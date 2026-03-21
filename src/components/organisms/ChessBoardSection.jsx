@@ -40,7 +40,7 @@ function Timer({ time = "15:00" }) {
   return (
     <div
       className="
-        w-[138px]
+        w-[150px]
         h-[44px]
         rounded-[20px_0px]
         bg-[#070d34]
@@ -175,20 +175,14 @@ export default function ChessBoardSection() {
 
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden">
-      <div
+     <div
         style={{
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-          width: `${BOARD_SIZE}px`,
+          width: `${Math.floor(BOARD_SIZE * scale)}px`
         }}
       >
         <section
-          className="
-            w-[834px]
-            min-w-[834px]
-            flex
-            flex-col
-          "
+          className="flex flex-col"
+          style={{ width: Math.floor(BOARD_SIZE * scale) }}
         >
           <div className="w-full flex items-center justify-between mb-[26px]">
             <div className="mb-[-12px]">
@@ -205,7 +199,7 @@ export default function ChessBoardSection() {
             <Chessboard
               id="PawnRequiemBoard"
               position={game.fen()}
-              boardWidth={BOARD_SIZE}
+              boardWidth={Math.floor(BOARD_SIZE * scale)}
               customPieces={customPieces}
               customLightSquareStyle={{ backgroundColor: "#c8cfdb" }}
               customDarkSquareStyle={{ backgroundColor: "#aab3c8" }}

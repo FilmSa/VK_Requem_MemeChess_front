@@ -3,6 +3,7 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 
 import UserInfo from "../molecules/UserInfo";
+import MoveHistoryPanel from "../molecules/MoveHistoryPanel.jsx";
 import { createGameSocket, getDebugToken } from "../../shared/ws/gameSocket.js";
 
 const BOARD_SIZE = 834;
@@ -290,12 +291,8 @@ function canControlPiece(piece, chessInstance = gameRef.current) {
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-hidden">
-      <div
-        style={{
-          width: `${Math.floor(BOARD_SIZE * scale)}px`,
-        }}
-      >
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="flex flex-row gap-4 items-start">
         <section
           className="flex flex-col"
           style={{ width: Math.floor(BOARD_SIZE * scale) }}
@@ -347,6 +344,10 @@ function canControlPiece(piece, chessInstance = gameRef.current) {
             <Timer time="15:00" />
           </div>
         </section>
+
+        <div className="flex-shrink-0" style={{ width: "220px", height: Math.floor(BOARD_SIZE * scale), marginTop: "54px" }}>
+          <MoveHistoryPanel history={game.history()} height="450px" />
+        </div>
       </div>
     </div>
   );

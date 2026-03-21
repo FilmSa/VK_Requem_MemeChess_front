@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
+
 import UserInfo from "../molecules/UserInfo";
+import { createGameSocket, getDebugToken } from "../../shared/ws/gameSocket.js";
 
 const BOARD_SIZE = 834;
 const DEFAULT_AVATAR = "/images/default-avatar.png";
+
+const API_BASE_URL = "http://localhost:8080";
+
+const searchParams = new URLSearchParams(window.location.search);
+
+const GAME_ID = searchParams.get("game") || "room-1";
+const USER_ID = searchParams.get("user") || "1";
+
+const PLAYER_COLOR = USER_ID === "1" ? "w" : "b";
+const BOARD_ORIENTATION = PLAYER_COLOR === "w" ? "white" : "black";
 
 const makePiece = (src, alt) => ({ squareWidth, isDragging }) => (
   <img
@@ -48,11 +60,10 @@ function Timer({ time = "15:00" }) {
         flex
         items-center
         justify-center
-        text-white
         text-[22px]
         leading-none
         font-medium
-        text-[#ffffff]
+        text-white
       "
       style={{ fontFamily: '"Unbounded", sans-serif' }}
     >
@@ -62,10 +73,18 @@ function Timer({ time = "15:00" }) {
 }
 
 export default function ChessBoardSection() {
-  const [game, setGame] = useState(new Chess());
+  const [game, setGame] = useState(() => new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [highlightedSquares, setHighlightedSquares] = useState({});
   const [scale, setScale] = useState(1);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+  const gameRef = useRef(game);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   useEffect(() => {
     function updateScale() {
@@ -81,8 +100,7 @@ export default function ChessBoardSection() {
       const scaleX = availableWidth / designWidth;
       const scaleY = availableHeight / designHeight;
 
-      const nextScale = Math.min(scaleX, scaleY, 1);
-      setScale(nextScale);
+      setScale(Math.min(scaleX, scaleY, 1));
     }
 
     updateScale();
@@ -91,7 +109,88 @@ export default function ChessBoardSection() {
     return () => window.removeEventListener("resize", updateScale);
   }, []);
 
-  function buildHighlights(square, chessInstance = game) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function connect() {
+      try {
+        const token = await getDebugToken(API_BASE_URL, USER_ID);
+        if (cancelled) return;
+
+        const client = createGameSocket({
+          baseHttpUrl: API_BASE_URL,
+          token,
+          gameId: GAME_ID,
+          userId: USER_ID,
+
+          onOpen: () => {
+            setIsSocketConnected(true);
+          },
+
+          onClose: () => {
+            setIsSocketConnected(false);
+          },
+
+          onJoined: (payload) => {
+            console.log("WS joined:", payload);
+          },
+
+          onMove: ({ isOwnMessage, move }) => {
+            if (isOwnMessage) return;
+
+            const gameCopy = new Chess(gameRef.current.fen());
+            const appliedMove = gameCopy.move({
+              from: move.from,
+              to: move.to,
+              promotion: move.promotion || "q",
+            });
+
+            if (!appliedMove) {
+              console.warn("Received invalid move from WS:", move);
+              return;
+            }
+
+            setGame(gameCopy);
+            clearSelection();
+          },
+
+          onError: (error) => {
+            console.error("WS error:", error);
+          },
+        });
+
+        socketRef.current = client;
+      } catch (error) {
+        console.error("Failed to connect WS:", error);
+        setIsSocketConnected(false);
+      }
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, []);
+
+  function clearSelection() {
+    setSelectedSquare(null);
+    setHighlightedSquares({});
+  }
+
+  function isPlayersTurn(chessInstance = gameRef.current) {
+  return chessInstance.turn() === PLAYER_COLOR;
+}
+
+function canControlPiece(piece, chessInstance = gameRef.current) {
+  if (!piece) return false;
+  if (!isPlayersTurn(chessInstance)) return false;
+  return piece.color === PLAYER_COLOR;
+}
+
+  function buildHighlights(square, chessInstance = gameRef.current) {
     const moves = chessInstance.moves({ square, verbose: true });
 
     if (!moves.length) {
@@ -120,64 +219,81 @@ export default function ChessBoardSection() {
     setHighlightedSquares(styles);
   }
 
-  function clearSelection() {
-    setSelectedSquare(null);
-    setHighlightedSquares({});
-  }
+  function applyLocalMove({ from, to, promotion = "q", shouldSend = true }) {
+    const gameCopy = new Chess(gameRef.current.fen());
 
-  function onSquareClick(square) {
-    const clickedPiece = game.get(square);
-
-    if (selectedSquare === square) {
-      clearSelection();
-      return;
-    }
-
-    if (clickedPiece && clickedPiece.color === game.turn()) {
-      setSelectedSquare(square);
-      buildHighlights(square);
-      return;
-    }
-
-    if (selectedSquare) {
-      const gameCopy = new Chess(game.fen());
-      const move = gameCopy.move({
-        from: selectedSquare,
-        to: square,
-        promotion: "q",
-      });
-
-      if (move) {
-        setGame(gameCopy);
-      }
-
-      clearSelection();
-      return;
-    }
-
-    clearSelection();
-  }
-
-  function onPieceDrop(sourceSquare, targetSquare) {
-    const gameCopy = new Chess(game.fen());
     const move = gameCopy.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: "q",
+      from,
+      to,
+      promotion,
     });
 
     if (!move) return false;
 
     setGame(gameCopy);
     clearSelection();
+
+    if (shouldSend) {
+      socketRef.current?.sendMove({ from, to, promotion });
+    }
+
     return true;
+  }
+
+  function onSquareClick(square) {
+  const currentGame = gameRef.current;
+  const clickedPiece = currentGame.get(square);
+
+  if (!isPlayersTurn(currentGame)) {
+    clearSelection();
+    return;
+  }
+
+  if (selectedSquare === square) {
+    clearSelection();
+    return;
+  }
+
+  if (clickedPiece && canControlPiece(clickedPiece, currentGame)) {
+    setSelectedSquare(square);
+    buildHighlights(square, currentGame);
+    return;
+  }
+
+  if (selectedSquare) {
+    applyLocalMove({
+      from: selectedSquare,
+      to: square,
+      promotion: "q",
+      shouldSend: true,
+    });
+    return;
+  }
+
+  clearSelection();
+}
+
+  function onPieceDrop(sourceSquare, targetSquare) {
+    const currentGame = gameRef.current;
+    const piece = currentGame.get(sourceSquare);
+
+    if (!canControlPiece(piece, currentGame)) {
+      return false;
+    }
+
+    return applyLocalMove({
+      from: sourceSquare,
+      to: targetSquare,
+      promotion: "q",
+      shouldSend: true,
+    });
   }
 
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden">
-     <div
+      <div
         style={{
-          width: `${Math.floor(BOARD_SIZE * scale)}px`
+          width: `${Math.floor(BOARD_SIZE * scale)}px`,
         }}
       >
         <section
@@ -192,13 +308,23 @@ export default function ChessBoardSection() {
                 avatar={DEFAULT_AVATAR}
               />
             </div>
-            <Timer time="15:00" />
+
+            <div className="flex items-center gap-3">
+              <Timer time="15:00" />
+            </div>
           </div>
 
-          <div className="w-[834px] h-[834px] overflow-hidden rounded-[16px]">
+          <div
+            className="overflow-hidden rounded-[16px]"
+            style={{
+              width: Math.floor(BOARD_SIZE * scale),
+              height: Math.floor(BOARD_SIZE * scale),
+            }}
+          >
             <Chessboard
               id="PawnRequiemBoard"
               position={game.fen()}
+              boardOrientation={BOARD_ORIENTATION}
               boardWidth={Math.floor(BOARD_SIZE * scale)}
               customPieces={customPieces}
               customLightSquareStyle={{ backgroundColor: "#c8cfdb" }}
@@ -217,6 +343,7 @@ export default function ChessBoardSection() {
                 avatar="/icons/avatar.jpg"
               />
             </div>
+
             <Timer time="15:00" />
           </div>
         </section>

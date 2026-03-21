@@ -24,11 +24,12 @@ export default function ChessBoardSection() {
 
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden">
-      <div
+      <div className="flex flex-row gap-4 items-start">
+      {/* <div
         style={{
           width: `${boardWidth}px`,
         }}
-      >
+      > */}
         <section
           className="flex flex-col"
           style={{ width: Math.floor(BOARD_SIZE * scale) }}
@@ -67,6 +68,7 @@ export default function ChessBoardSection() {
           <MoveHistoryPanel history={game.history()} height="450px" />
         </div>
       </div>
-    </div>
+      </div>
+    // </div>
   );
 }

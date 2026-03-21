@@ -345,7 +345,7 @@ function canControlPiece(piece, chessInstance = gameRef.current) {
           </div>
         </section>
 
-        <div className="flex-shrink-0" style={{ width: "220px", height: Math.floor(BOARD_SIZE * scale), marginTop: "54px" }}>
+        <div className="flex-shrink-0" style={{ width: "220px", height: Math.floor(BOARD_SIZE * scale), marginTop: "78px" }}>
           <MoveHistoryPanel history={game.history()} height="450px" />
         </div>
       </div>

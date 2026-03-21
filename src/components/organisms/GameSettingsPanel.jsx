@@ -162,7 +162,15 @@ export default function MoveHistoryPanel({ history = [], height, style }) {
 
   useEffect(() => {
     if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
+      // прокрутка к последнему ходу, когда добавляется новый ход
+      setTimeout(() => {
+        if (listRef.current) {
+          listRef.current.scrollTo({
+            top: listRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 0);
     }
   }, [history]);
 

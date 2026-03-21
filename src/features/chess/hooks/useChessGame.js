@@ -60,7 +60,13 @@ export function useChessGame() {
   }
 
   function applyMove({ from, to, promotion = "q" }) {
-    const gameCopy = new Chess(gameRef.current.fen());
+    const gameCopy = new Chess();
+    const moves = gameRef.current.moves({ verbose: true });
+    const history = gameRef.current.history({ verbose: true });
+    
+    history.forEach(move => {
+      gameCopy.move(move);
+    });
 
     const move = gameCopy.move({
       from,

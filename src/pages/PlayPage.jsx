@@ -8,6 +8,8 @@ import { useChessGame } from "../features/chess/hooks/useChessGame.js";
 export default function PlayPage() {
   const chessGameState = useChessGame();
 
+  const deposit = 1000;
+
   console.log("History:", chessGameState.game.history());
 
   return (
@@ -18,7 +20,7 @@ export default function PlayPage() {
             <div className="ml-[50px]">
                 <ChessBoardSection gameState={chessGameState} />
             </div>
-            <GameSettingsPanel history={chessGameState.game.history()} height="450px" style={{ marginTop: "78px" }}/>
+            <GameSettingsPanel history={chessGameState.game.history()} deposit={deposit} height="450px" style={{ marginTop: "78px" }}/>
         </main>
       </div>
     </div>

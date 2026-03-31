@@ -157,6 +157,44 @@ export function createGameSocket({
       return true;
     },
 
+    sendResign() {
+      if (socket.readyState !== WebSocket.OPEN) return false;
+
+      socket.send(
+        JSON.stringify({
+          type: WS_MESSAGE_TYPE.MESSAGE,
+          request_id: crypto.randomUUID(),
+          payload: {
+            game_id: gameId,
+            message: JSON.stringify({
+              kind: "resign",
+            }),
+          },
+        })
+      );
+
+      return true;
+    },
+
+    sendDraw() {
+      if (socket.readyState !== WebSocket.OPEN) return false;
+
+      socket.send(
+        JSON.stringify({
+          type: WS_MESSAGE_TYPE.MESSAGE,
+          request_id: crypto.randomUUID(),
+          payload: {
+            game_id: gameId,
+            message: JSON.stringify({
+              kind: "draw",
+            }),
+          },
+        })
+      );
+
+      return true;
+    },
+
     close() {
       socket.close();
     },

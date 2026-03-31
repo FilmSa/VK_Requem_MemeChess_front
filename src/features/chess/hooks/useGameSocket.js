@@ -59,7 +59,17 @@ export function useGameSocket({ onRemoteMove }) {
     socketRef.current?.sendMove(move);
   }
 
+  function sendResign() {
+    socketRef.current?.sendResign();
+  }
+
+  function sendDraw() {
+    socketRef.current?.sendDraw();
+  }
+
   return {
     sendMove,
+    sendResign,
+    sendDraw,
   };
 }

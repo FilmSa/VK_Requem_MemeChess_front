@@ -1,219 +1,103 @@
-import { useEffect, useRef } from "react";
+import GameHeaderMolecule from "../molecules/GameHeaderMolecule";
+import DepositBannerMolecule from "../molecules/DepositBannerMolecule";
+import QuickAccessMolecule from "../molecules/QuickAccessMolecule";
+import MoveHistoryMolecule from "../molecules/MoveHistoryMolecule";
+import MoveNavigationMolecule from "../molecules/MoveNavigationMolecule";
+import GameActionsMolecule from "../molecules/GameActionsMolecule";
+import { useBoardScale } from "../../features/chess/hooks/useBoardScale.js";
+import { BOARD_SIZE, DEFAULT_AVATAR } from "../../features/chess/lib/boardConfig.js";
+
 
 const S = {
   panel: {
-    width: 300,
-    height: "100%",
+    width: 510,
+    height: Math.floor(BOARD_SIZE),
     flexShrink: 0,
     display: "flex",
     flexDirection: "column",
+    gap: 12,
     background: "#060c2e",
     borderRadius: 16,
     border: "1px solid rgba(0,234,255,0.12)",
     boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
     overflow: "hidden",
     fontFamily: "'Unbounded', sans-serif",
+    padding: "12px",
   },
 
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "12px 16px",
-    borderBottom: "1px solid rgba(0,234,255,0.12)",
-    background: "#07103a",
-    flexShrink: 0,
-  },
-
-  title: {
-    fontSize: 16,
-    fontWeight: 500,
-    letterSpacing: "0.18em",
-    textTransform: "uppercase",
-    color: "rgba(232,238,255,0.35)",
-  },
-
-  cols: {
-    display: "flex",
-    alignItems: "center",
-    padding: "6px 10px 6px 14px",
-    borderBottom: "1px solid rgba(0,234,255,0.08)",
-    flexShrink: 0,
-  },
-
-  colNum: {
-    width: 37,
-    flexShrink: 0,
-  },
-
-  colLabel: (isWhite) => ({
+  content: {
     flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    letterSpacing: "0.1em",
-    color: isWhite ? "rgba(255,255,255,0.55)" : "rgba(150,160,200,0.5)",
-  }),
-
-  list: {
-    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    minHeight: 0,
     overflowY: "auto",
-    padding: "4px 6px",
+    paddingRight: 4,
     scrollbarWidth: "thin",
     scrollbarColor: "rgba(0,234,255,0.2) transparent",
   },
 
-  row: (isLast, isEven) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 2,
-    padding: "4px 6px",
-    borderRadius: 8,
-    background: isLast
-      ? "rgba(0,234,255,0.08)"
-      : isEven
-        ? "rgba(255,255,255,0.025)"
-        : "transparent",
-  }),
-
-  rowNum: {
-    width: 32,
-    flexShrink: 0,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
-  },
-
-  cell: (isBlack, isActive) => ({
+  moveHistoryWrapper: {
     flex: 1,
-    textAlign: "center",
-    padding: "4px 3px",
-    borderRadius: 5,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    fontWeight: 500,
-    color: isActive ? "#00eaff" : isBlack ? "rgba(232,238,255,0.65)" : "#e8eeff",
-    textShadow: isActive ? "0 0 8px rgba(0,234,255,0.6)" : "none",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  }),
-
-  empty: {
-    flex: 1,
+    minHeight: 0,
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 24,
-  },
-
-  emptyIcon: {
-    fontSize: 28,
-    opacity: 0.2,
-  },
-
-  emptyText: {
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
-    textAlign: "center",
-    lineHeight: 1.6,
-    letterSpacing: "0.05em",
   },
 
   footer: {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "9px 12px",
-    borderTop: "1px solid rgba(0,234,255,0.08)",
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
+    flexDirection: "column",
+    gap: 8,
     flexShrink: 0,
   },
 };
 
+export default function GameSettingsPanel({ history = [], deposit = 1000, style }) {
+  const handleItemClick = (item) => {
+    // Future: Send quick access action via WebSocket
+    console.log("Quick access item clicked:", item);
+  };
 
-function groupMoves(history) {
-  const pairs = [];
-  for (let i = 0; i < history.length; i += 2) {
-    pairs.push({
-      num: Math.floor(i / 2) + 1,
-      white: history[i] ?? null,
-      black: history[i + 1] ?? null,
-    });
-  }
-  return pairs;
-}
+  const handlePreviousMove = () => {
+    // Future: Navigate to previous move in history
+    console.log("Previous move");
+  };
 
-function formatCount(n) {
-  if (n === 0) return "партия не начата";
-  const mod = n % 10;
-  const mod100 = n % 100;
-  if (mod === 1 && mod100 !== 11) return `${n} ход`;
-  if (mod >= 2 && mod <= 4 && !(mod100 >= 12 && mod100 <= 14)) return `${n} хода`;
-  return `${n} ходов`;
-}
-
-
-export default function MoveHistoryPanel({ history = [], height, style }) {
-  const listRef = useRef(null);
-
-  useEffect(() => {
-    if (listRef.current) {
-      // прокрутка к последнему ходу, когда добавляется новый ход
-      setTimeout(() => {
-        if (listRef.current) {
-          listRef.current.scrollTo({
-            top: listRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
-        }
-      }, 0);
-    }
-  }, [history]);
-
-  const pairs = groupMoves(history);
-  const lastIndex = pairs.length - 1;
-  const lastMoveIsBlack = history.length % 2 === 0 && history.length > 0;
+  const handleNextMove = () => {
+    // Future: Navigate to next move in history
+    console.log("Next move");
+  };
 
   return (
-    <div style={{ ...S.panel, height, ...style }}>
-      <div style={S.header}>
-        <span style={S.title}>Ходы партии</span>
+    <div style={{ ...S.panel, ...style }}>
+      {/* Top section: Game Info */}
+      <div>
+        <GameHeaderMolecule iconKey="game" title="Партия" />
       </div>
 
-      <div style={S.cols}>
-        <span style={S.colNum} />
-        <span style={S.colLabel(true)}>Белые</span>
-        <span style={S.colLabel(false)}>Чёрные</span>
+      {/* Deposit banner with icon */}
+      <div>
+        <DepositBannerMolecule amount={deposit} iconKey="cup" label="Депозит" />
       </div>
 
-      {pairs.length === 0 ? (
-        <div style={S.empty}>
-          <span style={S.emptyText}>Ходы появятся здесь</span>
-        </div>
-      ) : (
-        <div style={S.list} ref={listRef}>
-          {pairs.map((pair, index) => {
-            const isLast = index === lastIndex;
-            const whiteIsActive = isLast && !lastMoveIsBlack;
-            const blackIsActive = isLast && lastMoveIsBlack;
+      {/* Quick access items */}
+      <div>
+        <QuickAccessMolecule onItemClick={handleItemClick} />
+      </div>
 
-            return (
-              <div key={pair.num} style={S.row(isLast, index % 2 !== 0)}>
-                <span style={S.rowNum}>{pair.num}.</span>
-                <span style={S.cell(false, whiteIsActive)}>{pair.white}</span>
-                <span style={S.cell(true, blackIsActive)}>{pair.black ?? ""}</span>
-              </div>
-            );
-          })}
+      {/* Scrollable content area: Move history + Navigation */}
+      <div style={S.content}>
+        <div style={S.moveHistoryWrapper}>
+          <MoveHistoryMolecule history={history} />
         </div>
-      )}
 
-      <div style={S.footer}>
-        {formatCount(history.length)}
+        <div style={S.footer}>
+          <MoveNavigationMolecule 
+            onPrevious={handlePreviousMove} 
+            onNext={handleNextMove}
+          />
+          <GameActionsMolecule />
+        </div>
       </div>
     </div>
   );

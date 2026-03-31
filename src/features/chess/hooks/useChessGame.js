@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { getGameParams } from "../lib/gameParams";
+import { useBoardEffects } from "./useBoardEffects";
+
+const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 
 export function useChessGame() {
   const { playerColor, boardOrientation } = getGameParams();
@@ -8,6 +11,8 @@ export function useChessGame() {
   const [game, setGame] = useState(() => new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [highlightedSquares, setHighlightedSquares] = useState({});
+
+  const { activeEffects, effect, clearEffects } = useBoardEffects();
 
   const gameRef = useRef(game);
 
@@ -19,6 +24,17 @@ export function useChessGame() {
     setSelectedSquare(null);
     setHighlightedSquares({});
   }
+
+  function triggerMoveEffect(move) {
+  const random = 1;
+
+  effect(String(random), {
+    square: move.to,
+    from: move.from,
+    to: move.to,
+    piece: move.piece,
+  });
+}
 
   function isPlayersTurn(chessInstance = gameRef.current) {
     return chessInstance.turn() === playerColor;
@@ -61,11 +77,10 @@ export function useChessGame() {
 
   function applyMove({ from, to, promotion = "q" }) {
     const gameCopy = new Chess();
-    const moves = gameRef.current.moves({ verbose: true });
     const history = gameRef.current.history({ verbose: true });
-    
-    history.forEach(move => {
-      gameCopy.move(move);
+
+    history.forEach((historyMove) => {
+      gameCopy.move(historyMove);
     });
 
     const move = gameCopy.move({
@@ -74,12 +89,13 @@ export function useChessGame() {
       promotion,
     });
 
-    if (!move) return false;
+    if (!move) return null;
 
     setGame(gameCopy);
     clearSelection();
+    triggerMoveEffect(move);
 
-    return true;
+    return move;
   }
 
   function onSquareClick(square, sendMove) {
@@ -103,17 +119,17 @@ export function useChessGame() {
     }
 
     if (selectedSquare) {
-      const moved = applyMove({
+      const move = applyMove({
         from: selectedSquare,
         to: square,
         promotion: "q",
       });
 
-      if (moved) {
+      if (move) {
         sendMove?.({
-          from: selectedSquare,
-          to: square,
-          promotion: "q",
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion || "q",
         });
       }
 
@@ -131,35 +147,40 @@ export function useChessGame() {
       return false;
     }
 
-    const moved = applyMove({
+    const move = applyMove({
       from: sourceSquare,
       to: targetSquare,
       promotion: "q",
     });
 
-    if (moved) {
+    if (move) {
       sendMove?.({
-        from: sourceSquare,
-        to: targetSquare,
-        promotion: "q",
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion || "q",
       });
+      return true;
     }
 
-    return moved;
+    return false;
   }
 
   function applyRemoteMove(move) {
-    return applyMove({
+    const appliedMove = applyMove({
       from: move.from,
       to: move.to,
       promotion: move.promotion || "q",
     });
+
+    return !!appliedMove;
   }
 
   return {
     game,
     highlightedSquares,
     boardOrientation,
+    activeEffects,
+    effect,
     onSquareClick,
     onPieceDrop,
     applyRemoteMove,

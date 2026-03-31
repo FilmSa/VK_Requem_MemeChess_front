@@ -10,7 +10,6 @@ export default function PlayPage() {
 
   const deposit = 1000;
 
-  console.log("History:", chessGameState.game.history());
 
   return (
     <div className="w-screen h-screen overflow-hidden text-white bg-[linear-gradient(312deg,#0b0f2b_0%,#2b1a58_13.94%,#3b1f6a_29.33%,#1a1446_50.47%,#341d5b_68.17%,#1f1852_88.46%,#0b0f2b_100%)]">

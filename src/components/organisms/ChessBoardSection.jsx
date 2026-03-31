@@ -3,16 +3,21 @@ import GameBoard from "../../features/chess/components/GameBoard.jsx";
 import { useBoardScale } from "../../features/chess/hooks/useBoardScale.js";
 import { useChessGame } from "../../features/chess/hooks/useChessGame.js";
 import { useGameSocket } from "../../features/chess/hooks/useGameSocket.js";
-import { BOARD_SIZE, DEFAULT_AVATAR } from "../../features/chess/lib/boardConfig.js";
+import {
+  BOARD_SIZE,
+  DEFAULT_AVATAR,
+} from "../../features/chess/lib/boardConfig.js";
 
 export default function ChessBoardSection({ gameState }) {
   const { scale, boardWidth } = useBoardScale(BOARD_SIZE);
 
   const gameStateLocal = gameState || useChessGame();
+
   const {
     game,
     highlightedSquares,
     boardOrientation,
+    activeEffects,
     onSquareClick,
     onPieceDrop,
     applyRemoteMove,
@@ -25,11 +30,6 @@ export default function ChessBoardSection({ gameState }) {
   return (
     <div className="w-full h-full flex items-center justify-center overflow-hidden">
       <div className="flex flex-row gap-4 items-start">
-      {/* <div
-        style={{
-          width: `${boardWidth}px`,
-        }}
-      > */}
         <section
           className="flex flex-col"
           style={{ width: Math.floor(BOARD_SIZE * scale) }}
@@ -48,6 +48,7 @@ export default function ChessBoardSection({ gameState }) {
             boardWidth={boardWidth}
             boardOrientation={boardOrientation}
             highlightedSquares={highlightedSquares}
+            activeEffects={activeEffects}
             onSquareClick={(square) => onSquareClick(square, sendMove)}
             onPieceDrop={(sourceSquare, targetSquare) =>
               onPieceDrop(sourceSquare, targetSquare, sendMove)
@@ -64,7 +65,6 @@ export default function ChessBoardSection({ gameState }) {
           </div>
         </section>
       </div>
-      </div>
-    // </div>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { getGameParams } from "../lib/gameParams";
 import { useBoardEffects } from "./useBoardEffects";
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
+  let effectIndex = 1;
 
 export function useChessGame() {
   const { playerColor, boardOrientation } = getGameParams();
@@ -25,16 +26,17 @@ export function useChessGame() {
     setHighlightedSquares({});
   }
 
-  function triggerMoveEffect(move) {
-  const random = 1;
 
-  effect(String(random), {
-    square: move.to,
-    from: move.from,
-    to: move.to,
-    piece: move.piece,
-  });
-}
+ function triggerMoveEffect(move) {
+    effect(String(effectIndex), {
+      square: move.to,
+      from: move.from,
+      to: move.to,
+      piece: move.piece,
+    });
+
+    effectIndex = (effectIndex % 5) + 1;
+  }
 
   function isPlayersTurn(chessInstance = gameRef.current) {
     return chessInstance.turn() === playerColor;

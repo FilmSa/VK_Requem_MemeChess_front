@@ -34,7 +34,7 @@ function PriceButton({ price }) {
         w-full h-[42px]
         rounded-[8px]
         bg-[#19d9ff]
-        text-[#03132d]
+        text-[#A346CE]
         font-bold
         text-[24px]
         leading-none
@@ -148,35 +148,8 @@ function SkinPreviewModal({ skin, onClose }) {
           overflow: "auto",
         }}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            top: "12px",
-            right: "12px",
-            width: "38px",
-            height: "38px",
-            borderRadius: "999px",
-            background: "#fff",
-            color: "#000",
-            fontSize: "24px",
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "none",
-            cursor: "pointer",
-            zIndex: 2,
-          }}
-        >
-          ×
-        </button>
 
         <div className="text-center mb-[20px] pr-[40px]">
-          <div className="text-white font-black text-[42px] leading-[0.95]">
-            {skin.title.toUpperCase()}
-          </div>
           <div className="text-[#67e7ff] text-[18px] tracking-[0.18em] font-semibold">
           </div>
         </div>

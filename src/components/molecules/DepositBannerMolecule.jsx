@@ -11,27 +11,27 @@ const S = {
     borderRadius: 12,
     fontFamily: "'Unbounded', sans-serif",
   },
-  
+
   label: {
     fontSize: 14,
     letterSpacing: "0.1em",
     textTransform: "uppercase",
     color: "rgba(232,238,255,0.5)",
   },
-  
+
   valueSection: {
     display: "flex",
     alignItems: "center",
     gap: 6,
   },
-  
+
   amount: {
     fontSize: 16,
     fontWeight: 500,
     color: "#00eaff",
     fontFamily: "'JetBrains Mono', monospace",
   },
-  
+
   iconWrapper: {
     display: "flex",
     alignItems: "center",
@@ -42,11 +42,10 @@ const S = {
   },
 };
 
-
-export default function DepositBannerMolecule({ 
-  amount = 1000, 
+export default function DepositBannerMolecule({
+  amount = 1000,
   iconKey = "cup",
-  label = "Депозит"
+  label = "Депозит",
 }) {
   return (
     <div style={S.container}>

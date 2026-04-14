@@ -11,14 +11,14 @@ const S = {
     borderRadius: 16,
     fontFamily: "'Unbounded', sans-serif",
   },
-  
+
   titleSection: {
     flex: 1,
     display: "flex",
     alignItems: "center",
     gap: 8,
   },
-  
+
   title: {
     fontSize: 16,
     fontWeight: 500,
@@ -26,7 +26,7 @@ const S = {
     textTransform: "uppercase",
     color: "#e8eeff",
   },
-  
+
   iconWrapper: {
     display: "flex",
     alignItems: "center",
@@ -37,7 +37,10 @@ const S = {
   },
 };
 
-export default function GameHeaderMolecule({ iconKey = "game", title = "Партия" }) {
+export default function GameHeaderMolecule({
+  iconKey = "game",
+  title = "Партия",
+}) {
   return (
     <div style={S.container}>
       <div style={S.titleSection}>

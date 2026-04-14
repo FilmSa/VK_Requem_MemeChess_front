@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Icon from "../atoms/Icon";
-import { useGameSocket } from "../../features/chess/hooks/useGameSocket";
 
 const S = {
   container: {
@@ -15,7 +14,7 @@ const S = {
     gap: 8,
   },
 
-  button: (variant) => {
+  button: (variant, disabled) => {
     const baseStyle = {
       flex: 1,
       padding: "10px 14px",
@@ -26,13 +25,14 @@ const S = {
       fontWeight: 500,
       letterSpacing: "0.1em",
       textTransform: "uppercase",
-      cursor: "pointer",
+      cursor: disabled ? "not-allowed" : "pointer",
       transition: "all 0.2s ease",
       boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
+      opacity: disabled ? 0.6 : 1,
     };
 
     if (variant === "resign") {
@@ -44,16 +44,12 @@ const S = {
       };
     }
 
-    if (variant === "draw") {
-      return {
-        ...baseStyle,
-        background: "linear-gradient(135deg, #d946ef 0%, #a91ba8 100%)",
-        color: "#fff",
-        border: "1px solid rgba(255,255,255,0.1)",
-      };
-    }
-
-    return baseStyle;
+    return {
+      ...baseStyle,
+      background: "linear-gradient(135deg, #d946ef 0%, #a91ba8 100%)",
+      color: "#fff",
+      border: "1px solid rgba(255,255,255,0.1)",
+    };
   },
 
   buttonHover: (variant) => {
@@ -64,14 +60,10 @@ const S = {
       };
     }
 
-    if (variant === "draw") {
-      return {
-        background: "linear-gradient(135deg, #e964ff 0%, #c81fd5 100%)",
-        boxShadow: "0 6px 16px rgba(217,70,239,0.4)",
-      };
-    }
-
-    return {};
+    return {
+      background: "linear-gradient(135deg, #e964ff 0%, #c81fd5 100%)",
+      boxShadow: "0 6px 16px rgba(217,70,239,0.4)",
+    };
   },
 
   iconWrapper: {
@@ -82,7 +74,6 @@ const S = {
     height: 16,
   },
 };
-
 
 const GAME_ACTIONS = {
   resign: {
@@ -101,40 +92,53 @@ const GAME_ACTIONS = {
   },
 };
 
-export default function GameActionsMolecule({ actions = GAME_ACTIONS }) {
-  const { sendResign, sendDraw } = useGameSocket({ onRemoteMove: null });
+export default function GameActionsMolecule({
+  actions = GAME_ACTIONS,
+  onResign = () => {},
+  onDraw = () => {},
+  disabled = false,
+}) {
   const [isLoading, setIsLoading] = useState(false);
+  const isDisabled = disabled || isLoading;
 
-  const handleResign = () => {
-    // окно для подтверждения поражения
-  };
-
-  const handleDrawOffer = () => {
+  async function handleResign() {
     setIsLoading(true);
     try {
-      sendDraw();
+      await onResign();
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleMouseEnter = (e, variant) => {
-    Object.assign(e.target.style, S.buttonHover(variant));
-  };
+  async function handleDrawOffer() {
+    setIsLoading(true);
+    try {
+      await onDraw();
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-  const handleMouseLeave = (e, variant) => {
-    Object.assign(e.target.style, S.button(variant));
-  };
+  function handleMouseEnter(event, variant) {
+    if (isDisabled) {
+      return;
+    }
+    Object.assign(event.currentTarget.style, S.buttonHover(variant));
+  }
+
+  function handleMouseLeave(event, variant) {
+    Object.assign(event.currentTarget.style, S.button(variant, isDisabled));
+  }
 
   return (
     <div style={S.container}>
       <div style={S.row}>
         <button
-          style={S.button(actions.resign.color)}
+          style={S.button(actions.resign.color, isDisabled)}
           onClick={handleResign}
-          disabled={isLoading}
-          onMouseEnter={(e) => handleMouseEnter(e, actions.resign.color)}
-          onMouseLeave={(e) => handleMouseLeave(e, actions.resign.color)}
+          disabled={isDisabled}
+          onMouseEnter={(event) => handleMouseEnter(event, actions.resign.color)}
+          onMouseLeave={(event) => handleMouseLeave(event, actions.resign.color)}
           title={actions.resign.description}
         >
           <div style={S.iconWrapper}>
@@ -143,11 +147,11 @@ export default function GameActionsMolecule({ actions = GAME_ACTIONS }) {
           {actions.resign.label}
         </button>
         <button
-          style={S.button(actions.draw.color)}
+          style={S.button(actions.draw.color, isDisabled)}
           onClick={handleDrawOffer}
-          disabled={isLoading}
-          onMouseEnter={(e) => handleMouseEnter(e, actions.draw.color)}
-          onMouseLeave={(e) => handleMouseLeave(e, actions.draw.color)}
+          disabled={isDisabled}
+          onMouseEnter={(event) => handleMouseEnter(event, actions.draw.color)}
+          onMouseLeave={(event) => handleMouseLeave(event, actions.draw.color)}
           title={actions.draw.description}
         >
           <div style={S.iconWrapper}>
@@ -160,6 +164,4 @@ export default function GameActionsMolecule({ actions = GAME_ACTIONS }) {
   );
 }
 
-// Экспорт конфига для переиспользования
 export { GAME_ACTIONS };
-

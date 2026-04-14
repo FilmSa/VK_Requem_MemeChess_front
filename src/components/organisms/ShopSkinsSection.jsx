@@ -5,24 +5,24 @@ import ShopPreviewBoard from "./ShopPreviewBoard.jsx";
 const skins = [
   {
     id: 1,
-    title: "ChessFrame",
+    title: "Шахматная рамка",
     price: 2500,
     heroImage: "/images/image.jpg",
     previewImage: "/images/Board.png",
   },
   {
     id: 2,
-    title: "Dark Legion",
+    title: "Тёмный легион",
     price: 2800,
-    heroImage: "/images/shop/dark-legion-hero.jpg",
-    previewImage: "/images/shop/dark-legion-preview.jpg",
+    heroImage: "/images/image.jpg",
+    previewImage: "/images/Board.png",
   },
   {
     id: 3,
-    title: "Void Kings",
+    title: "Короли пустоты",
     price: 3100,
-    heroImage: "/images/shop/void-kings-hero.jpg",
-    previewImage: "/images/shop/void-kings-preview.jpg",
+    heroImage: "/images/image.jpg",
+    previewImage: "/images/Board.png",
   },
 ];
 
@@ -30,18 +30,9 @@ function PriceButton({ price }) {
   return (
     <button
       type="button"
-      className="
-        w-full h-[42px]
-        rounded-[8px]
-        bg-[#19d9ff]
-        text-[#A346CE]
-        font-bold
-        text-[24px]
-        leading-none
-        flex items-center justify-center gap-[12px]
-      "
+      className="flex h-[42px] w-full items-center justify-center gap-[12px] rounded-[8px] bg-[#19d9ff] text-[24px] font-bold leading-none text-[#A346CE]"
     >
-      <img src="/icons/crown.svg" alt="crown" className="w-[22px] h-[22px]" />
+      <img src="/icons/crown.svg" alt="корона" className="h-[22px] w-[22px]" />
       <span>{price}</span>
     </button>
   );
@@ -55,20 +46,15 @@ function SliderArrow({ direction = "left", onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="
-        w-[47px] h-[126px]
-        flex items-center justify-center
-        shrink-0
-        border-0 outline-none p-0
-      "
+      className="flex h-[126px] w-[47px] shrink-0 items-center justify-center border-0 p-0 outline-none"
       style={{
         background: "linear-gradient(159deg, #160936 0%, #0a183c 159%)",
       }}
     >
       <img
         src={iconSrc}
-        alt={direction}
-        className="w-[60px] h-[60px]"
+        alt={direction === "left" ? "Назад" : "Вперёд"}
+        className="h-[60px] w-[60px]"
       />
     </button>
   );
@@ -76,11 +62,11 @@ function SliderArrow({ direction = "left", onClick }) {
 
 function PaginationDots({ total, currentIndex }) {
   return (
-    <div className="flex gap-[10px] mt-[16px]">
+    <div className="mt-[16px] flex gap-[10px]">
       {Array.from({ length: total }).map((_, index) => (
         <span
           key={index}
-          className={`w-[30px] h-[12px] rounded-[2px] ${
+          className={`h-[12px] w-[30px] rounded-[2px] ${
             index === currentIndex ? "bg-[#cbc0f7]" : "bg-[#7a6db1]"
           }`}
         />
@@ -95,7 +81,7 @@ function BoardPreview({ skin, onOpen }) {
       src={skin.previewImage}
       alt={skin.title}
       onClick={onOpen}
-      className="block w-[294px] h-[294px] object-fill cursor-pointer"
+      className="block h-[294px] w-[294px] cursor-pointer object-fill"
     />
   );
 }
@@ -148,9 +134,9 @@ function SkinPreviewModal({ skin, onClose }) {
           overflow: "auto",
         }}
       >
-
-        <div className="text-center mb-[20px] pr-[40px]">
-          <div className="text-[#67e7ff] text-[18px] tracking-[0.18em] font-semibold">
+        <div className="mb-[20px] pr-[40px] text-center">
+          <div className="text-[18px] font-semibold tracking-[0.18em] text-[#67e7ff]">
+            Предпросмотр скина
           </div>
         </div>
 
@@ -186,14 +172,14 @@ export default function ShopSkinsSection() {
   return (
     <>
       <section className="ml-[0px]">
-        <div className="flex items-start gap-[12px] mb-[10px]">
-          <div className="text-[#67e7ff] text-[34px] font-medium leading-[1.05]">
+        <div className="mb-[10px] flex items-start gap-[12px]">
+          <div className="text-[34px] font-medium leading-[1.05] text-[#67e7ff]">
             <div className="flex items-center gap-[12px]">
               <span>Магазин</span>
               <img
                 src="/icons/cart.svg"
-                alt="cart"
-                className="w-[32px] h-[32px]"
+                alt="корзина"
+                className="h-[32px] w-[32px]"
               />
             </div>
             <div>Скины</div>
@@ -206,61 +192,37 @@ export default function ShopSkinsSection() {
           </div>
 
           <div className="shrink-0">
-            <div
-              className="
-                w-[1191px] h-[489px]
-                bg-[#0b0f2b]
-                flex gap-[20px]
-                px-[20px] py-[10px]
-                overflow-hidden
-                rounded-tl-[40px] rounded-tr-[0px]
-                rounded-br-[40px] rounded-bl-[0px]
-              "
-            >
-              <div className="relative flex-1 h-full">
-                <img
-                  src={activeSkin.heroImage}
-                  alt={activeSkin.title}
-                  className="w-full h-full object-cover rounded-tl-[40px] rounded-tr-[0px]
-                rounded-br-[40px] rounded-bl-[0px]"
-                />
+            <div className="h-[489px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] bg-[#0b0f2b] px-[20px] py-[10px]">
+              <div className="flex gap-[20px]">
+                <div className="relative h-full flex-1">
+                  <img
+                    src={activeSkin.heroImage}
+                    alt={activeSkin.title}
+                    className="h-full w-full rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] object-cover"
+                  />
 
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,10,40,0)_55%,rgba(4,10,40,0.55)_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,10,40,0)_55%,rgba(4,10,40,0.55)_100%)]" />
 
-                <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 text-center">
-                  
+                  <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 text-center" />
+                </div>
+
+                <div className="flex h-[469px] w-[355px] shrink-0 flex-col items-center gap-[20px] rounded-tl-[0px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] px-[20px] pb-[16px] pt-[18px]">
+                  <div className="mb-[18px] w-full text-center text-[36px] font-semibold leading-none text-[#57dfff]">
+                    {activeSkin.title}
+                  </div>
+
+                  <div className="flex flex-1 items-center justify-center">
+                    <BoardPreview skin={activeSkin} onOpen={handleOpenPreview} />
+                  </div>
+
+                  <div className="mt-auto w-full">
+                    <PriceButton price={activeSkin.price} />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div
-                className="
-                  w-[355px] h-[469px]
-                  shrink-0
-                  rounded-tl-[0px] rounded-tr-[0px]
-                  rounded-br-[40px] rounded-bl-[0px]
-                  px-[20px] pt-[18px] pb-[16px]
-                  flex flex-col items-center h-full
-                  gap-[20px]
-                "
-              >
-                <div className="w-full text-[#57dfff] text-[36px] font-semibold leading-none mb-[18px] text-center">
-                  {activeSkin.title}
-                </div>
-
-                <div className="flex-1 flex items-center justify-center">
-                  <BoardPreview skin={activeSkin} onOpen={handleOpenPreview} />
-                </div>
-
-                <div className="mt-auto w-full">
-                  <PriceButton price={activeSkin.price} />
-                </div>
-              </div>
-                          </div>
-
-            <PaginationDots
-              total={skins.length}
-              currentIndex={activeIndex}
-            />
+            <PaginationDots total={skins.length} currentIndex={activeIndex} />
           </div>
 
           <div className="ml-[19px] shrink-0">

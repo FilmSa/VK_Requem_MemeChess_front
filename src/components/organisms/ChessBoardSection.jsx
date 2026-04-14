@@ -8,9 +8,16 @@ import {
   DEFAULT_AVATAR,
 } from "../../features/chess/lib/boardConfig.js";
 
-export default function ChessBoardSection({ gameState }) {
+export default function ChessBoardSection({
+  gameState,
+  enableSocket = true,
+  socketOptions,
+  topPlayerName = "Соперник",
+  bottomPlayerName = "Вы",
+  topPlayerAvatar = DEFAULT_AVATAR,
+  bottomPlayerAvatar = DEFAULT_AVATAR,
+}) {
   const { scale, boardWidth } = useBoardScale(BOARD_SIZE);
-
   const gameStateLocal = gameState || useChessGame();
 
   const {
@@ -25,20 +32,30 @@ export default function ChessBoardSection({ gameState }) {
 
   const { sendMove } = useGameSocket({
     onRemoteMove: applyRemoteMove,
+    onStateChange: socketOptions?.onStateChange,
+    onJoined: socketOptions?.onJoined,
+    onOpen: socketOptions?.onOpen,
+    onClose: socketOptions?.onClose,
+    onError: socketOptions?.onError,
+    enabled: enableSocket,
+    gameId: socketOptions?.gameId,
+    userId: socketOptions?.userId,
+    token: socketOptions?.token,
+    allowDebugToken: socketOptions?.allowDebugToken,
   });
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-hidden">
-      <div className="flex flex-row gap-4 items-start">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden">
+      <div className="flex flex-row items-start gap-4">
         <section
           className="flex flex-col"
           style={{ width: Math.floor(BOARD_SIZE * scale) }}
         >
           <div className="mb-[26px]">
             <PlayerPanel
-              name="Противник"
-              level="??? lvl"
-              avatar={DEFAULT_AVATAR}
+              name={topPlayerName}
+              level=""
+              avatar={topPlayerAvatar || DEFAULT_AVATAR}
               time="15:00"
             />
           </div>
@@ -57,9 +74,9 @@ export default function ChessBoardSection({ gameState }) {
 
           <div className="mt-[18px]">
             <PlayerPanel
-              name="ChessMaster"
-              level="14 lvl"
-              avatar="/icons/avatar.jpg"
+              name={bottomPlayerName}
+              level=""
+              avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
               time="15:00"
             />
           </div>

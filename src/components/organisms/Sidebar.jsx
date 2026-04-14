@@ -1,10 +1,9 @@
 import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
 
-import Logo from "../molecules/Logo";
-import MenuButton from "../molecules/MenuButton";
-import UserInfo from "../molecules/UserInfo";
-import CurrencyBadge from "../molecules/Currency";
+import Logo from "../molecules/Logo.jsx";
+import MenuButton from "../molecules/MenuButton.jsx";
+import SidebarProfileCard from "../molecules/SidebarProfileCard.jsx";
+import { useAuth } from "../../features/auth/useAuth.js";
 
 const menuItems = [
   { id: "play", label: "Играть", icon: "/icons/sword.svg", to: "/" },
@@ -14,26 +13,19 @@ const menuItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
+  const isPlaySection =
+    location.pathname === "/" || location.pathname.startsWith("/play");
+
+  async function handleLogout() {
+    await logout();
+  }
 
   return (
-    <aside
-      className="
-        w-[247px]
-        min-w-[247px]
-        max-w-[247px]
-        h-full
-        overflow-hidden
-        shrink-0
-        px-[20px]
-        py-[20px]
-        flex
-        flex-col
-        bg-[linear-gradient(90deg,#160936_0%,#0a183c_22.6%)]
-      "
-    >
+    <aside className="flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden bg-[linear-gradient(90deg,#160936_0%,#0a183c_22.6%)] px-[20px] py-[20px]">
       <Logo />
 
-      <div className="flex-1 flex flex-col justify-end">
+      <div className="flex flex-1 flex-col justify-between pt-[28px]">
         <nav className="flex flex-col gap-[10px]">
           {menuItems.map((item) => (
             <MenuButton
@@ -41,38 +33,20 @@ export default function Sidebar() {
               label={item.label}
               icon={item.icon}
               to={item.to}
-              active={location.pathname === item.to}
+              active={
+                item.id === "play"
+                  ? isPlaySection
+                  : location.pathname === item.to
+              }
             />
           ))}
         </nav>
 
-        <div className="mt-[18px] w-[207px]">
-          <Link to="/profile" className="no-underline">
-            <UserInfo
-              name="ChessMaster"
-              level="14 lvl"
-              avatar="/icons/avatar.jpg"
-            />
-          </Link>
-
-          <div className="flex gap-[8px]">
-            <CurrencyBadge
-              icon="/icons/crown.svg"
-              value="360"
-              bgClass="bg-[#7b056f]"
-              borderClass="border-[#de67ff]"
-              textClass="text-[#de67ff]"
-            />
-
-            <CurrencyBadge
-              icon="/icons/rock.svg"
-              value="3228"
-              bgClass="bg-[radial-gradient(50%_50%_at_50%_50%,#287078_0%,#205357_100%)]"
-              borderClass="border-[#55f3ff]"
-              textClass="text-[#55f3ff]"
-            />
-          </div>
-        </div>
+        <SidebarProfileCard
+          user={user}
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+        />
       </div>
     </aside>
   );

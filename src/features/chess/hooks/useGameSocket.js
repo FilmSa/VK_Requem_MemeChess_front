@@ -1,48 +1,109 @@
 import { useEffect, useRef } from "react";
-import { createGameSocket, getDebugToken } from "../../../shared/ws/gameSocket.js";
+import {
+  createGameSocket,
+  getDebugToken,
+} from "../../../shared/ws/gameSocket.js";
+import { useAuth } from "../../auth/useAuth.js";
 import { API_BASE_URL } from "../lib/boardConfig";
 import { getGameParams } from "../lib/gameParams";
 
-export function useGameSocket({ onRemoteMove }) {
-  const { gameId, userId } = getGameParams();
+export function useGameSocket({
+  onRemoteMove,
+  onStateChange,
+  onJoined,
+  onOpen,
+  onClose,
+  onError,
+  enabled = true,
+  gameId,
+  userId,
+  token: externalToken,
+  allowDebugToken = false,
+}) {
+  const gameParams = getGameParams();
+  const { token, user } = useAuth();
   const socketRef = useRef(null);
+  const callbacksRef = useRef({
+    onRemoteMove,
+    onStateChange,
+    onJoined,
+    onOpen,
+    onClose,
+    onError,
+  });
+
+  const resolvedGameId = gameId ?? gameParams.gameId;
+  const resolvedUserId = userId ?? user?.id ?? gameParams.userId;
+  const resolvedToken = externalToken ?? token;
 
   useEffect(() => {
+    callbacksRef.current = {
+      onRemoteMove,
+      onStateChange,
+      onJoined,
+      onOpen,
+      onClose,
+      onError,
+    };
+  }, [onClose, onError, onJoined, onOpen, onRemoteMove, onStateChange]);
+
+  useEffect(() => {
+    if (!enabled || !resolvedGameId || !resolvedUserId) {
+      return undefined;
+    }
+
     let cancelled = false;
 
     async function connect() {
       try {
-        const token = await getDebugToken(API_BASE_URL, userId);
-        if (cancelled) return;
+        const socketToken =
+          resolvedToken ||
+          (allowDebugToken
+            ? await getDebugToken(API_BASE_URL, resolvedUserId)
+            : "");
+
+        if (!socketToken) {
+          throw new Error("Не найден токен для подключения к игре.");
+        }
+        if (cancelled) {
+          return;
+        }
 
         const client = createGameSocket({
           baseHttpUrl: API_BASE_URL,
-          token,
-          gameId,
-          userId,
-
+          token: socketToken,
+          gameId: resolvedGameId,
+          userId: resolvedUserId,
           onOpen: () => {
+            callbacksRef.current.onOpen?.();
           },
-
-          onClose: () => {
+          onClose: (event) => {
+            callbacksRef.current.onClose?.(event);
           },
-
-          onJoined: (payload) => {
+          onJoined: (state) => {
+            callbacksRef.current.onJoined?.(state);
           },
-
           onMove: ({ isOwnMessage, move }) => {
-            if (isOwnMessage) return;
-            onRemoteMove?.(move);
+            if (isOwnMessage) {
+              return;
+            }
+            callbacksRef.current.onRemoteMove?.(move);
           },
-
+          onState: (state) => {
+            callbacksRef.current.onStateChange?.(state);
+          },
           onError: (error) => {
-            console.error("WS error:", error);
+            callbacksRef.current.onError?.(error);
           },
         });
 
         socketRef.current = client;
       } catch (error) {
-        console.error("Failed to connect WS:", error);
+        callbacksRef.current.onError?.(
+          error instanceof Error
+            ? error
+            : new Error("Не удалось подключиться к игровой комнате.")
+        );
       }
     }
 
@@ -53,18 +114,33 @@ export function useGameSocket({ onRemoteMove }) {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [gameId, userId, onRemoteMove]);
+  }, [
+    allowDebugToken,
+    enabled,
+    resolvedGameId,
+    resolvedToken,
+    resolvedUserId,
+  ]);
 
   function sendMove(move) {
-    socketRef.current?.sendMove(move);
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendMove(move) ?? false;
   }
 
   function sendResign() {
-    socketRef.current?.sendResign();
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendResign() ?? false;
   }
 
   function sendDraw() {
-    socketRef.current?.sendDraw();
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendDraw() ?? false;
   }
 
   return {

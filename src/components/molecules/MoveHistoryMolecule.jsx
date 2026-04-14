@@ -106,11 +106,6 @@ const S = {
     padding: 24,
   },
 
-  emptyIcon: {
-    fontSize: 28,
-    opacity: 0.2,
-  },
-
   emptyText: {
     fontSize: 16,
     color: "rgba(232,238,255,0.35)",
@@ -132,40 +127,39 @@ const S = {
   },
 };
 
-
 function groupMoves(history) {
   const pairs = [];
-  for (let i = 0; i < history.length; i += 2) {
+  for (let index = 0; index < history.length; index += 2) {
     pairs.push({
-      num: Math.floor(i / 2) + 1,
-      white: history[i] ?? null,
-      black: history[i + 1] ?? null,
+      num: Math.floor(index / 2) + 1,
+      white: history[index] ?? null,
+      black: history[index + 1] ?? null,
     });
   }
   return pairs;
 }
 
-function formatCount(n) {
-  if (n === 0) return "партия не начата";
-  const mod = n % 10;
-  const mod100 = n % 100;
-  if (mod === 1 && mod100 !== 11) return `${n} ход`;
-  if (mod >= 2 && mod <= 4 && !(mod100 >= 12 && mod100 <= 14)) return `${n} хода`;
-  return `${n} ходов`;
+function formatCount(count) {
+  if (count === 0) return "партия не начата";
+  const mod = count % 10;
+  const mod100 = count % 100;
+  if (mod === 1 && mod100 !== 11) return `${count} ход`;
+  if (mod >= 2 && mod <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
+    return `${count} хода`;
+  }
+  return `${count} ходов`;
 }
-
 
 export default function MoveHistoryMolecule({ history = [], style }) {
   const listRef = useRef(null);
 
   useEffect(() => {
     if (listRef.current) {
-      // прокрутка к последнему ходу, когда добавляется новый ход
       setTimeout(() => {
         if (listRef.current) {
           listRef.current.scrollTo({
             top: listRef.current.scrollHeight,
-            behavior: 'smooth'
+            behavior: "smooth",
           });
         }
       }, 0);
@@ -210,9 +204,7 @@ export default function MoveHistoryMolecule({ history = [], style }) {
         </div>
       )}
 
-      <div style={S.footer}>
-        {formatCount(history.length)}
-      </div>
+      <div style={S.footer}>{formatCount(history.length)}</div>
     </div>
   );
 }

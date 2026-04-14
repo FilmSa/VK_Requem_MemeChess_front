@@ -8,7 +8,7 @@ const S = {
     gap: 10,
     padding: "12px 0",
   },
-  
+
   label: {
     fontSize: 14,
     fontWeight: 500,
@@ -18,13 +18,13 @@ const S = {
     fontFamily: "'Unbounded', sans-serif",
     paddingLeft: 4,
   },
-  
+
   tilesRow: {
     display: "flex",
     gap: 8,
     justifyContent: "space-between",
   },
-  
+
   tile: (isActive) => ({
     flex: 1,
     aspectRatio: "1/1",
@@ -32,7 +32,9 @@ const S = {
     alignItems: "center",
     justifyContent: "center",
     background: isActive ? "rgba(0,234,255,0.15)" : "rgba(0,234,255,0.08)",
-    border: isActive ? "2px solid rgba(0,234,255,0.4)" : "1px solid rgba(0,234,255,0.12)",
+    border: isActive
+      ? "2px solid rgba(0,234,255,0.4)"
+      : "1px solid rgba(0,234,255,0.12)",
     borderRadius: 12,
     cursor: "pointer",
     transition: "all 0.2s ease",
@@ -47,29 +49,29 @@ const S = {
 };
 
 const QUICK_ACCESS_ITEMS = [
-  { 
-    id: 1, 
+  {
+    id: 1,
     iconKey: "sword",
     name: "Атака",
-    description: ""
+    description: "Быстрое действие: атака",
   },
-  { 
-    id: 2, 
+  {
+    id: 2,
     iconKey: "rock",
-    name: "Skeleton",
-    description: ""
+    name: "Скелет",
+    description: "Быстрое действие: скелет",
   },
-  { 
-    id: 3, 
+  {
+    id: 3,
     iconKey: "cup",
-    name: "Cup",
-    description: ""
+    name: "Кубок",
+    description: "Быстрое действие: кубок",
   },
 ];
 
-export default function QuickAccessMolecule({ 
+export default function QuickAccessMolecule({
   items = QUICK_ACCESS_ITEMS,
-  onItemClick 
+  onItemClick,
 }) {
   const [activeId, setActiveId] = useState(null);
 
@@ -90,8 +92,8 @@ export default function QuickAccessMolecule({
             onClick={() => handleClick(item)}
             title={item.description}
           >
-            <Icon 
-              iconKey={item.iconKey} 
+            <Icon
+              iconKey={item.iconKey}
               style={S.tileIcon}
               width="100%"
               height="100%"
@@ -103,6 +105,4 @@ export default function QuickAccessMolecule({
   );
 }
 
-// Экспорт конфига для переиспользования
 export { QUICK_ACCESS_ITEMS };
-

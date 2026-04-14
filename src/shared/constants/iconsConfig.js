@@ -1,79 +1,64 @@
 export const ICONS = {
-  // Game UI
   game: "/icons/gameIcon.svg",
   surrender: "/icons/surrender.svg",
   draw: "/icons/draw.svg",
-  
-  // Rewards/Currency
   cup: "/icons/cup.svg",
-  
-  // Combat
   sword: "/images/toyota-yaris.gif",
   rock: "/images/skeleton-mad-skeleton.gif",
-  
-  // Other
   cart: "/icons/cart.svg",
   crown: "/icons/crown.svg",
 };
 
 /**
- * Метаинформация об иконках для UI
+ * Метаданные иконок для UI.
  */
 export const ICON_METADATA = {
-  // Game actions
   game: {
     name: "Партия",
     path: ICONS.game,
-    alt: "Game icon",
+    alt: "Иконка партии",
   },
   surrender: {
     name: "Сдаться",
     path: ICONS.surrender,
-    alt: "Surrender icon",
+    alt: "Иконка сдачи",
   },
   draw: {
     name: "Ничья",
     path: ICONS.draw,
-    alt: "Draw/Peace icon",
+    alt: "Иконка ничьей",
   },
-  
-  // Currency/Rewards
   cup: {
-    name: "Чашка",
+    name: "Кубок",
     path: ICONS.cup,
-    alt: "Cup reward icon",
+    alt: "Иконка кубка",
   },
-  
-  // Combat emojis equivalent
   sword: {
     name: "Меч",
     path: ICONS.sword,
-    alt: "Sword icon",
+    alt: "Иконка меча",
   },
   rock: {
     name: "Камень",
     path: ICONS.rock,
-    alt: "Rock icon",
+    alt: "Иконка камня",
   },
-  
-  // Other
   cart: {
     name: "Корзина",
     path: ICONS.cart,
-    alt: "Cart icon",
+    alt: "Иконка корзины",
   },
   crown: {
     name: "Корона",
     path: ICONS.crown,
-    alt: "Crown icon",
+    alt: "Иконка короны",
   },
 };
-
 
 export function getIcon(key, style = {}) {
   const icon = ICON_METADATA[key];
   if (!icon) {
-    console.warn(`Icon not found: ${key}`);
+    console.warn(`Иконка не найдена: ${key}`);
     return null;
   }
 

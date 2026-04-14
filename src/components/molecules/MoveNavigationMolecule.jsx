@@ -6,7 +6,7 @@ const S = {
     gap: 8,
     padding: "8px 0",
   },
-  
+
   button: {
     display: "flex",
     alignItems: "center",
@@ -23,7 +23,7 @@ const S = {
     transition: "all 0.2s ease",
     fontFamily: "'Unbounded', sans-serif",
   },
-  
+
   buttonHover: {
     background: "rgba(0,234,255,0.1)",
     borderColor: "rgba(0,234,255,0.3)",
@@ -32,15 +32,19 @@ const S = {
   },
 };
 
-export default function MoveNavigationMolecule({ onPrevious, onNext, disabled = false }) {
-  const handleMouseEnter = (e) => {
+export default function MoveNavigationMolecule({
+  onPrevious,
+  onNext,
+  disabled = false,
+}) {
+  const handleMouseEnter = (event) => {
     if (!disabled) {
-      Object.assign(e.target.style, S.buttonHover);
+      Object.assign(event.target.style, S.buttonHover);
     }
   };
 
-  const handleMouseLeave = (e) => {
-    Object.assign(e.target.style, {
+  const handleMouseLeave = (event) => {
+    Object.assign(event.target.style, {
       background: S.button.background,
       borderColor: S.button.border,
       color: S.button.color,

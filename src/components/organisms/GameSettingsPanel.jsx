@@ -4,9 +4,7 @@ import QuickAccessMolecule from "../molecules/QuickAccessMolecule";
 import MoveHistoryMolecule from "../molecules/MoveHistoryMolecule";
 import MoveNavigationMolecule from "../molecules/MoveNavigationMolecule";
 import GameActionsMolecule from "../molecules/GameActionsMolecule";
-import { useBoardScale } from "../../features/chess/hooks/useBoardScale.js";
-import { BOARD_SIZE, DEFAULT_AVATAR } from "../../features/chess/lib/boardConfig.js";
-
+import { BOARD_SIZE } from "../../features/chess/lib/boardConfig.js";
 
 const S = {
   panel: {
@@ -52,51 +50,55 @@ const S = {
   },
 };
 
-export default function GameSettingsPanel({ history = [], deposit = 1000, style }) {
+export default function GameSettingsPanel({
+  history = [],
+  deposit = 1000,
+  style,
+  onResign,
+  onDraw,
+  actionsDisabled = false,
+}) {
   const handleItemClick = (item) => {
-    // Future: Send quick access action via WebSocket
-    console.log("Quick access item clicked:", item);
+    console.log("Быстрое действие:", item);
   };
 
   const handlePreviousMove = () => {
-    // Future: Navigate to previous move in history
-    console.log("Previous move");
+    console.log("Переход к предыдущему ходу");
   };
 
   const handleNextMove = () => {
-    // Future: Navigate to next move in history
-    console.log("Next move");
+    console.log("Переход к следующему ходу");
   };
 
   return (
     <div style={{ ...S.panel, ...style }}>
-      {/* Top section: Game Info */}
       <div>
         <GameHeaderMolecule iconKey="game" title="Партия" />
       </div>
 
-      {/* Deposit banner with icon */}
       <div>
         <DepositBannerMolecule amount={deposit} iconKey="cup" label="Депозит" />
       </div>
 
-      {/* Quick access items */}
       <div>
         <QuickAccessMolecule onItemClick={handleItemClick} />
       </div>
 
-      {/* Scrollable content area: Move history + Navigation */}
       <div style={S.content}>
         <div style={S.moveHistoryWrapper}>
           <MoveHistoryMolecule history={history} />
         </div>
 
         <div style={S.footer}>
-          <MoveNavigationMolecule 
-            onPrevious={handlePreviousMove} 
+          <MoveNavigationMolecule
+            onPrevious={handlePreviousMove}
             onNext={handleNextMove}
           />
-          <GameActionsMolecule />
+          <GameActionsMolecule
+            onResign={onResign}
+            onDraw={onDraw}
+            disabled={actionsDisabled}
+          />
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { getGameParams } from "../lib/gameParams";
-import { useBoardEffects } from "./useBoardEffects";
+import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 
@@ -48,6 +48,17 @@ function buildGameFromServerState(state) {
   return nextGame;
 }
 
+function buildGameToPly(history, plyCount) {
+  const nextGame = new Chess();
+  const safePlyCount = Math.max(0, Math.min(plyCount, history.length));
+
+  for (let index = 0; index < safePlyCount; index += 1) {
+    nextGame.move(history[index]);
+  }
+
+  return nextGame;
+}
+
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
@@ -56,13 +67,29 @@ export function useChessGame(options = {}) {
   const [game, setGame] = useState(() => new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [highlightedSquares, setHighlightedSquares] = useState({});
+  const [historyCursor, setHistoryCursor] = useState(0);
 
-  const { activeEffects, effect } = useBoardEffects();
+  const { activeEffects, triggerEffect } = useBoardEffectsController();
   const gameRef = useRef(game);
+  const historyCursorRef = useRef(historyCursor);
 
   useEffect(() => {
     gameRef.current = game;
   }, [game]);
+
+  useEffect(() => {
+    historyCursorRef.current = historyCursor;
+  }, [historyCursor]);
+
+  function syncHistoryCursor(nextHistoryLength, previousHistoryLength) {
+    setHistoryCursor((currentCursor) => {
+      if (currentCursor >= previousHistoryLength) {
+        return nextHistoryLength;
+      }
+
+      return Math.min(currentCursor, nextHistoryLength);
+    });
+  }
 
   function clearSelection() {
     setSelectedSquare(null);
@@ -74,7 +101,7 @@ export function useChessGame(options = {}) {
       return;
     }
 
-    effect(String(effectIndex), {
+    triggerEffect(String(effectIndex), {
       square: move.to,
       from: move.from,
       to: move.to,
@@ -139,6 +166,7 @@ export function useChessGame(options = {}) {
   }
 
   function applyMove({ from, to, promotion = "q" }) {
+    const previousHistoryLength = gameRef.current.history().length;
     const gameCopy = cloneGameFromHistory();
     const move = gameCopy.move({
       from,
@@ -151,6 +179,7 @@ export function useChessGame(options = {}) {
     }
 
     setGame(gameCopy);
+    syncHistoryCursor(gameCopy.history().length, previousHistoryLength);
     clearSelection();
     triggerMoveEffect(move);
 
@@ -159,7 +188,13 @@ export function useChessGame(options = {}) {
 
   function onSquareClick(square, sendMove) {
     const currentGame = gameRef.current;
+    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const clickedPiece = currentGame.get(square);
+
+    if (isViewingHistory) {
+      clearSelection();
+      return;
+    }
 
     if (!isPlayersTurn(currentGame)) {
       clearSelection();
@@ -200,7 +235,12 @@ export function useChessGame(options = {}) {
 
   function onPieceDrop(sourceSquare, targetSquare, sendMove) {
     const currentGame = gameRef.current;
+    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const piece = currentGame.get(sourceSquare);
+
+    if (isViewingHistory) {
+      return false;
+    }
 
     if (!canControlPiece(piece, currentGame)) {
       return false;
@@ -235,26 +275,55 @@ export function useChessGame(options = {}) {
   }
 
   function syncFromServerState(state) {
+    const previousHistoryLength = gameRef.current.history().length;
     const nextGame = buildGameFromServerState(state);
     if (!nextGame) {
       return false;
     }
 
     setGame(nextGame);
+    syncHistoryCursor(nextGame.history().length, previousHistoryLength);
     clearSelection();
     return true;
   }
 
+  const history = game.history({ verbose: true });
+  const displayedGame = buildGameToPly(history, historyCursor);
+  const activeHistoryPly = Math.min(historyCursor, history.length);
+
+  function viewPreviousMove() {
+    setHistoryCursor((currentCursor) => Math.max(currentCursor - 1, 0));
+    clearSelection();
+  }
+
+  function viewNextMove() {
+    setHistoryCursor((currentCursor) => Math.min(currentCursor + 1, history.length));
+    clearSelection();
+  }
+
+  function jumpToLatestMove() {
+    setHistoryCursor(history.length);
+    clearSelection();
+  }
+
   return {
     game,
+    displayedGame,
+    activeHistoryPly,
     moveCount: game.history().length,
     highlightedSquares,
     boardOrientation,
     activeEffects,
-    effect,
+    effect: triggerEffect,
     onSquareClick,
     onPieceDrop,
     applyRemoteMove,
     syncFromServerState,
+    viewPreviousMove,
+    viewNextMove,
+    jumpToLatestMove,
+    canViewPrevious: activeHistoryPly > 0,
+    canViewNext: activeHistoryPly < history.length,
+    isViewingHistory: activeHistoryPly !== history.length,
   };
 }

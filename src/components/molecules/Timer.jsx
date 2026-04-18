@@ -8,17 +8,22 @@ export default function Timer({ time = "15:00", className = "" }) {
         w-[150px]
         h-[44px]
         rounded-[20px_0px]
-        bg-[#070d34]
-        shadow-[0_4px_10px_rgba(0,0,0,0.35)]
         flex
         items-center
         justify-center
         ${className}
       `}
+      style={{
+        background: "var(--player-timer-bg)",
+        boxShadow: "var(--player-timer-shadow)",
+      }}
     >
       <Text
-        className="text-[22px] leading-none font-medium text-[#ffff]"
-        style={{ fontFamily: '"Unbounded", sans-serif' }}
+        className="text-[22px] leading-none font-medium"
+        style={{
+          fontFamily: '"Unbounded", sans-serif',
+          color: "var(--player-timer-text)",
+        }}
       >
         {time}
       </Text>

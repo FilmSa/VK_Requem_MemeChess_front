@@ -1,3 +1,7 @@
-export default function Badge({ children, className = "" }) {
-  return <div className={className}>{children}</div>;
+export default function Badge({ children, className = "", style = {} }) {
+  return (
+    <div className={className} style={style}>
+      {children}
+    </div>
+  );
 }

@@ -1,12 +1,20 @@
-import Sidebar from "../components/organisms/Sidebar.jsx";
+import AppShell from "../shared/layout/AppShell.jsx";
+import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import Card from "../shared/ui/atoms/Card.jsx";
 
 export default function TournamentsPage() {
   return (
-    <div className="w-screen h-screen overflow-hidden text-white bg-[linear-gradient(312deg,#0b0f2b_0%,#2b1a58_13.94%,#3b1f6a_29.33%,#1a1446_50.47%,#341d5b_68.17%,#1f1852_88.46%,#0b0f2b_100%)]">
-      <div className="w-full h-full flex overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 h-full overflow-hidden" />
+    <AppShell sidebar={<AppSidebar />}>
+      <div className="page-placeholder">
+        <Card className="page-placeholder__card">
+          <h1 className="page-placeholder__title">Турниры</h1>
+          <p className="page-placeholder__text">
+            Экран переведен на общий shell-слой. Теперь сюда можно добавлять
+            турнирную сетку, фильтры и карточки событий отдельно от navigation-
+            логики и глобального layout.
+          </p>
+        </Card>
       </div>
-    </div>
+    </AppShell>
   );
 }

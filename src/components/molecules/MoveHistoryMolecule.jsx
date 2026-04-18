@@ -1,134 +1,8 @@
 import { useEffect, useRef } from "react";
 
-const S = {
-  panel: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    background: "#060c2e",
-    borderRadius: 16,
-    border: "1px solid rgba(0,234,255,0.12)",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
-    overflow: "hidden",
-    fontFamily: "'Unbounded', sans-serif",
-  },
-
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "12px 16px",
-    borderBottom: "1px solid rgba(0,234,255,0.12)",
-    background: "#07103a",
-    flexShrink: 0,
-  },
-
-  title: {
-    fontSize: 16,
-    fontWeight: 500,
-    letterSpacing: "0.18em",
-    textTransform: "uppercase",
-    color: "rgba(232,238,255,0.35)",
-  },
-
-  cols: {
-    display: "flex",
-    alignItems: "center",
-    padding: "6px 10px 6px 14px",
-    borderBottom: "1px solid rgba(0,234,255,0.08)",
-    flexShrink: 0,
-  },
-
-  colNum: {
-    width: 37,
-    flexShrink: 0,
-  },
-
-  colLabel: (isWhite) => ({
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    letterSpacing: "0.1em",
-    color: isWhite ? "rgba(255,255,255,0.55)" : "rgba(150,160,200,0.5)",
-  }),
-
-  list: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "4px 6px",
-    scrollbarWidth: "thin",
-    scrollbarColor: "rgba(0,234,255,0.2) transparent",
-  },
-
-  row: (isLast, isEven) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 2,
-    padding: "4px 6px",
-    borderRadius: 8,
-    background: isLast
-      ? "rgba(0,234,255,0.08)"
-      : isEven
-        ? "rgba(255,255,255,0.025)"
-        : "transparent",
-  }),
-
-  rowNum: {
-    width: 32,
-    flexShrink: 0,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
-  },
-
-  cell: (isBlack, isActive) => ({
-    flex: 1,
-    textAlign: "center",
-    padding: "4px 3px",
-    borderRadius: 5,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    fontWeight: 500,
-    color: isActive ? "#00eaff" : isBlack ? "rgba(232,238,255,0.65)" : "#e8eeff",
-    textShadow: isActive ? "0 0 8px rgba(0,234,255,0.6)" : "none",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  }),
-
-  empty: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    padding: 24,
-  },
-
-  emptyText: {
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
-    textAlign: "center",
-    lineHeight: 1.6,
-    letterSpacing: "0.05em",
-  },
-
-  footer: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "9px 12px",
-    borderTop: "1px solid rgba(0,234,255,0.08)",
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: 16,
-    color: "rgba(232,238,255,0.35)",
-    flexShrink: 0,
-  },
-};
-
 function groupMoves(history) {
   const pairs = [];
+
   for (let index = 0; index < history.length; index += 2) {
     pairs.push({
       num: Math.floor(index / 2) + 1,
@@ -136,6 +10,7 @@ function groupMoves(history) {
       black: history[index + 1] ?? null,
     });
   }
+
   return pairs;
 }
 
@@ -143,68 +18,174 @@ function formatCount(count) {
   if (count === 0) return "партия не начата";
   const mod = count % 10;
   const mod100 = count % 100;
-  if (mod === 1 && mod100 !== 11) return `${count} ход`;
+
+  if (mod === 1 && mod100 !== 11) {
+    return `${count} ход`;
+  }
+
   if (mod >= 2 && mod <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
     return `${count} хода`;
   }
+
   return `${count} ходов`;
 }
 
-export default function MoveHistoryMolecule({ history = [], style }) {
+export default function MoveHistoryMolecule({
+  history = [],
+  activePly = history.length,
+}) {
   const listRef = useRef(null);
 
   useEffect(() => {
-    if (listRef.current) {
-      setTimeout(() => {
-        if (listRef.current) {
-          listRef.current.scrollTo({
-            top: listRef.current.scrollHeight,
-            behavior: "smooth",
-          });
-        }
-      }, 0);
+    if (!listRef.current) {
+      return;
     }
+
+    listRef.current.scrollTo({
+      top: listRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [history]);
 
   const pairs = groupMoves(history);
-  const lastIndex = pairs.length - 1;
-  const lastMoveIsBlack = history.length % 2 === 0 && history.length > 0;
+  const activePairIndex = activePly > 0 ? Math.ceil(activePly / 2) - 1 : -1;
+  const activeMoveIsBlack = activePly % 2 === 0 && activePly > 0;
 
   return (
-    <div style={{ ...S.panel, ...style }}>
-      <div style={S.header}>
-        <span style={S.title}>Ходы партии</span>
+    <div
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-tl-[20px] rounded-br-[20px]"
+      style={{
+        background: "var(--main-menu-control-bg)",
+        boxShadow: "var(--main-menu-surface-shadow)",
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-[16px] py-[12px]"
+        style={{ borderBottom: "1px solid var(--main-menu-divider)" }}
+      >
+        <span
+          className="text-[16px] font-medium uppercase tracking-[0.18em]"
+          style={{
+            color: "var(--main-menu-text)",
+            fontFamily: '"Unbounded", sans-serif',
+          }}
+        >
+          Ходы партии
+        </span>
       </div>
 
-      <div style={S.cols}>
-        <span style={S.colNum} />
-        <span style={S.colLabel(true)}>Белые</span>
-        <span style={S.colLabel(false)}>Чёрные</span>
+      <div
+        className="flex items-center px-[14px] py-[8px]"
+        style={{ borderBottom: "1px solid var(--main-menu-divider)" }}
+      >
+        <span className="w-[37px] flex-shrink-0" />
+        <span
+          className="flex-1 text-center text-[16px] tracking-[0.1em]"
+          style={{
+            color: "var(--color-text-muted)",
+            fontFamily: '"Unbounded", sans-serif',
+          }}
+        >
+          Белые
+        </span>
+        <span
+          className="flex-1 text-center text-[16px] tracking-[0.1em]"
+          style={{
+            color: "var(--color-text-muted)",
+            fontFamily: '"Unbounded", sans-serif',
+          }}
+        >
+          Черные
+        </span>
       </div>
 
-      {pairs.length === 0 ? (
-        <div style={S.empty}>
-          <span style={S.emptyText}>Ходы появятся здесь</span>
-        </div>
-      ) : (
-        <div style={S.list} ref={listRef}>
+      {pairs.length ? (
+        <div
+          ref={listRef}
+          className="game-history-scroll min-h-0 flex-1 overflow-y-auto px-[6px] py-[4px]"
+        >
           {pairs.map((pair, index) => {
-            const isLast = index === lastIndex;
-            const whiteIsActive = isLast && !lastMoveIsBlack;
-            const blackIsActive = isLast && lastMoveIsBlack;
+            const isActiveRow = index === activePairIndex;
+            const whiteIsActive = isActiveRow && !activeMoveIsBlack;
+            const blackIsActive = isActiveRow && activeMoveIsBlack;
 
             return (
-              <div key={pair.num} style={S.row(isLast, index % 2 !== 0)}>
-                <span style={S.rowNum}>{pair.num}.</span>
-                <span style={S.cell(false, whiteIsActive)}>{pair.white}</span>
-                <span style={S.cell(true, blackIsActive)}>{pair.black ?? ""}</span>
+              <div
+                key={pair.num}
+                className="flex items-center gap-[2px] rounded-[8px] px-[6px] py-[4px]"
+                style={{
+                  background: isActiveRow
+                    ? "rgba(82, 56, 200, 0.18)"
+                    : index % 2 !== 0
+                      ? "rgba(255, 255, 255, 0.025)"
+                      : "transparent",
+                }}
+              >
+                <span
+                  className="w-[32px] flex-shrink-0 text-[16px]"
+                  style={{
+                    color: "var(--color-text-muted)",
+                    fontFamily: '"JetBrains Mono", monospace',
+                  }}
+                >
+                  {pair.num}.
+                </span>
+
+                <span
+                  className="flex-1 truncate rounded-[5px] px-[3px] py-[4px] text-center text-[16px] font-medium"
+                  style={{
+                    color: whiteIsActive
+                      ? "var(--color-accent-strong)"
+                      : "var(--main-menu-text)",
+                    textShadow: whiteIsActive
+                      ? "0 0 8px rgba(30, 224, 255, 0.45)"
+                      : "none",
+                    fontFamily: '"JetBrains Mono", monospace',
+                  }}
+                >
+                  {pair.white}
+                </span>
+
+                <span
+                  className="flex-1 truncate rounded-[5px] px-[3px] py-[4px] text-center text-[16px] font-medium"
+                  style={{
+                    color: blackIsActive
+                      ? "var(--color-accent-strong)"
+                      : "var(--main-menu-text)",
+                    textShadow: blackIsActive
+                      ? "0 0 8px rgba(30, 224, 255, 0.45)"
+                      : "none",
+                    fontFamily: '"JetBrains Mono", monospace',
+                  }}
+                >
+                  {pair.black ?? ""}
+                </span>
               </div>
             );
           })}
         </div>
+      ) : (
+        <div
+          className="flex flex-1 items-center justify-center px-[24px] text-center text-[16px]"
+          style={{
+            color: "var(--color-text-muted)",
+            fontFamily: '"Unbounded", sans-serif',
+          }}
+        >
+          Ходы появятся здесь
+        </div>
       )}
 
-      <div style={S.footer}>{formatCount(history.length)}</div>
+      <div
+        className="flex items-center justify-center px-[12px] py-[9px] text-[16px]"
+        style={{
+          borderTop: "1px solid var(--main-menu-divider)",
+          color: "var(--color-text-muted)",
+          fontFamily: '"JetBrains Mono", monospace',
+        }}
+      >
+        {formatCount(history.length)}
+      </div>
     </div>
   );
 }

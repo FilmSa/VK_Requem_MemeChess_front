@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -7,8 +6,7 @@ import {
 } from "react";
 
 import * as authApi from "./authApi.js";
-
-export const AuthContext = createContext(null);
+import { AuthContext } from "./AuthContext.js";
 
 const tokenStorageKey = "meme-chess.auth.token";
 

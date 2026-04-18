@@ -1,0 +1,311 @@
+:root {
+  --font-display: "Unbounded", sans-serif;
+  --font-accent: "Tilt Warp", sans-serif;
+
+  --color-text: #f5f7ff;
+  --color-text-muted: #b7c4e7;
+  --color-text-soft: #8aa2d1;
+  --color-accent: #2fc8e3;
+  --color-accent-strong: #1ee0ff;
+  --color-accent-pink: #ff5fd2;
+  --color-success: #32d86f;
+  --color-danger: #ff7c93;
+  --color-danger-bg: rgba(82, 25, 40, 0.82);
+  --color-surface: rgba(12, 17, 48, 0.86);
+  --color-surface-strong: rgba(19, 27, 72, 0.96);
+  --color-surface-soft: rgba(31, 24, 83, 0.76);
+  --color-panel: linear-gradient(
+    180deg,
+    rgba(34, 23, 77, 0.96) 0%,
+    rgba(10, 17, 50, 0.98) 100%
+  );
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(47, 200, 227, 0.32);
+  --page-background: linear-gradient(
+    312deg,
+    #0b0f2b 0%,
+    #2b1a58 13.94%,
+    #3b1f6a 29.33%,
+    #1a1446 50.47%,
+    #341d5b 68.17%,
+    #1f1852 88.46%,
+    #0b0f2b 100%
+  );
+  --page-grid-overlay: linear-gradient(
+      rgba(114, 86, 190, 0.14) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(114, 86, 190, 0.14) 1px, transparent 1px);
+  --page-glow-overlay: radial-gradient(
+      circle at 62% 78%,
+      rgba(47, 200, 227, 0.25),
+      transparent 30%
+    ),
+    radial-gradient(circle at 50% 20%, rgba(255, 0, 200, 0.18), transparent 24%);
+
+  --sidebar-background: linear-gradient(90deg, #160936 0%, #0a183c 22.6%);
+  --sidebar-card-background: linear-gradient(
+    180deg,
+    rgba(34, 22, 74, 0.96) 0%,
+    rgba(13, 18, 52, 0.96) 100%
+  );
+  --sidebar-card-border: rgba(255, 255, 255, 0.1);
+  --sidebar-card-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+  --sidebar-avatar-border: rgba(255, 255, 255, 0.2);
+  --sidebar-guest-border: rgba(88, 223, 255, 0.45);
+  --sidebar-guest-background: #102149;
+  --sidebar-guest-color: #8eeeff;
+  --sidebar-primary-button-bg: #2fc8e3;
+  --sidebar-primary-button-text: #ffffff;
+  --sidebar-secondary-button-bg: #1a1636;
+  --sidebar-secondary-button-border: rgba(255, 255, 255, 0.12);
+  --sidebar-secondary-button-text: #f4f7ff;
+  --sidebar-accent-button-bg: #3c1850;
+  --sidebar-accent-button-border: rgba(255, 122, 225, 0.55);
+  --sidebar-accent-button-text: #ffd4f5;
+  --sidebar-toggle-track: rgba(255, 255, 255, 0.08);
+  --sidebar-toggle-thumb: #2fc8e3;
+  --sidebar-toggle-icon: #ffffff;
+  --menu-item-active-bg: linear-gradient(135deg, #5238c8 0%, #2a1e5d 100%);
+  --menu-item-active-text: linear-gradient(90deg, #2fc8e3 0%, #ffffff 100%);
+  --menu-item-text: #7be9ff;
+  --menu-item-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+
+  --auth-card-background: rgba(23, 20, 45, 0.95);
+  --auth-card-border: rgba(255, 255, 255, 0.1);
+  --auth-card-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.35),
+    inset 0 4px 8px rgba(0, 0, 0, 0.22),
+    0 0 0 2px rgba(47, 200, 227, 0.6);
+  --auth-title-color: #a8e7ff;
+  --auth-input-background: #0b0f2b;
+  --auth-input-label: #b2b4c7;
+  --auth-input-icon: #b7bbd1;
+  --auth-input-placeholder: #b0b2c0;
+  --auth-error-background: #351828;
+  --auth-error-border: rgba(255, 107, 107, 0.4);
+  --auth-error-text: #ffd0d0;
+  --auth-link-primary: #2fc8e3;
+  --auth-link-primary-hover: #7be9ff;
+  --auth-link-secondary: #ff78e5;
+  --auth-link-secondary-hover: #ffb0f0;
+  --status-card-background: rgba(18, 21, 51, 0.9);
+  --status-card-border: rgba(255, 255, 255, 0.1);
+  --status-card-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+
+  --main-menu-panel-bg: #2a1e5d;
+  --main-menu-tab-inactive-bg: #0b0f2b;
+  --main-menu-control-bg: #0b0f2b;
+  --main-menu-divider: #201149;
+  --main-menu-text: #ffffff;
+  --main-menu-icon-filter: brightness(0) saturate(100%) invert(1);
+  --main-menu-panel-shadow:
+    0 4px 4px rgba(0, 0, 0, 0.25),
+    inset 0 4px 4px rgba(0, 0, 0, 0.25);
+  --main-menu-surface-shadow:
+    0 4px 4px rgba(0, 0, 0, 0.25),
+    inset 0 4px 4px rgba(0, 0, 0, 0.25);
+  --main-menu-card-ring: #ffffff;
+  --main-menu-error-bg: #3b1744;
+  --main-menu-error-border: rgba(255, 140, 202, 0.4);
+  --main-menu-error-text: #ffd8f3;
+  --main-menu-gradient-active: linear-gradient(90deg, #5238c8 0%, #2a1e5d 100%);
+  --main-menu-gradient-pink: linear-gradient(180deg, #ff00c8 0%, #990078 100%);
+  --main-menu-gradient-blue: linear-gradient(180deg, #16ceef 0%, #1f9fb5 100%);
+  --main-menu-customize-divider: #ffffff;
+  --main-menu-scroll-track: #2a1e5d;
+  --main-menu-scroll-thumb: rgba(255, 255, 255, 0.68);
+  --main-menu-scroll-border: transparent;
+
+  --game-panel-bg: #060c2e;
+  --game-panel-bg-elevated: #07103a;
+  --game-panel-border: rgba(0, 234, 255, 0.12);
+  --game-panel-border-soft: rgba(0, 234, 255, 0.08);
+  --game-panel-accent-bg: rgba(0, 234, 255, 0.08);
+  --game-panel-accent-bg-strong: rgba(0, 234, 255, 0.15);
+  --game-panel-accent-border: rgba(0, 234, 255, 0.4);
+  --game-panel-accent: #00eaff;
+  --game-panel-text: #e8eeff;
+  --game-panel-text-soft: rgba(232, 238, 255, 0.65);
+  --game-panel-text-muted: rgba(232, 238, 255, 0.35);
+  --game-panel-label: rgba(232, 238, 255, 0.5);
+  --game-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --game-history-scroll-track: rgba(255, 255, 255, 0.08);
+  --game-history-scroll-thumb: rgba(255, 255, 255, 0.32);
+  --game-history-scroll-border: transparent;
+  --player-panel-avatar-bg: rgba(255, 255, 255, 0.2);
+  --player-panel-name: #ffffff;
+  --player-panel-level: #ffd700;
+  --player-timer-bg: #070d34;
+  --player-timer-text: #ffffff;
+  --player-timer-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+
+  --modal-backdrop: rgba(4, 8, 23, 0.85);
+  --modal-surface: linear-gradient(180deg, #151a43 0%, #0b0f2b 100%);
+  --modal-border: rgba(255, 255, 255, 0.1);
+  --modal-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+  --modal-chip-bg: #121945;
+  --modal-chip-border: rgba(47, 200, 227, 0.2);
+
+  --shadow-card: 0 22px 55px rgba(0, 0, 0, 0.34);
+  --shadow-panel: 0 30px 80px rgba(0, 0, 0, 0.42);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --sidebar-width: 248px;
+  --shell-padding: clamp(16px, 2vw, 32px);
+  --content-gap: clamp(16px, 2vw, 28px);
+}
+
+:root[data-theme="light"] {
+  --color-text: #16213d;
+  --color-text-muted: #5a6b88;
+  --color-text-soft: #7686a1;
+  --color-accent: #12b7da;
+  --color-accent-strong: #0891b2;
+  --color-accent-pink: #d755b5;
+  --color-success: #2aa35a;
+  --color-danger: #d6496a;
+  --color-danger-bg: rgba(240, 102, 133, 0.14);
+  --color-surface: rgba(255, 255, 255, 0.82);
+  --color-surface-strong: rgba(255, 255, 255, 0.94);
+  --color-surface-soft: rgba(236, 242, 255, 0.92);
+  --color-panel: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(235, 242, 255, 0.96) 100%
+  );
+  --color-border: rgba(26, 53, 104, 0.12);
+  --color-border-strong: rgba(18, 183, 218, 0.28);
+  --page-background: linear-gradient(
+    312deg,
+    #f9fbff 0%,
+    #eef4ff 24%,
+    #e4ebff 52%,
+    #f6f8ff 100%
+  );
+  --page-grid-overlay: linear-gradient(
+      rgba(104, 132, 194, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(104, 132, 194, 0.1) 1px, transparent 1px);
+  --page-glow-overlay: radial-gradient(
+      circle at 62% 78%,
+      rgba(18, 183, 218, 0.18),
+      transparent 30%
+    ),
+    radial-gradient(circle at 50% 20%, rgba(215, 85, 181, 0.14), transparent 24%);
+
+  --sidebar-background: linear-gradient(180deg, #f8fbff 0%, #e8efff 100%);
+  --sidebar-card-background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(236, 242, 255, 0.96) 100%
+  );
+  --sidebar-card-border: rgba(26, 53, 104, 0.12);
+  --sidebar-card-shadow: 0 16px 34px rgba(31, 58, 111, 0.12);
+  --sidebar-avatar-border: rgba(26, 53, 104, 0.14);
+  --sidebar-guest-border: rgba(18, 183, 218, 0.24);
+  --sidebar-guest-background: #edf7ff;
+  --sidebar-guest-color: #0a87aa;
+  --sidebar-primary-button-bg: #12b7da;
+  --sidebar-primary-button-text: #ffffff;
+  --sidebar-secondary-button-bg: #eff4ff;
+  --sidebar-secondary-button-border: rgba(26, 53, 104, 0.12);
+  --sidebar-secondary-button-text: #233659;
+  --sidebar-accent-button-bg: #fff0fb;
+  --sidebar-accent-button-border: rgba(215, 85, 181, 0.24);
+  --sidebar-accent-button-text: #b0388f;
+  --sidebar-toggle-track: rgba(19, 39, 82, 0.08);
+  --sidebar-toggle-thumb: #12b7da;
+  --sidebar-toggle-icon: #2a4d73;
+  --menu-item-active-bg: linear-gradient(135deg, #dff4ff 0%, #edf1ff 100%);
+  --menu-item-active-text: linear-gradient(90deg, #12b7da 0%, #365cd6 100%);
+  --menu-item-text: #2a4d73;
+  --menu-item-shadow: 0 8px 18px rgba(31, 58, 111, 0.08);
+
+  --auth-card-background: rgba(255, 255, 255, 0.92);
+  --auth-card-border: rgba(26, 53, 104, 0.12);
+  --auth-card-shadow:
+    0 12px 36px rgba(31, 58, 111, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 0 0 2px rgba(18, 183, 218, 0.15);
+  --auth-title-color: #1688aa;
+  --auth-input-background: #f3f7ff;
+  --auth-input-label: #5f6f8d;
+  --auth-input-icon: #6b7b96;
+  --auth-input-placeholder: #8d98ad;
+  --auth-error-background: #fff3f5;
+  --auth-error-border: rgba(214, 73, 106, 0.24);
+  --auth-error-text: #b23a59;
+  --auth-link-primary: #0ea5c6;
+  --auth-link-primary-hover: #0284c7;
+  --auth-link-secondary: #c54aa2;
+  --auth-link-secondary-hover: #a93f89;
+  --status-card-background: rgba(255, 255, 255, 0.92);
+  --status-card-border: rgba(26, 53, 104, 0.12);
+  --status-card-shadow: 0 18px 42px rgba(31, 58, 111, 0.12);
+
+  --main-menu-panel-bg: #eef2ff;
+  --main-menu-tab-inactive-bg: #dde6ff;
+  --main-menu-control-bg: #ffffff;
+  --main-menu-divider: rgba(26, 53, 104, 0.12);
+  --main-menu-text: #16213d;
+  --main-menu-icon-filter: brightness(0) saturate(100%) invert(14%) sepia(20%)
+    saturate(1368%) hue-rotate(186deg) brightness(95%) contrast(90%);
+  --main-menu-panel-shadow:
+    0 18px 40px rgba(31, 58, 111, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --main-menu-surface-shadow:
+    0 12px 24px rgba(31, 58, 111, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --main-menu-card-ring: rgba(22, 33, 61, 0.4);
+  --main-menu-error-bg: #fff1f7;
+  --main-menu-error-border: rgba(214, 73, 106, 0.22);
+  --main-menu-error-text: #b23a59;
+  --main-menu-gradient-active: linear-gradient(90deg, #5238c8 0%, #2a1e5d 100%);
+  --main-menu-gradient-pink: linear-gradient(180deg, #ff00c8 0%, #990078 100%);
+  --main-menu-gradient-blue: linear-gradient(180deg, #16ceef 0%, #1f9fb5 100%);
+  --main-menu-customize-divider: #ffffff;
+  --main-menu-scroll-track: #2a1e5d;
+  --main-menu-scroll-thumb: rgba(255, 255, 255, 0.68);
+  --main-menu-scroll-border: transparent;
+
+  --game-panel-bg: #ffffff;
+  --game-panel-bg-elevated: #f6f9ff;
+  --game-panel-border: rgba(26, 53, 104, 0.12);
+  --game-panel-border-soft: rgba(26, 53, 104, 0.08);
+  --game-panel-accent-bg: rgba(18, 183, 218, 0.08);
+  --game-panel-accent-bg-strong: rgba(18, 183, 218, 0.14);
+  --game-panel-accent-border: rgba(18, 183, 218, 0.25);
+  --game-panel-accent: #12b7da;
+  --game-panel-text: #1d2c4b;
+  --game-panel-text-soft: rgba(29, 44, 75, 0.72);
+  --game-panel-text-muted: rgba(29, 44, 75, 0.44);
+  --game-panel-label: rgba(29, 44, 75, 0.58);
+  --game-panel-shadow: 0 18px 40px rgba(31, 58, 111, 0.12);
+  --game-history-scroll-track: rgba(29, 44, 75, 0.08);
+  --game-history-scroll-thumb: rgba(29, 44, 75, 0.28);
+  --game-history-scroll-border: transparent;
+  --player-panel-avatar-bg: rgba(18, 33, 61, 0.08);
+  --player-panel-name: #1d2c4b;
+  --player-panel-level: #cf8a00;
+  --player-timer-bg: #ffffff;
+  --player-timer-text: #1d2c4b;
+  --player-timer-shadow: 0 12px 28px rgba(31, 58, 111, 0.12);
+
+  --modal-backdrop: rgba(236, 242, 255, 0.76);
+  --modal-surface: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
+  --modal-border: rgba(26, 53, 104, 0.12);
+  --modal-shadow: 0 24px 70px rgba(31, 58, 111, 0.16);
+  --modal-chip-bg: #f6f9ff;
+  --modal-chip-border: rgba(18, 183, 218, 0.18);
+
+  --shadow-card: 0 18px 38px rgba(31, 58, 111, 0.12);
+  --shadow-panel: 0 22px 50px rgba(31, 58, 111, 0.14);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}

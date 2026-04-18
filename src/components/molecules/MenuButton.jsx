@@ -6,34 +6,27 @@ export default function MenuButton({ label, icon, to, active }) {
   return (
     <Link
       to={to}
-      className={`
-        w-[207px]
-        h-[56px]
-        px-[8px]
-        py-[6px]
-        rounded-[20px_0px]
-        flex
-        items-center
-        justify-between
-        transition-all
-        no-underline
-        border-none
-        outline-none
-        ${active
-          ? "bg-[linear-gradient(135deg,#5238c8_0%,#2a1e5d_100%)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
-          : "bg-transparent shadow-none"}
-      `}
+      className="flex h-[56px] w-[207px] items-center justify-between rounded-[20px_0px] border-none px-[8px] py-[6px] no-underline outline-none transition-all"
+      style={{
+        background: active ? "var(--menu-item-active-bg)" : "transparent",
+        boxShadow: active ? "var(--menu-item-shadow)" : "none",
+      }}
     >
       <Text
-        className={`
-          text-[24px]
-          leading-none
-          font-normal
-          ${active
-            ? "bg-[linear-gradient(90deg,#2fc8e3_0%,#ffffff_100%)] bg-clip-text text-transparent"
-            : "text-[#7BE9FF]"}
-        `}
-        style={{ fontFamily: '"Unbounded", sans-serif' }}
+        className="text-[24px] font-normal leading-none"
+        style={{
+          fontFamily: '"Unbounded", sans-serif',
+          ...(active
+            ? {
+                backgroundImage: "var(--menu-item-active-text)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }
+            : {
+                color: "var(--menu-item-text)",
+              }),
+        }}
       >
         {label}
       </Text>
@@ -41,7 +34,7 @@ export default function MenuButton({ label, icon, to, active }) {
       <Icon
         src={icon}
         alt={label}
-        className="w-[32px] h-[32px] object-contain shrink-0"
+        className="h-[32px] w-[32px] shrink-0 object-contain"
       />
     </Link>
   );

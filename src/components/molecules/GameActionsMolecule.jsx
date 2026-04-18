@@ -1,167 +1,67 @@
 import { useState } from "react";
-import Icon from "../atoms/Icon";
+import Icon from "../atoms/Icon.jsx";
 
-const S = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-    padding: "8px 0",
-  },
-
-  row: {
-    display: "flex",
-    gap: 8,
-  },
-
-  button: (variant, disabled) => {
-    const baseStyle = {
-      flex: 1,
-      padding: "10px 14px",
-      border: "none",
-      borderRadius: 8,
-      fontFamily: "'Unbounded', sans-serif",
-      fontSize: 14,
-      fontWeight: 500,
-      letterSpacing: "0.1em",
-      textTransform: "uppercase",
-      cursor: disabled ? "not-allowed" : "pointer",
-      transition: "all 0.2s ease",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      opacity: disabled ? 0.6 : 1,
-    };
-
-    if (variant === "resign") {
-      return {
-        ...baseStyle,
-        background: "linear-gradient(135deg, #c41e3a 0%, #8b0000 100%)",
-        color: "#fff",
-        border: "1px solid rgba(255,255,255,0.1)",
-      };
-    }
-
-    return {
-      ...baseStyle,
-      background: "linear-gradient(135deg, #d946ef 0%, #a91ba8 100%)",
-      color: "#fff",
-      border: "1px solid rgba(255,255,255,0.1)",
-    };
-  },
-
-  buttonHover: (variant) => {
-    if (variant === "resign") {
-      return {
-        background: "linear-gradient(135deg, #e53e50 0%, #a01020 100%)",
-        boxShadow: "0 6px 16px rgba(196,30,58,0.4)",
-      };
-    }
-
-    return {
-      background: "linear-gradient(135deg, #e964ff 0%, #c81fd5 100%)",
-      boxShadow: "0 6px 16px rgba(217,70,239,0.4)",
-    };
-  },
-
-  iconWrapper: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 16,
-    height: 16,
-  },
-};
-
-const GAME_ACTIONS = {
-  resign: {
-    id: "resign",
-    label: "Сдаться",
-    iconKey: "surrender",
-    description: "Сдаться в партии",
-    color: "resign",
-  },
-  draw: {
-    id: "draw",
-    label: "Ничья",
-    iconKey: "draw",
-    description: "Предложить ничью",
-    color: "draw",
-  },
-};
+function ActionButton({
+  label,
+  iconKey,
+  title,
+  background,
+  onClick,
+  disabled,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="flex h-[46px] flex-1 items-center justify-between rounded-tl-[20px] rounded-br-[20px] border-none px-[16px] py-[8px] text-white shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+      style={{
+        background,
+        fontFamily: '"Unbounded", sans-serif',
+      }}
+    >
+      <span className="text-[16px] font-medium leading-none">{label}</span>
+      <Icon iconKey={iconKey} width={20} height={20} />
+    </button>
+  );
+}
 
 export default function GameActionsMolecule({
-  actions = GAME_ACTIONS,
-  onResign = () => {},
-  onDraw = () => {},
+  onResign = async () => {},
+  onDraw = async () => {},
   disabled = false,
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const isDisabled = disabled || isLoading;
 
-  async function handleResign() {
+  async function handleAction(action) {
     setIsLoading(true);
     try {
-      await onResign();
+      await action();
     } finally {
       setIsLoading(false);
     }
-  }
-
-  async function handleDrawOffer() {
-    setIsLoading(true);
-    try {
-      await onDraw();
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  function handleMouseEnter(event, variant) {
-    if (isDisabled) {
-      return;
-    }
-    Object.assign(event.currentTarget.style, S.buttonHover(variant));
-  }
-
-  function handleMouseLeave(event, variant) {
-    Object.assign(event.currentTarget.style, S.button(variant, isDisabled));
   }
 
   return (
-    <div style={S.container}>
-      <div style={S.row}>
-        <button
-          style={S.button(actions.resign.color, isDisabled)}
-          onClick={handleResign}
-          disabled={isDisabled}
-          onMouseEnter={(event) => handleMouseEnter(event, actions.resign.color)}
-          onMouseLeave={(event) => handleMouseLeave(event, actions.resign.color)}
-          title={actions.resign.description}
-        >
-          <div style={S.iconWrapper}>
-            <Icon iconKey={actions.resign.iconKey} width={16} height={16} />
-          </div>
-          {actions.resign.label}
-        </button>
-        <button
-          style={S.button(actions.draw.color, isDisabled)}
-          onClick={handleDrawOffer}
-          disabled={isDisabled}
-          onMouseEnter={(event) => handleMouseEnter(event, actions.draw.color)}
-          onMouseLeave={(event) => handleMouseLeave(event, actions.draw.color)}
-          title={actions.draw.description}
-        >
-          <div style={S.iconWrapper}>
-            <Icon iconKey={actions.draw.iconKey} width={16} height={16} />
-          </div>
-          {actions.draw.label}
-        </button>
-      </div>
+    <div className="flex items-center gap-[16px]">
+      <ActionButton
+        label="Сдаться"
+        iconKey="surrender"
+        title="Сдаться"
+        background="linear-gradient(180deg, #F33856 0%, #99152F 100%)"
+        onClick={() => handleAction(onResign)}
+        disabled={isDisabled}
+      />
+      <ActionButton
+        label="Ничья"
+        iconKey="draw"
+        title="Предложить ничью"
+        background="var(--main-menu-gradient-pink)"
+        onClick={() => handleAction(onDraw)}
+        disabled={isDisabled}
+      />
     </div>
   );
 }
-
-export { GAME_ACTIONS };

@@ -1,0 +1,155 @@
+.chess-stage {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chess-stage__surface {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chess-stage__board-stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chess-stage__board-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.game-board {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: var(--shadow-panel);
+  background: rgba(11, 15, 43, 0.95);
+}
+
+.board-effects-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.game-settings {
+  height: 100%;
+}
+
+.game-settings__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+.game-settings__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.game-settings__summary-card {
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: rgba(13, 19, 50, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-settings__summary-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #9cc8ff;
+}
+
+.game-settings__summary-value {
+  margin-top: 8px;
+  font-size: 20px;
+}
+
+.game-settings__history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.game-settings__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.game-settings__move-row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(13, 19, 50, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.game-settings__move-index {
+  color: var(--color-text-soft);
+  font-size: 13px;
+}
+
+.game-settings__move-cell {
+  min-width: 0;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-settings__history-empty {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(13, 19, 50, 0.72);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.game-settings__actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .chess-stage {
+    min-height: 760px;
+  }
+}
+
+@media (max-width: 720px) {
+  .game-settings__summary,
+  .game-settings__actions {
+    grid-template-columns: 1fr;
+  }
+}

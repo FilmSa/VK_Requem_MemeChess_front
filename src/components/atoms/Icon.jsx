@@ -1,4 +1,4 @@
-import { getIcon, iconPaths } from "../../shared/constants/iconsConfig";
+import { getIcon } from "../../shared/constants/iconsConfig";
 
 
 export default function Icon({ 
@@ -36,5 +36,3 @@ export default function Icon({
     />
   );
 }
-
-export { iconPaths };

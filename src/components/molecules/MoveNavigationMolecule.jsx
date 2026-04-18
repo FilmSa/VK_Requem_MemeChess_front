@@ -1,79 +1,45 @@
-const S = {
-  container: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: "8px 0",
-  },
+import Icon from "../atoms/Icon.jsx";
 
-  button: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 40,
-    height: 40,
-    background: "#0a0f2e",
-    border: "1px solid rgba(0,234,255,0.12)",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontSize: 20,
-    color: "rgba(0,234,255,0.6)",
-    fontWeight: "bold",
-    transition: "all 0.2s ease",
-    fontFamily: "'Unbounded', sans-serif",
-  },
-
-  buttonHover: {
-    background: "rgba(0,234,255,0.1)",
-    borderColor: "rgba(0,234,255,0.3)",
-    color: "#00eaff",
-    boxShadow: "0 0 8px rgba(0,234,255,0.2)",
-  },
-};
+function NavigationButton({ iconSrc, title, onClick, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="flex h-[48px] w-[52px] items-center justify-center border-none bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <Icon src={iconSrc} alt="" width={32} height={32} />
+    </button>
+  );
+}
 
 export default function MoveNavigationMolecule({
   onPrevious,
   onNext,
-  disabled = false,
+  previousDisabled = false,
+  nextDisabled = false,
 }) {
-  const handleMouseEnter = (event) => {
-    if (!disabled) {
-      Object.assign(event.target.style, S.buttonHover);
-    }
-  };
-
-  const handleMouseLeave = (event) => {
-    Object.assign(event.target.style, {
-      background: S.button.background,
-      borderColor: S.button.border,
-      color: S.button.color,
-      boxShadow: S.button.boxShadow,
-    });
-  };
-
   return (
-    <div style={S.container}>
-      <button
-        style={S.button}
-        onClick={onPrevious}
-        disabled={disabled}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+    <div
+      className="flex w-fit items-center overflow-hidden rounded-tl-[16px] rounded-br-[16px] px-[10px]"
+      style={{
+        background: "var(--main-menu-control-bg)",
+        boxShadow: "var(--main-menu-surface-shadow)",
+      }}
+    >
+      <NavigationButton
+        iconSrc="/icons/left.svg"
         title="Предыдущий ход"
-      >
-        ◀
-      </button>
-      <button
-        style={S.button}
-        onClick={onNext}
-        disabled={disabled}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onClick={onPrevious}
+        disabled={previousDisabled}
+      />
+      <NavigationButton
+        iconSrc="/icons/right.svg"
         title="Следующий ход"
-      >
-        ▶
-      </button>
+        onClick={onNext}
+        disabled={nextDisabled}
+      />
     </div>
   );
 }

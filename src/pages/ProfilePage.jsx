@@ -1,4 +1,4 @@
-import Sidebar from "../components/organisms/Sidebar.jsx";
+import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
 
 const fallbackAvatar = "/images/default-avatar.png";
@@ -20,51 +20,97 @@ function formatDate(value) {
   }).format(date);
 }
 
+function cardStyle() {
+  return {
+    borderColor: "var(--status-card-border)",
+    background: "var(--status-card-background)",
+    boxShadow: "var(--status-card-shadow)",
+  };
+}
+
+function innerCardStyle() {
+  return {
+    borderColor: "var(--color-border)",
+    background: "var(--game-panel-bg-elevated)",
+  };
+}
+
 export default function ProfilePage() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[linear-gradient(312deg,#0b0f2b_0%,#2b1a58_13.94%,#3b1f6a_29.33%,#1a1446_50.47%,#341d5b_68.17%,#1f1852_88.46%,#0b0f2b_100%)] text-white">
+    <div className="app-page h-screen w-screen overflow-hidden">
       <div className="flex h-full w-full overflow-hidden">
-        <Sidebar />
+        <AppSidebar />
 
         <main className="flex-1 overflow-y-auto px-[48px] py-[34px]">
           <div className="mx-auto flex max-w-[980px] flex-col gap-[24px]">
             <header>
-              <p className="text-[14px] uppercase tracking-[0.28em] text-[#82ebff]">
+              <p
+                className="text-[14px] uppercase tracking-[0.28em]"
+                style={{ color: "var(--color-accent)" }}
+              >
                 Аккаунт
               </p>
-              <h1 className="mt-[10px] text-[40px] font-semibold tracking-[-0.03em] text-white">
+              <h1
+                className="mt-[10px] text-[40px] font-semibold tracking-[-0.03em]"
+                style={{ color: "var(--color-text)" }}
+              >
                 {user.username}
               </h1>
-              <p className="mt-[8px] max-w-[560px] text-[16px] leading-[1.55] text-[#c6d6f5]">
-                Профиль загружается из реальной авторизации backend и
-                остаётся доступным после обновления страницы.
+              <p
+                className="mt-[8px] max-w-[560px] text-[16px] leading-[1.55]"
+                style={{ color: "var(--color-text-muted)" }}
+              >
+                Профиль загружается из авторизованной backend-сессии и остается
+                доступным после обновления страницы.
               </p>
             </header>
 
             <section className="grid gap-[24px] lg:grid-cols-[320px_minmax(0,1fr)]">
-              <div className="rounded-[30px] border border-white/10 bg-[#17142d]/92 p-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.32)]">
+              <div
+                className="rounded-[30px] border p-[24px]"
+                style={cardStyle()}
+              >
                 <img
                   src={user.avatar_url || fallbackAvatar}
                   alt={`Аватар ${user.username}`}
-                  className="h-[120px] w-[120px] rounded-full border border-white/15 object-cover shadow-[0_16px_32px_rgba(0,0,0,0.32)]"
+                  className="h-[120px] w-[120px] rounded-full object-cover"
+                  style={{
+                    border: "1px solid var(--sidebar-avatar-border)",
+                    boxShadow: "0 16px 32px rgba(0,0,0,0.18)",
+                  }}
                 />
 
                 <div className="mt-[18px]">
-                  <h2 className="text-[26px] font-semibold text-white">
+                  <h2
+                    className="text-[26px] font-semibold"
+                    style={{ color: "var(--color-text)" }}
+                  >
                     {user.username}
                   </h2>
-                  <p className="mt-[6px] break-all text-[14px] text-[#98ebff]">
+                  <p
+                    className="mt-[6px] break-all text-[14px]"
+                    style={{ color: "var(--color-accent)" }}
+                  >
                     {user.email || "Почта не указана"}
                   </p>
                 </div>
 
-                <div className="mt-[24px] rounded-[22px] border border-white/8 bg-[#0d1332]/90 p-[16px]">
-                  <p className="text-[12px] uppercase tracking-[0.24em] text-[#9cc8ff]">
+                <div
+                  className="mt-[24px] rounded-[22px] border p-[16px]"
+                  style={innerCardStyle()}
+                >
+                  <p
+                    className="text-[12px] uppercase tracking-[0.24em]"
+                    style={{ color: "var(--game-panel-label)" }}
+                  >
                     Дата регистрации
                   </p>
-                  <p className="mt-[8px] text-[18px] font-medium text-white">
+                  <p
+                    className="mt-[8px] text-[18px] font-medium"
+                    style={{ color: "var(--color-text)" }}
+                  >
                     {formatDate(user.created_at)}
                   </p>
                 </div>
@@ -72,52 +118,95 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="mt-[20px] inline-flex h-[48px] w-full items-center justify-center rounded-[18px] border border-white/12 bg-[#251b4d] text-[15px] font-semibold text-white transition hover:border-[#6beeff]/40 hover:bg-[#2c2160]"
+                  className="mt-[20px] inline-flex h-[48px] w-full items-center justify-center rounded-[18px] border text-[15px] font-semibold transition hover:brightness-105"
+                  style={{
+                    borderColor: "var(--sidebar-secondary-button-border)",
+                    background: "var(--sidebar-secondary-button-bg)",
+                    color: "var(--sidebar-secondary-button-text)",
+                  }}
                 >
                   Выйти
                 </button>
               </div>
 
-              <div className="rounded-[30px] border border-white/10 bg-[#17142d]/92 p-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.32)]">
+              <div
+                className="rounded-[30px] border p-[24px]"
+                style={cardStyle()}
+              >
                 <div className="grid gap-[16px] md:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/8 bg-[#0d1332]/90 p-[18px]">
-                    <p className="text-[12px] uppercase tracking-[0.24em] text-[#9cc8ff]">
+                  <div
+                    className="rounded-[22px] border p-[18px]"
+                    style={innerCardStyle()}
+                  >
+                    <p
+                      className="text-[12px] uppercase tracking-[0.24em]"
+                      style={{ color: "var(--game-panel-label)" }}
+                    >
                       ID пользователя
                     </p>
-                    <p className="mt-[10px] break-all text-[15px] leading-[1.5] text-white">
+                    <p
+                      className="mt-[10px] break-all text-[15px] leading-[1.5]"
+                      style={{ color: "var(--color-text)" }}
+                    >
                       {user.id}
                     </p>
                   </div>
 
-                  <div className="rounded-[22px] border border-white/8 bg-[#0d1332]/90 p-[18px]">
-                    <p className="text-[12px] uppercase tracking-[0.24em] text-[#9cc8ff]">
+                  <div
+                    className="rounded-[22px] border p-[18px]"
+                    style={innerCardStyle()}
+                  >
+                    <p
+                      className="text-[12px] uppercase tracking-[0.24em]"
+                      style={{ color: "var(--game-panel-label)" }}
+                    >
                       Состояние сессии
                     </p>
-                    <p className="mt-[10px] text-[15px] leading-[1.5] text-white">
+                    <p
+                      className="mt-[10px] text-[15px] leading-[1.5]"
+                      style={{ color: "var(--color-text)" }}
+                    >
                       Авторизация работает через Bearer JWT и восстанавливается
-                      из сохранённого токена на фронтенде.
+                      из сохраненного токена на фронтенде.
                     </p>
                   </div>
 
-                  <div className="rounded-[22px] border border-white/8 bg-[#0d1332]/90 p-[18px] md:col-span-2">
-                    <p className="text-[12px] uppercase tracking-[0.24em] text-[#9cc8ff]">
+                  <div
+                    className="rounded-[22px] border p-[18px] md:col-span-2"
+                    style={innerCardStyle()}
+                  >
+                    <p
+                      className="text-[12px] uppercase tracking-[0.24em]"
+                      style={{ color: "var(--game-panel-label)" }}
+                    >
                       Данные профиля с backend
                     </p>
-                    <ul className="mt-[10px] flex flex-col gap-[8px] text-[15px] leading-[1.5] text-white">
+                    <ul
+                      className="mt-[10px] flex flex-col gap-[8px] text-[15px] leading-[1.5]"
+                      style={{ color: "var(--color-text)" }}
+                    >
                       <li>
-                        <span className="text-[#82ebff]">Имя пользователя:</span>{" "}
+                        <span style={{ color: "var(--color-accent)" }}>
+                          Имя пользователя:
+                        </span>{" "}
                         {user.username}
                       </li>
                       <li>
-                        <span className="text-[#82ebff]">Почта:</span>{" "}
+                        <span style={{ color: "var(--color-accent)" }}>
+                          Почта:
+                        </span>{" "}
                         {user.email || "Не указана"}
                       </li>
                       <li>
-                        <span className="text-[#82ebff]">Аватар:</span>{" "}
+                        <span style={{ color: "var(--color-accent)" }}>
+                          Аватар:
+                        </span>{" "}
                         {user.avatar_url || "Не задан"}
                       </li>
                       <li>
-                        <span className="text-[#82ebff]">Дата создания:</span>{" "}
+                        <span style={{ color: "var(--color-accent)" }}>
+                          Дата создания:
+                        </span>{" "}
                         {formatDate(user.created_at)}
                       </li>
                     </ul>

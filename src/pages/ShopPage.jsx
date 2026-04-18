@@ -1,16 +1,11 @@
-import Sidebar from "../components/organisms/Sidebar.jsx";
+import AppShell from "../shared/layout/AppShell.jsx";
+import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import ShopSkinsSection from "../components/organisms/ShopSkinsSection.jsx";
 
 export default function ShopPage() {
   return (
-    <div className="w-screen h-screen overflow-hidden text-white bg-[linear-gradient(312deg,#0b0f2b_0%,#2b1a58_13.94%,#3b1f6a_29.33%,#1a1446_50.47%,#341d5b_68.17%,#1f1852_88.46%,#0b0f2b_100%)]">
-      <div className="w-full h-full flex overflow-hidden">
-        <Sidebar />
-
-        <main className="flex-1 h-full overflow-y-auto px-[56px] pt-[28px] pb-[30px]">
-          <ShopSkinsSection />
-        </main>
-      </div>
-    </div>
+    <AppShell sidebar={<AppSidebar />} scrollable>
+      <ShopSkinsSection />
+    </AppShell>
   );
 }

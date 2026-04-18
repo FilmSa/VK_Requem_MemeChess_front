@@ -1,11 +1,9 @@
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 function normalizeOrientation(boardOrientation) {
-  if (boardOrientation === "b" || boardOrientation === "black") {
-    return "black";
-  }
-
-  return "white";
+  return boardOrientation === "b" || boardOrientation === "black"
+    ? "black"
+    : "white";
 }
 
 function squareToCoords(square, boardOrientation, boardWidth) {
@@ -15,7 +13,6 @@ function squareToCoords(square, boardOrientation, boardWidth) {
 
   const orientation = normalizeOrientation(boardOrientation);
   const cellSize = boardWidth / 8;
-
   const file = FILES.indexOf(square[0]);
   const rank = Number(square[1]) - 1;
 
@@ -38,24 +35,8 @@ function squareToCoords(square, boardOrientation, boardWidth) {
   };
 }
 
-function getAssetType(effect) {
-  if (effect?.type) {
-    return effect.type;
-  }
-
-  const asset = effect?.asset?.toLowerCase?.() || "";
-
-  if (asset.endsWith(".mp4") || asset.endsWith(".webm") || asset.endsWith(".ogg")) {
-    return "video";
-  }
-
-  return "image";
-}
-
 function renderEffectMedia(effect) {
-  const assetType = getAssetType(effect);
-
-  if (assetType === "video") {
+  if (effect.mediaType === "video") {
     return (
       <video
         src={effect.asset}
@@ -81,8 +62,8 @@ function renderEffectMedia(effect) {
       draggable={false}
       style={{
         width: "100%",
-          height: "100%",
-          objectFit: "cover",
+        height: "100%",
+        objectFit: "cover",
         pointerEvents: "none",
         userSelect: "none",
       }}
@@ -100,14 +81,7 @@ export default function BoardEffectsLayer({
   }
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "none",
-        zIndex: 20,
-      }}
-    >
+    <div className="board-effects-layer">
       {activeEffects.map((effect) => {
         const coords = squareToCoords(
           effect?.square,
@@ -115,7 +89,9 @@ export default function BoardEffectsLayer({
           boardWidth
         );
 
-        if (!coords) return null;
+        if (!coords) {
+          return null;
+        }
 
         return (
           <div
@@ -129,7 +105,6 @@ export default function BoardEffectsLayer({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              pointerEvents: "none",
             }}
           >
             {renderEffectMedia(effect)}

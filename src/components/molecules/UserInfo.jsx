@@ -4,22 +4,31 @@ import Text from "../atoms/Text";
 export default function UserInfo({ name, level, avatar }) {
   return (
     <div className="mb-[12px] flex items-center gap-[10px]">
-      <div className="h-[54px] w-[54px] shrink-0 overflow-hidden rounded-full bg-white/20">
+      <div
+        className="h-[54px] w-[54px] shrink-0 overflow-hidden rounded-full"
+        style={{ background: "var(--player-panel-avatar-bg)" }}
+      >
         <Avatar src={avatar} className="h-full w-full object-cover" />
       </div>
 
       <div className="flex flex-col justify-center">
         <Text
-          className="text-[14px] font-medium leading-[1.2] text-[#ffff]"
-          style={{ fontFamily: '"Unbounded", sans-serif' }}
+          className="text-[14px] font-medium leading-[1.2]"
+          style={{
+            fontFamily: '"Unbounded", sans-serif',
+            color: "var(--player-panel-name)",
+          }}
         >
           {name}
         </Text>
 
         {level ? (
           <Text
-            className="text-[20px] font-medium leading-[1.2] text-[#ffd700]"
-            style={{ fontFamily: '"Unbounded", sans-serif' }}
+            className="text-[20px] font-medium leading-[1.2]"
+            style={{
+              fontFamily: '"Unbounded", sans-serif',
+              color: "var(--player-panel-level)",
+            }}
           >
             {level}
           </Text>

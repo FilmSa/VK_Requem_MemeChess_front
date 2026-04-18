@@ -19,19 +19,19 @@ function validateForm(form) {
   const errors = {};
 
   if (form.nickname.trim().length < 3) {
-    errors.nickname = "Имя пользователя должно содержать минимум 3 символа.";
+    errors.nickname = "РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј 3 СЃРёРјРІРѕР»Р°.";
   }
 
   if (!form.email.includes("@")) {
-    errors.email = "Введите корректную почту.";
+    errors.email = "Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅСѓСЋ РїРѕС‡С‚Сѓ.";
   }
 
   if (form.password.length < 8) {
-    errors.password = "Пароль должен содержать не менее 8 символов.";
+    errors.password = "РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ РјРµРЅРµРµ 8 СЃРёРјРІРѕР»РѕРІ.";
   }
 
   if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = "Пароли не совпадают.";
+    errors.confirmPassword = "РџР°СЂРѕР»Рё РЅРµ СЃРѕРІРїР°РґР°СЋС‚.";
   }
 
   return errors;
@@ -101,7 +101,7 @@ export default function RegisterPage() {
       });
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setSubmitError(error.message || "Не удалось создать аккаунт.");
+      setSubmitError(error.message || "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚.");
       setServerErrors(error.fields || {});
     } finally {
       setIsSubmitting(false);
@@ -109,20 +109,17 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-[linear-gradient(312deg,#0b0f2b_0%,#2b1a58_13.94%,#3b1f6a_29.33%,#1a1446_50.47%,#341d5b_68.17%,#1f1852_88.46%,#0b0f2b_100%)] px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(114,86,190,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(114,86,190,0.14)_1px,transparent_1px)] bg-[size:32px_32px]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_62%_78%,rgba(47,200,227,0.18),transparent_30%),radial-gradient(circle_at_50%_20%,rgba(255,0,200,0.16),transparent_24%)]" />
-
-      <div className="relative z-10 flex w-full max-w-[420px] flex-col">
-        <AuthCard title="Регистрация">
+    <div className="auth-screen w-screen px-4 py-10 sm:px-6">
+      <div className="auth-screen__inner flex w-full max-w-[420px] flex-col">
+        <AuthCard title="Р РµРіРёСЃС‚СЂР°С†РёСЏ">
           <form onSubmit={handleSubmit} className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[20px]">
               <AuthInput
                 id="nickname"
                 name="nickname"
-                label="Имя пользователя"
+                label="РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"
                 type="text"
-                placeholder="Игрок_01"
+                placeholder="РРіСЂРѕРє_01"
                 value={form.nickname}
                 onChange={handleChange}
                 icon="user"
@@ -132,7 +129,7 @@ export default function RegisterPage() {
               <AuthInput
                 id="email"
                 name="email"
-                label="Электронная почта"
+                label="Р­Р»РµРєС‚СЂРѕРЅРЅР°СЏ РїРѕС‡С‚Р°"
                 type="email"
                 placeholder="user@example.com"
                 value={form.email}
@@ -144,9 +141,9 @@ export default function RegisterPage() {
               <AuthInput
                 id="password"
                 name="password"
-                label="Пароль"
+                label="РџР°СЂРѕР»СЊ"
                 type="password"
-                placeholder="Не менее 8 символов"
+                placeholder="РќРµ РјРµРЅРµРµ 8 СЃРёРјРІРѕР»РѕРІ"
                 value={form.password}
                 onChange={handleChange}
                 icon="lock"
@@ -156,9 +153,9 @@ export default function RegisterPage() {
               <AuthInput
                 id="confirmPassword"
                 name="confirmPassword"
-                label="Подтвердите пароль"
+                label="РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїР°СЂРѕР»СЊ"
                 type="password"
-                placeholder="Повторите пароль"
+                placeholder="РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 icon="lock"
@@ -167,29 +164,35 @@ export default function RegisterPage() {
             </div>
 
             {submitError ? (
-              <div className="rounded-[14px] border border-[#ff6b6b]/40 bg-[#351828] px-[14px] py-[12px] text-[14px] text-[#ffd0d0]">
+              <div
+                className="rounded-[14px] border px-[14px] py-[12px] text-[14px]"
+                style={{
+                  borderColor: "var(--auth-error-border)",
+                  background: "var(--auth-error-background)",
+                  color: "var(--auth-error-text)",
+                }}
+              >
                 {submitError}
               </div>
             ) : null}
 
             <div>
-              <AuthButton
-                type="submit"
-                icon={friendGameIcon}
-                disabled={isDisabled}
-              >
-                {isSubmitting ? "Создаём аккаунт..." : "Создать аккаунт"}
+              <AuthButton type="submit" icon={friendGameIcon} disabled={isDisabled}>
+                {isSubmitting ? "РЎРѕР·РґР°РµРј Р°РєРєР°СѓРЅС‚..." : "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚"}
               </AuthButton>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-[10px] text-[16px]">
-              <span className="text-[#c0c5d8]">Уже есть аккаунт?</span>
+              <span style={{ color: "var(--color-text-muted)" }}>
+                РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚?
+              </span>
               <Link
                 to="/login"
                 state={{ from: location.state?.from }}
-                className="font-medium text-[#ff78e5] no-underline transition-colors hover:text-[#ffb0f0]"
+                className="font-medium no-underline transition-colors"
+                style={{ color: "var(--auth-link-secondary)" }}
               >
-                Войти
+                Р’РѕР№С‚Рё
               </Link>
             </div>
           </form>

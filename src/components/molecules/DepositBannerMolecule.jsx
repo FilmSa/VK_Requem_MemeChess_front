@@ -6,8 +6,8 @@ const S = {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "10px 14px",
-    background: "#060c2e",
-    border: "1px solid rgba(0,234,255,0.12)",
+    background: "var(--game-panel-bg)",
+    border: "1px solid var(--game-panel-border)",
     borderRadius: 12,
     fontFamily: "'Unbounded', sans-serif",
   },
@@ -16,7 +16,7 @@ const S = {
     fontSize: 14,
     letterSpacing: "0.1em",
     textTransform: "uppercase",
-    color: "rgba(232,238,255,0.5)",
+    color: "var(--game-panel-label)",
   },
 
   valueSection: {
@@ -28,7 +28,7 @@ const S = {
   amount: {
     fontSize: 16,
     fontWeight: 500,
-    color: "#00eaff",
+    color: "var(--game-panel-accent)",
     fontFamily: "'JetBrains Mono', monospace",
   },
 

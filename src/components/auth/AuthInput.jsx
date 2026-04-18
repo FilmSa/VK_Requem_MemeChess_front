@@ -100,12 +100,18 @@ export default function AuthInput({
 
   return (
     <label className="block">
-      <span className="mb-[10px] block text-[15px] font-medium leading-none text-[#b2b4c7]">
+      <span
+        className="mb-[10px] block text-[15px] font-medium leading-none"
+        style={{ color: "var(--auth-input-label)" }}
+      >
         {label}
       </span>
 
       <div className="relative">
-        <span className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-[#b7bbd1]">
+        <span
+          className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2"
+          style={{ color: "var(--auth-input-icon)" }}
+        >
           <Icon />
         </span>
 
@@ -116,16 +122,23 @@ export default function AuthInput({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`h-[58px] w-full rounded-[14px] border-none bg-[#0b0f2b] pl-[42px] pr-4 text-[19px] font-medium text-white outline-none transition-shadow placeholder:text-[17px] placeholder:text-[#b0b2c0] ${
+          className={`h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] ${
             error
-              ? "shadow-[inset_0_4px_4px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,95,95,0.95)]"
-              : "shadow-[inset_0_4px_4px_rgba(0,0,0,0.25)] focus:shadow-[inset_0_4px_4px_rgba(0,0,0,0.25),0_0_0_1px_rgba(47,200,227,0.95),0_0_18px_rgba(47,200,227,0.22)]"
+              ? "shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_rgba(255,95,95,0.95)]"
+              : "shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)] focus:shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_var(--color-accent),0_0_18px_rgba(47,200,227,0.22)]"
           }`}
-          style={{ color: "#ffffff" }}
+          style={{
+            background: "var(--auth-input-background)",
+            color: "var(--color-text)",
+          }}
         />
       </div>
 
-      {error ? <p className="mt-[10px] text-[13px] text-[#ff6b6b]">{error}</p> : null}
+      {error ? (
+        <p className="mt-[10px] text-[13px]" style={{ color: "var(--color-danger)" }}>
+          {error}
+        </p>
+      ) : null}
     </label>
   );
 }

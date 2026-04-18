@@ -1,9 +1,8 @@
 import { useLocation } from "react-router-dom";
-
-import Logo from "../molecules/Logo.jsx";
-import MenuButton from "../molecules/MenuButton.jsx";
-import SidebarProfileCard from "../molecules/SidebarProfileCard.jsx";
-import { useAuth } from "../../features/auth/useAuth.js";
+import { useAuth } from "../../../features/auth/useAuth.js";
+import Logo from "../../../components/molecules/Logo.jsx";
+import MenuButton from "../../../components/molecules/MenuButton.jsx";
+import SidebarProfileCard from "../../../components/molecules/SidebarProfileCard.jsx";
 
 const menuItems = [
   { id: "play", label: "Играть", icon: "/icons/sword.svg", to: "/" },
@@ -11,7 +10,7 @@ const menuItems = [
   { id: "shop", label: "Магазин", icon: "/icons/cart.svg", to: "/shop" },
 ];
 
-export default function Sidebar() {
+export default function AppSidebar() {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const isPlaySection =
@@ -22,7 +21,10 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden bg-[linear-gradient(90deg,#160936_0%,#0a183c_22.6%)] px-[20px] py-[20px]">
+    <aside
+      className="flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden px-[20px] py-[20px]"
+      style={{ background: "var(--sidebar-background)" }}
+    >
       <Logo />
 
       <div className="flex flex-1 flex-col justify-between pt-[28px]">

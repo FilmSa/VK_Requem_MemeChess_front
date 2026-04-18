@@ -1,6 +1,6 @@
 import { Chessboard } from "react-chessboard";
 import { customPieces } from "../lib/boardPieces.jsx";
-import BoardEffectsLayer from "./BoardEffectsLayer.jsx";
+import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
 
 export default function GameBoard({
   fen,
@@ -11,12 +11,14 @@ export default function GameBoard({
   onSquareClick,
   onPieceDrop,
 }) {
-  console.log("GameBoard activeEffects", activeEffects);
+  if (!boardWidth) {
+    return null;
+  }
+
   return (
     <div
-      className="overflow-hidden rounded-[16px]"
+      className="game-board"
       style={{
-        position: "relative",
         width: boardWidth,
         height: boardWidth,
       }}

@@ -1,4 +1,4 @@
-export const EFFECTS = {
+export const BOARD_EFFECTS = {
   "1": {
     id: "1",
     name: "Default Move",
@@ -6,48 +6,46 @@ export const EFFECTS = {
     sound: "/sounds/skeleton.mp3",
     volume: 0.5,
     duration: 6000,
-    type: "overlay",
+    mediaType: "video",
   },
-
   "2": {
     id: "2",
-    name: "Ezh",
+    name: "Ahmed",
     asset: "/effects/ahmed.gif",
     sound: "/sounds/ahmad-mohsen.mp3",
     volume: 0.5,
     duration: 4000,
-    type: "overlay",
+    mediaType: "image",
   },
-
   "3": {
     id: "3",
-    name: "vibecoding",
+    name: "No Brain",
     asset: "/effects/nobrain.mp4",
     sound: "/effects/nobrain.mp4",
     volume: 0.5,
     duration: 4600,
-    type: "overlay",
+    mediaType: "video",
   },
   "4": {
     id: "4",
-    name: "showspeed",
+    name: "Speed",
     asset: "/effects/ishowspeed.mp4",
-    sound: "/effects/ishowspeed.mp4",
+    sound: "/effects/ishowspeed.mp3",
     volume: 0.1,
     duration: 6000,
-    type: "overlay",
+    mediaType: "video",
   },
-   "5": {
+  "5": {
     id: "5",
-    name: "cat",
+    name: "Cat",
     asset: "/effects/cat.mp4",
     sound: "/effects/cat.mp4",
     volume: 0.1,
     duration: 4000,
-    type: "overlay",
+    mediaType: "video",
   },
 };
 
-export function getEffectConfig(effectId) {
-  return EFFECTS[String(effectId)] ?? null;
+export function getBoardEffectConfig(effectId) {
+  return BOARD_EFFECTS[String(effectId)] ?? null;
 }

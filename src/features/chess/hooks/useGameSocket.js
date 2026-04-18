@@ -4,7 +4,7 @@ import {
   getDebugToken,
 } from "../../../shared/ws/gameSocket.js";
 import { useAuth } from "../../auth/useAuth.js";
-import { API_BASE_URL } from "../lib/boardConfig";
+import { API_BASE_URL } from "../lib/boardConfig.js";
 import { getGameParams } from "../lib/gameParams";
 
 export function useGameSocket({

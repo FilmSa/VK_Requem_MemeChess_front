@@ -1,27 +1,24 @@
-import PlayerPanel from "../molecules/PlayerPanel.jsx";
-import GameBoard from "../../features/chess/components/GameBoard.jsx";
-import { useBoardScale } from "../../features/chess/hooks/useBoardScale.js";
-import { useChessGame } from "../../features/chess/hooks/useChessGame.js";
-import { useGameSocket } from "../../features/chess/hooks/useGameSocket.js";
-import {
-  BOARD_SIZE,
-  DEFAULT_AVATAR,
-} from "../../features/chess/lib/boardConfig.js";
+import PlayerPanel from "../../../components/molecules/PlayerPanel.jsx";
+import { useGameSocket } from "../hooks/useGameSocket.js";
+import { useChessGame } from "../hooks/useChessGame.js";
+import { BOARD_SIZE, DEFAULT_AVATAR } from "../lib/boardConfig.js";
+import GameBoard from "./GameBoard.jsx";
 
 export default function ChessBoardSection({
   gameState,
   enableSocket = true,
   socketOptions,
-  topPlayerName = "Соперник",
-  bottomPlayerName = "Вы",
+  topPlayerName = "\u0421\u043e\u043f\u0435\u0440\u043d\u0438\u043a",
+  bottomPlayerName = "\u0412\u044b",
   topPlayerAvatar = DEFAULT_AVATAR,
   bottomPlayerAvatar = DEFAULT_AVATAR,
 }) {
-  const { scale, boardWidth } = useBoardScale(BOARD_SIZE);
-  const gameStateLocal = gameState || useChessGame();
+  const fallbackGameState = useChessGame();
+  const gameStateLocal = gameState || fallbackGameState;
 
   const {
     game,
+    displayedGame,
     highlightedSquares,
     boardOrientation,
     activeEffects,
@@ -45,12 +42,9 @@ export default function ChessBoardSection({
   });
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden">
+    <div className="flex items-start justify-start overflow-visible">
       <div className="flex flex-row items-start gap-4">
-        <section
-          className="flex flex-col"
-          style={{ width: Math.floor(BOARD_SIZE * scale) }}
-        >
+        <section className="flex flex-col" style={{ width: BOARD_SIZE }}>
           <div className="mb-[26px]">
             <PlayerPanel
               name={topPlayerName}
@@ -61,8 +55,8 @@ export default function ChessBoardSection({
           </div>
 
           <GameBoard
-            fen={game.fen()}
-            boardWidth={boardWidth}
+            fen={(displayedGame || game).fen()}
+            boardWidth={BOARD_SIZE}
             boardOrientation={boardOrientation}
             highlightedSquares={highlightedSquares}
             activeEffects={activeEffects}

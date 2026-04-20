@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
 import HomePage from "../pages/HomePage.jsx";
 import InvitePage from "../pages/InvitePage.jsx";
@@ -10,8 +10,15 @@ import ShopPage from "../pages/ShopPage.jsx";
 import TournamentsPage from "../pages/TournamentsPage.jsx";
 
 export default function App() {
+  const useHashRouter = import.meta.env.VITE_ROUTER_MODE === "hash";
+  const Router = useHashRouter ? HashRouter : BrowserRouter;
+  const browserBasename =
+    !useHashRouter && import.meta.env.BASE_URL !== "/"
+      ? import.meta.env.BASE_URL
+      : undefined;
+
   return (
-    <BrowserRouter>
+    <Router basename={browserBasename}>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/play" element={<PlayPage />} />
@@ -30,6 +37,6 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }

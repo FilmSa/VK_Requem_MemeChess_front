@@ -59,13 +59,6 @@ export default function ProfilePage() {
               >
                 {user.username}
               </h1>
-              <p
-                className="mt-[8px] max-w-[560px] text-[16px] leading-[1.55]"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                Профиль загружается из авторизованной backend-сессии и остается
-                доступным после обновления страницы.
-              </p>
             </header>
 
             <section className="grid gap-[24px] lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -154,25 +147,6 @@ export default function ProfilePage() {
                   </div>
 
                   <div
-                    className="rounded-[22px] border p-[18px]"
-                    style={innerCardStyle()}
-                  >
-                    <p
-                      className="text-[12px] uppercase tracking-[0.24em]"
-                      style={{ color: "var(--game-panel-label)" }}
-                    >
-                      Состояние сессии
-                    </p>
-                    <p
-                      className="mt-[10px] text-[15px] leading-[1.5]"
-                      style={{ color: "var(--color-text)" }}
-                    >
-                      Авторизация работает через Bearer JWT и восстанавливается
-                      из сохраненного токена на фронтенде.
-                    </p>
-                  </div>
-
-                  <div
                     className="rounded-[22px] border p-[18px] md:col-span-2"
                     style={innerCardStyle()}
                   >
@@ -180,7 +154,7 @@ export default function ProfilePage() {
                       className="text-[12px] uppercase tracking-[0.24em]"
                       style={{ color: "var(--game-panel-label)" }}
                     >
-                      Данные профиля с backend
+                      Данные профиля
                     </p>
                     <ul
                       className="mt-[10px] flex flex-col gap-[8px] text-[15px] leading-[1.5]"

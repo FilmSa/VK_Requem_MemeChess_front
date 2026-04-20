@@ -15,7 +15,7 @@ export default function InvitePage() {
           boxShadow: "var(--status-card-shadow)",
         }}
       >
-        <div className="text-[30px] font-semibold">РџСЂРёРіР»Р°С€РµРЅРёРµ РІ РёРіСЂСѓ</div>
+        <div className="text-[30px] font-semibold">Приглашение в игру</div>
         <div
           className="mt-3 text-[16px] leading-7"
           style={{ color: "var(--color-text-muted)" }}
@@ -43,7 +43,7 @@ export default function InvitePage() {
                 color: "#ffffff",
               }}
             >
-              РќР° РіР»Р°РІРЅСѓСЋ
+              На главную
             </Link>
             <Link
               to="/login"
@@ -53,7 +53,7 @@ export default function InvitePage() {
                 color: "var(--color-text)",
               }}
             >
-              Р’РѕР№С‚Рё
+              Войти
             </Link>
           </div>
         )}

@@ -67,7 +67,7 @@ export default function LoginPage() {
       });
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setSubmitError(error.message || "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ РІС…РѕРґ.");
+      setSubmitError(error.message || "Не удалось выполнить вход.");
       setFieldErrors(error.fields || {});
     } finally {
       setIsSubmitting(false);
@@ -77,15 +77,15 @@ export default function LoginPage() {
   return (
     <div className="auth-screen w-screen px-4 py-[10px] sm:px-6">
       <div className="auth-screen__inner flex w-full max-w-[420px] flex-col">
-        <AuthCard title="Р’С…РѕРґ">
+        <AuthCard title="Вход">
           <form onSubmit={handleSubmit} className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[10px]">
               <AuthInput
                 id="login"
                 name="login"
-                label="Р›РѕРіРёРЅ РёР»Рё РїРѕС‡С‚Р°"
+                label="Логин или почта"
                 type="text"
-                placeholder="РРіСЂРѕРє_01"
+                placeholder="Игрок_01"
                 value={form.login}
                 onChange={handleChange}
                 icon="user"
@@ -95,9 +95,9 @@ export default function LoginPage() {
               <AuthInput
                 id="password"
                 name="password"
-                label="РџР°СЂРѕР»СЊ"
+                label="Пароль"
                 type="password"
-                placeholder="Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ"
+                placeholder="Введите пароль"
                 value={form.password}
                 onChange={handleChange}
                 icon="lock"
@@ -120,13 +120,13 @@ export default function LoginPage() {
 
             <div>
               <AuthButton type="submit" icon={startGameIcon} disabled={isDisabled}>
-                {isSubmitting ? "Р’С…РѕРґРёРј..." : "Р’РѕР№С‚Рё"}
+                {isSubmitting ? "Входим..." : "Войти"}
               </AuthButton>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-[10px] text-[16px]">
               <span style={{ color: "var(--color-text-muted)" }}>
-                Р•С‰Рµ РЅРµС‚ Р°РєРєР°СѓРЅС‚Р°?
+                Еще нет аккаунта?
               </span>
               <Link
                 to="/register"
@@ -134,7 +134,7 @@ export default function LoginPage() {
                 className="font-medium no-underline transition-colors"
                 style={{ color: "var(--auth-link-primary)" }}
               >
-                Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
+                Зарегистрироваться
               </Link>
             </div>
           </form>

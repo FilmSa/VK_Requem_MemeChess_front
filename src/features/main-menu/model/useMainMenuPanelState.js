@@ -1,11 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CARD_SETS,
   DEFAULT_CARD_IDS,
   MODE_OPTIONS,
 } from "../config/menuConfig.js";
+import {
+  persistEmojiQuickAccess,
+  readStoredEmojiQuickAccess,
+  updateEmojiQuickAccessIds,
+} from "../../../shared/lib/emojiQuickAccess.js";
 
-export function useMainMenuPanelState() {
+export function useMainMenuPanelState({ userId } = {}) {
   const [activeTab, setActiveTab] = useState("new");
   const [activeCardId, setActiveCardId] = useState(DEFAULT_CARD_IDS.new);
   const [selectedMode, setSelectedMode] = useState(MODE_OPTIONS[0]);
@@ -19,8 +24,19 @@ export function useMainMenuPanelState() {
     pieces: true,
   });
   const [expandedCustomizeSections, setExpandedCustomizeSections] = useState({});
+  const [selectedEmojiQuickAccessIds, setSelectedEmojiQuickAccessIds] = useState(
+    () => readStoredEmojiQuickAccess(userId)
+  );
 
   const cards = useMemo(() => CARD_SETS[activeTab] || [], [activeTab]);
+
+  useEffect(() => {
+    setSelectedEmojiQuickAccessIds(readStoredEmojiQuickAccess(userId));
+  }, [userId]);
+
+  useEffect(() => {
+    persistEmojiQuickAccess(userId, selectedEmojiQuickAccessIds);
+  }, [selectedEmojiQuickAccessIds, userId]);
 
   function selectTab(tabId) {
     setActiveTab(tabId);
@@ -42,6 +58,14 @@ export function useMainMenuPanelState() {
     }));
   }
 
+  function selectCard(cardId) {
+    setActiveCardId(cardId);
+
+    setSelectedEmojiQuickAccessIds((currentIds) => {
+      return updateEmojiQuickAccessIds(currentIds, cardId);
+    });
+  }
+
   return {
     activeTab,
     activeCardId,
@@ -52,11 +76,12 @@ export function useMainMenuPanelState() {
     depositTo,
     openCustomizeSections,
     expandedCustomizeSections,
+    selectedEmojiQuickAccessIds,
     cards,
     selectTab,
+    selectCard,
     toggleCustomizeSection,
     toggleCustomizeExpanded,
-    setActiveCardId,
     setSelectedMode,
     setIsModeOpen,
     setMemeMode,

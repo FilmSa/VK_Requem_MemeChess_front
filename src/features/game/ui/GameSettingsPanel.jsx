@@ -21,6 +21,9 @@ const panelStyle = {
 };
 
 export default function GameSettingsPanel({
+  emojiQuickAccessItems = [],
+  onEmojiSelect,
+  emojiCooldownActive = false,
   history = [],
   activeHistoryPly = history.length,
   canViewPrevious = false,
@@ -31,16 +34,16 @@ export default function GameSettingsPanel({
   onDraw,
   actionsDisabled = false,
 }) {
-  const handleItemClick = (item) => {
-    console.log("Быстрое действие:", item);
-  };
-
   return (
     <section style={panelStyle}>
       <GameHeaderMolecule iconKey="game" title="Партия" />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <QuickAccessMolecule onItemClick={handleItemClick} />
+        <QuickAccessMolecule
+          items={emojiQuickAccessItems}
+          onItemClick={onEmojiSelect}
+          disabled={emojiCooldownActive}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col px-[12px] pb-[12px] pt-[14px]">
           <MoveHistoryMolecule history={history} activePly={activeHistoryPly} />

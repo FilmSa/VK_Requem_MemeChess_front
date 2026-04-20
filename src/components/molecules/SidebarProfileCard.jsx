@@ -82,18 +82,6 @@ export default function SidebarProfileCard({
           >
             Войти
           </Link>
-          <Link
-            to="/register"
-            onClick={stopPropagation}
-            className="min-w-0 flex-1 rounded-[16px] border px-[10px] py-[10px] text-center text-[13px] font-semibold no-underline transition"
-            style={{
-              borderColor: "var(--sidebar-accent-button-border)",
-              background: "var(--sidebar-accent-button-bg)",
-              color: "var(--sidebar-accent-button-text)",
-            }}
-          >
-            Регистрация
-          </Link>
         </div>
       </div>
     );

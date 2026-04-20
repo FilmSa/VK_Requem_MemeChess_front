@@ -1,14 +1,12 @@
 import Divider from "../atoms/Divider.jsx";
-import { PLAY_EMOJI_PREVIEW_ITEMS } from "../../shared/constants/emojiPreviewMedia.js";
 import MediaPreviewCard from "./MediaPreviewCard.jsx";
-
-const QUICK_ACCESS_ITEMS = PLAY_EMOJI_PREVIEW_ITEMS;
 
 export default function QuickAccessMolecule({
   title = "Эмодзи:",
   label = "Быстрый доступ:",
-  items = QUICK_ACCESS_ITEMS,
+  items = [],
   onItemClick,
+  disabled = false,
 }) {
   return (
     <section
@@ -41,8 +39,8 @@ export default function QuickAccessMolecule({
             title={item.title}
             imageSrc={item.imageSrc}
             videoSrc={item.videoSrc}
-            previewTime={item.previewTime}
             cornerStyle="diagonal"
+            disabled={disabled}
             onClick={() => onItemClick?.(item)}
           />
         ))}
@@ -50,5 +48,3 @@ export default function QuickAccessMolecule({
     </section>
   );
 }
-
-export { QUICK_ACCESS_ITEMS };

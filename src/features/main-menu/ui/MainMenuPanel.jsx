@@ -27,17 +27,18 @@ export default function MainMenuPanel({ style }) {
     depositTo,
     openCustomizeSections,
     expandedCustomizeSections,
+    selectedEmojiQuickAccessIds,
     cards,
     selectTab,
+    selectCard,
     toggleCustomizeSection,
     toggleCustomizeExpanded,
-    setActiveCardId,
     setSelectedMode,
     setIsModeOpen,
     setMemeMode,
     setDepositFrom,
     setDepositTo,
-  } = useMainMenuPanelState();
+  } = useMainMenuPanelState({ userId: user?.id });
 
   const inviteLobby = useInviteLobby({
     token,
@@ -92,9 +93,14 @@ export default function MainMenuPanel({ style }) {
 
   const customizeSections = CUSTOMIZE_SECTIONS.map((section) => {
     const itemsById = new Map(cards.map((item) => [item.id, item]));
+    const quickAccessIds =
+      section.id === "emoji"
+        ? selectedEmojiQuickAccessIds
+        : section.quickAccessIds;
+
     return {
       ...section,
-      quickAccessItems: section.quickAccessIds
+      quickAccessItems: quickAccessIds
         .map((id) => itemsById.get(id))
         .filter(Boolean),
       ownedItems: section.ownedIds.map((id) => itemsById.get(id)).filter(Boolean),
@@ -112,7 +118,7 @@ export default function MainMenuPanel({ style }) {
         onTabSelect={selectTab}
         cards={cards}
         activeCardId={activeCardId}
-        onCardSelect={setActiveCardId}
+        onCardSelect={selectCard}
         modeField={modeField}
         memeField={memeField}
         depositField={depositField}

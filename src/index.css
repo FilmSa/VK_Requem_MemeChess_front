@@ -5,6 +5,50 @@
 @import "./styles/layouts.css";
 @import "./styles/chess.css";
 
+@keyframes emoji-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.72);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.02);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -18px) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.9);
+  }
+}
+
+@keyframes emoji-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.82);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(10px) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

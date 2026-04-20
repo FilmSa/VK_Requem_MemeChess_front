@@ -1,0 +1,5 @@
+.git
+dist
+node_modules
+tmp_frames
+tmp_video_frames

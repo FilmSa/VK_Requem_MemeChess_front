@@ -19,19 +19,20 @@ function validateForm(form) {
   const errors = {};
 
   if (form.nickname.trim().length < 3) {
-    errors.nickname = "РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґРѕР»Р¶РЅРѕ СЃРѕРґРµСЂР¶Р°С‚СЊ РјРёРЅРёРјСѓРј 3 СЃРёРјРІРѕР»Р°.";
+    errors.nickname =
+      "Имя пользователя должно содержать минимум 3 символа.";
   }
 
   if (!form.email.includes("@")) {
-    errors.email = "Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅСѓСЋ РїРѕС‡С‚Сѓ.";
+    errors.email = "Введите корректную почту.";
   }
 
   if (form.password.length < 8) {
-    errors.password = "РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ СЃРѕРґРµСЂР¶Р°С‚СЊ РЅРµ РјРµРЅРµРµ 8 СЃРёРјРІРѕР»РѕРІ.";
+    errors.password = "Пароль должен содержать не менее 8 символов.";
   }
 
   if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = "РџР°СЂРѕР»Рё РЅРµ СЃРѕРІРїР°РґР°СЋС‚.";
+    errors.confirmPassword = "Пароли не совпадают.";
   }
 
   return errors;
@@ -101,7 +102,7 @@ export default function RegisterPage() {
       });
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setSubmitError(error.message || "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚.");
+      setSubmitError(error.message || "Не удалось создать аккаунт.");
       setServerErrors(error.fields || {});
     } finally {
       setIsSubmitting(false);
@@ -111,15 +112,15 @@ export default function RegisterPage() {
   return (
     <div className="auth-screen w-screen px-4 py-10 sm:px-6">
       <div className="auth-screen__inner flex w-full max-w-[420px] flex-col">
-        <AuthCard title="Р РµРіРёСЃС‚СЂР°С†РёСЏ">
+        <AuthCard title="Регистрация">
           <form onSubmit={handleSubmit} className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[20px]">
               <AuthInput
                 id="nickname"
                 name="nickname"
-                label="РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"
+                label="Имя пользователя"
                 type="text"
-                placeholder="РРіСЂРѕРє_01"
+                placeholder="Игрок_01"
                 value={form.nickname}
                 onChange={handleChange}
                 icon="user"
@@ -129,7 +130,7 @@ export default function RegisterPage() {
               <AuthInput
                 id="email"
                 name="email"
-                label="Р­Р»РµРєС‚СЂРѕРЅРЅР°СЏ РїРѕС‡С‚Р°"
+                label="Электронная почта"
                 type="email"
                 placeholder="user@example.com"
                 value={form.email}
@@ -141,9 +142,9 @@ export default function RegisterPage() {
               <AuthInput
                 id="password"
                 name="password"
-                label="РџР°СЂРѕР»СЊ"
+                label="Пароль"
                 type="password"
-                placeholder="РќРµ РјРµРЅРµРµ 8 СЃРёРјРІРѕР»РѕРІ"
+                placeholder="Не менее 8 символов"
                 value={form.password}
                 onChange={handleChange}
                 icon="lock"
@@ -153,9 +154,9 @@ export default function RegisterPage() {
               <AuthInput
                 id="confirmPassword"
                 name="confirmPassword"
-                label="РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїР°СЂРѕР»СЊ"
+                label="Подтвердите пароль"
                 type="password"
-                placeholder="РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ"
+                placeholder="Повторите пароль"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 icon="lock"
@@ -178,13 +179,13 @@ export default function RegisterPage() {
 
             <div>
               <AuthButton type="submit" icon={friendGameIcon} disabled={isDisabled}>
-                {isSubmitting ? "РЎРѕР·РґР°РµРј Р°РєРєР°СѓРЅС‚..." : "РЎРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚"}
+                {isSubmitting ? "Создаем аккаунт..." : "Создать аккаунт"}
               </AuthButton>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-[10px] text-[16px]">
               <span style={{ color: "var(--color-text-muted)" }}>
-                РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚?
+                Уже есть аккаунт?
               </span>
               <Link
                 to="/login"
@@ -192,7 +193,7 @@ export default function RegisterPage() {
                 className="font-medium no-underline transition-colors"
                 style={{ color: "var(--auth-link-secondary)" }}
               >
-                Р’РѕР№С‚Рё
+                Войти
               </Link>
             </div>
           </form>

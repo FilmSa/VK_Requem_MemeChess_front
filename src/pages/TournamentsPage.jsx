@@ -9,9 +9,7 @@ export default function TournamentsPage() {
         <Card className="page-placeholder__card">
           <h1 className="page-placeholder__title">Турниры</h1>
           <p className="page-placeholder__text">
-            Экран переведен на общий shell-слой. Теперь сюда можно добавлять
-            турнирную сетку, фильтры и карточки событий отдельно от navigation-
-            логики и глобального layout.
+            Турниры пока на стадии разработки
           </p>
         </Card>
       </div>

@@ -51,12 +51,12 @@ function buildError(error, fallbackMessage) {
 
   if (rawMessage.includes("username must be 3-32")) {
     return new ApiError(
-      "Имя пользователя должно содержать от 3 до 32 символов: буквы, цифры или подчёркивание.",
+      "Имя пользователя должно содержать от 3 до 32 символов: буквы, цифры или подчеркивание.",
       {
         status: error.status,
         fields: {
           username:
-            "От 3 до 32 символов: буквы, цифры или подчёркивание.",
+            "От 3 до 32 символов: буквы, цифры или подчеркивание.",
         },
         payload: error.payload,
       }
@@ -64,14 +64,17 @@ function buildError(error, fallbackMessage) {
   }
 
   if (rawMessage.includes("username or email already taken")) {
-    return new ApiError("Пользователь с таким именем или почтой уже существует.", {
-      status: error.status,
-      fields: {
-        username: "Имя пользователя уже занято.",
-        email: "Почта уже используется.",
-      },
-      payload: error.payload,
-    });
+    return new ApiError(
+      "Пользователь с таким именем или почтой уже существует.",
+      {
+        status: error.status,
+        fields: {
+          username: "Имя пользователя уже занято.",
+          email: "Почта уже используется.",
+        },
+        payload: error.payload,
+      }
+    );
   }
 
   if (

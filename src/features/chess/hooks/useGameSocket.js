@@ -14,6 +14,7 @@ export function useGameSocket({
   onOpen,
   onClose,
   onError,
+  onEmoji,
   enabled = true,
   gameId,
   userId,
@@ -30,6 +31,7 @@ export function useGameSocket({
     onOpen,
     onClose,
     onError,
+    onEmoji,
   });
 
   const resolvedGameId = gameId ?? gameParams.gameId;
@@ -44,8 +46,9 @@ export function useGameSocket({
       onOpen,
       onClose,
       onError,
+      onEmoji,
     };
-  }, [onClose, onError, onJoined, onOpen, onRemoteMove, onStateChange]);
+  }, [onClose, onEmoji, onError, onJoined, onOpen, onRemoteMove, onStateChange]);
 
   useEffect(() => {
     if (!enabled || !resolvedGameId || !resolvedUserId) {
@@ -89,6 +92,9 @@ export function useGameSocket({
             }
             callbacksRef.current.onRemoteMove?.(move);
           },
+          onEmoji: (event) => {
+            callbacksRef.current.onEmoji?.(event);
+          },
           onState: (state) => {
             callbacksRef.current.onStateChange?.(state);
           },
@@ -129,6 +135,13 @@ export function useGameSocket({
     return socketRef.current?.sendMove(move) ?? false;
   }
 
+  function sendEmoji(emojiId) {
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendEmoji(emojiId) ?? false;
+  }
+
   function sendResign() {
     if (!enabled) {
       return false;
@@ -145,6 +158,7 @@ export function useGameSocket({
 
   return {
     sendMove,
+    sendEmoji,
     sendResign,
     sendDraw,
   };

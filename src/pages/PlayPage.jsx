@@ -1,11 +1,152 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../shared/ui/atoms/Button.jsx";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import ChessBoardSection from "../features/chess/ui/ChessBoardSection.jsx";
 import GameSettingsPanel from "../features/game/ui/GameSettingsPanel.jsx";
 import { useChessGame } from "../features/chess/hooks/useChessGame.js";
+import { useGameSocket } from "../features/chess/hooks/useGameSocket.js";
 import { DEFAULT_AVATAR } from "../features/chess/lib/boardConfig.js";
 import { useOnlineGameRoom } from "../features/game/model/useOnlineGameRoom.js";
+import { useAuth } from "../features/auth/useAuth.js";
+import {
+  readStoredEmojiQuickAccess,
+  resolveEmojiQuickAccessItems,
+  resolveEmojiReactionById,
+} from "../shared/lib/emojiQuickAccess.js";
+
+const EMOJI_COOLDOWN_MS = 10_000;
+const EMOJI_POPUP_DURATION_MS = 2_400;
+const reactionDurationCache = new Map();
+
+function resolveReactionDurationMs(reaction) {
+  const mediaSrc = reaction?.videoSrc || reaction?.soundSrc || "";
+
+  if (!mediaSrc || typeof document === "undefined") {
+    return Promise.resolve(EMOJI_POPUP_DURATION_MS);
+  }
+
+  const cachedDuration = reactionDurationCache.get(mediaSrc);
+  if (cachedDuration) {
+    return cachedDuration;
+  }
+
+  const durationPromise = new Promise((resolve) => {
+    const mediaElement = document.createElement("video");
+
+    function cleanup() {
+      mediaElement.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      mediaElement.removeEventListener("error", handleError);
+      mediaElement.src = "";
+    }
+
+    function handleLoadedMetadata() {
+      const durationSeconds = Number.isFinite(mediaElement.duration)
+        ? mediaElement.duration
+        : 0;
+      const durationMs =
+        durationSeconds > 0
+          ? Math.max(400, Math.round(durationSeconds * 1000))
+          : EMOJI_POPUP_DURATION_MS;
+
+      cleanup();
+      resolve(durationMs);
+    }
+
+    function handleError() {
+      cleanup();
+      resolve(EMOJI_POPUP_DURATION_MS);
+    }
+
+    mediaElement.preload = "metadata";
+    mediaElement.addEventListener("loadedmetadata", handleLoadedMetadata);
+    mediaElement.addEventListener("error", handleError);
+    mediaElement.src = mediaSrc;
+  });
+
+  reactionDurationCache.set(mediaSrc, durationPromise);
+  return durationPromise;
+}
+
+function createReactionFromItem(item) {
+  if (!item?.id) {
+    return null;
+  }
+
+  return {
+    id: item.id,
+    title: item.title || String(item.id),
+    assetUrl: item.videoSrc || item.imageSrc || "",
+    mediaType: item.videoSrc ? "video" : item.imageSrc ? "image" : "",
+    imageSrc: item.imageSrc || "/images/default-emoji.png",
+    videoSrc: item.videoSrc || "",
+    soundSrc: item.videoSrc || "",
+  };
+}
+
+function normalizeReactionInput(reactionInput) {
+  if (!reactionInput) {
+    return null;
+  }
+
+  if (typeof reactionInput === "string") {
+    const resolvedReaction = resolveEmojiReactionById(reactionInput);
+    if (!resolvedReaction) {
+      return null;
+    }
+
+    return {
+      ...resolvedReaction,
+      assetUrl: resolvedReaction.videoSrc || resolvedReaction.imageSrc || "",
+      mediaType: resolvedReaction.videoSrc ? "video" : "image",
+      videoSrc: resolvedReaction.videoSrc || "",
+      soundSrc: resolvedReaction.videoSrc || "",
+    };
+  }
+
+  const reactionId =
+    reactionInput.id || reactionInput.emojiId || reactionInput.emoji_id || "";
+  const resolvedReaction = reactionId ? resolveEmojiReactionById(reactionId) : null;
+  const imageSrc =
+    reactionInput.imageSrc ||
+    reactionInput.image_src ||
+    reactionInput.imageUrl ||
+    reactionInput.image_url ||
+    resolvedReaction?.imageSrc ||
+    "/images/default-emoji.png";
+  const videoSrc =
+    reactionInput.videoSrc ||
+    reactionInput.video_src ||
+    reactionInput.videoUrl ||
+    reactionInput.video_url ||
+    "";
+  const soundSrc =
+    reactionInput.soundSrc ||
+    reactionInput.sound_src ||
+    reactionInput.soundUrl ||
+    reactionInput.sound_url ||
+    videoSrc ||
+    resolvedReaction?.videoSrc ||
+    "";
+
+  return {
+    id: reactionId || resolvedReaction?.id || "",
+    title: reactionInput.title || resolvedReaction?.title || "Эмодзи",
+    assetUrl:
+      reactionInput.assetUrl ||
+      reactionInput.asset_url ||
+      videoSrc ||
+      imageSrc ||
+      "",
+    mediaType:
+      reactionInput.mediaType ||
+      reactionInput.media_type ||
+      (videoSrc ? "video" : imageSrc ? "image" : ""),
+    imageSrc,
+    videoSrc,
+    soundSrc,
+  };
+}
 
 function StatusCard({ title, description, action }) {
   return (
@@ -34,19 +175,151 @@ function StatusCard({ title, description, action }) {
 export default function PlayPage() {
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get("game") || "";
+  const { user } = useAuth();
+  const [topReaction, setTopReaction] = useState(null);
+  const [bottomReaction, setBottomReaction] = useState(null);
+  const [emojiCooldownActive, setEmojiCooldownActive] = useState(false);
+  const topReactionTimeoutRef = useRef(null);
+  const bottomReactionTimeoutRef = useRef(null);
+  const cooldownTimeoutRef = useRef(null);
 
   const onlineRoom = useOnlineGameRoom(gameId);
   const chessGameState = useChessGame({
     playerColor: onlineRoom.playerColor,
   });
 
+  const emojiOwnerId = onlineRoom.currentUserProfile?.id || user?.id;
+  const emojiQuickAccessItems = useMemo(() => {
+    const quickAccessIds = readStoredEmojiQuickAccess(emojiOwnerId);
+    return resolveEmojiQuickAccessItems(quickAccessIds);
+  }, [emojiOwnerId]);
+
   const socketOptions = onlineRoom.buildSocketOptions(chessGameState);
+
+  function playEmojiSound(reaction) {
+    const reactionPayload = normalizeReactionInput(reaction);
+    if (!reactionPayload?.soundSrc) {
+      return;
+    }
+
+    const sound = new Audio(reactionPayload.soundSrc);
+    sound.volume = 0.65;
+    sound.play().catch(() => {});
+  }
+
+  function clearReactionTimer(side) {
+    const timeoutRef =
+      side === "top" ? topReactionTimeoutRef : bottomReactionTimeoutRef;
+
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }
+
+  async function showReaction(side, reactionInput, withSound = true) {
+    const reaction = normalizeReactionInput(reactionInput);
+    if (!reaction) {
+      return;
+    }
+
+    const setReaction = side === "top" ? setTopReaction : setBottomReaction;
+    const timeoutRef =
+      side === "top" ? topReactionTimeoutRef : bottomReactionTimeoutRef;
+
+    clearReactionTimer(side);
+    const durationMs = await resolveReactionDurationMs(reaction);
+    const timedReaction = {
+      ...reaction,
+      durationMs,
+    };
+
+    setReaction(timedReaction);
+
+    timeoutRef.current = window.setTimeout(() => {
+      setReaction(null);
+      timeoutRef.current = null;
+    }, durationMs);
+
+    if (withSound) {
+      playEmojiSound(timedReaction);
+    }
+  }
+
+  function handleIncomingEmoji(event) {
+    if (!event?.reaction && !event?.emojiId) {
+      return;
+    }
+
+    if (event.isOwnMessage) {
+      return;
+    }
+
+    console.log("[emoji] opponent reaction received", {
+      gameId,
+      senderUserId: event.senderUserId || "",
+      emojiId: event.emojiId || event.reaction?.id || "",
+      reaction: event.reaction || null,
+      raw: event.raw || null,
+    });
+
+    showReaction("top", event.reaction || event.emojiId);
+  }
+
+  const socketClient = useGameSocket({
+    onRemoteMove: chessGameState.applyRemoteMove,
+    onStateChange: socketOptions?.onStateChange,
+    onJoined: socketOptions?.onJoined,
+    onOpen: socketOptions?.onOpen,
+    onClose: socketOptions?.onClose,
+    onError: socketOptions?.onError,
+    onEmoji: handleIncomingEmoji,
+    enabled: Boolean(onlineRoom.isOnlineGame && onlineRoom.hasOnlineAccess),
+    gameId: socketOptions?.gameId,
+    userId: socketOptions?.userId,
+    token: socketOptions?.token,
+    allowDebugToken: socketOptions?.allowDebugToken,
+  });
+
+  useEffect(() => {
+    return () => {
+      clearReactionTimer("top");
+      clearReactionTimer("bottom");
+
+      if (cooldownTimeoutRef.current) {
+        window.clearTimeout(cooldownTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function startEmojiCooldown() {
+    if (cooldownTimeoutRef.current) {
+      window.clearTimeout(cooldownTimeoutRef.current);
+    }
+
+    setEmojiCooldownActive(true);
+    cooldownTimeoutRef.current = window.setTimeout(() => {
+      setEmojiCooldownActive(false);
+      cooldownTimeoutRef.current = null;
+    }, EMOJI_COOLDOWN_MS);
+  }
+
+  function handleEmojiSelect(item) {
+    const reaction = createReactionFromItem(item);
+    if (!reaction || emojiCooldownActive) {
+      return;
+    }
+
+    startEmojiCooldown();
+    showReaction("bottom", reaction);
+    socketClient.sendEmoji(reaction);
+  }
 
   if (onlineRoom.isWaitingForAuthBootstrap) {
     return (
       <StatusCard
-        title="РџРѕРґРєР»СЋС‡Р°РµРј Рє РёРіСЂРµ"
-        description="РџСЂРѕРІРµСЂСЏРµРј СЃРѕС…СЂР°РЅРµРЅРЅСѓСЋ СЃРµСЃСЃРёСЋ РїРµСЂРµРґ РІС…РѕРґРѕРј РІ РєРѕРјРЅР°С‚Сѓ..."
+        title="Подключаем к игре"
+        description="Проверяем сохранённую сессию перед входом в комнату..."
       />
     );
   }
@@ -54,11 +327,11 @@ export default function PlayPage() {
   if (onlineRoom.isOnlineGame && !onlineRoom.hasOnlineAccess) {
     return (
       <StatusCard
-        title="РЎРµСЃСЃРёСЏ РёРіСЂС‹ РЅРµ РЅР°Р№РґРµРЅР°"
-        description="РћС‚РєСЂРѕР№С‚Рµ СЃСЃС‹Р»РєСѓ-РїСЂРёРіР»Р°С€РµРЅРёРµ Р·Р°РЅРѕРІРѕ, С‡С‚РѕР±С‹ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РєРѕСЂСЂРµРєС‚РЅСѓСЋ РёРіСЂРѕРІСѓСЋ СЃРµСЃСЃРёСЋ РґР»СЏ СЌС‚РѕР№ РєРѕРјРЅР°С‚С‹."
+        title="Сессия игры не найдена"
+        description="Откройте ссылку-приглашение заново, чтобы восстановить корректные игровые данные для этой комнаты."
         action={
           <Link to="/" style={{ textDecoration: "none" }}>
-            <Button variant="primary">РќР° РіР»Р°РІРЅСѓСЋ</Button>
+            <Button variant="primary">На главную</Button>
           </Link>
         }
       />
@@ -72,35 +345,37 @@ export default function PlayPage() {
         <main className="flex h-full items-start justify-center gap-[50px] px-[60px] pt-[24px]">
           <div className="flex justify-center">
             <div className="flex min-w-0 flex-1 flex-col">
-            <ChessBoardSection
-              gameState={chessGameState}
-              enableSocket={Boolean(
-                onlineRoom.isOnlineGame && onlineRoom.hasOnlineAccess
-              )}
-              socketOptions={socketOptions}
-              topPlayerName={onlineRoom.opponentName}
-              topPlayerAvatar={
-                onlineRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
-              }
-              bottomPlayerName={onlineRoom.currentUserName}
-              bottomPlayerAvatar={
-                onlineRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
-              }
-            />
+              <ChessBoardSection
+                gameState={chessGameState}
+                sendMove={socketClient.sendMove}
+                topPlayerName={onlineRoom.opponentName}
+                topPlayerAvatar={
+                  onlineRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
+                }
+                bottomPlayerName={onlineRoom.currentUserName}
+                bottomPlayerAvatar={
+                  onlineRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
+                }
+                topReaction={topReaction}
+                bottomReaction={bottomReaction}
+              />
 
-            {onlineRoom.socketError ? (
-              <div
-                className="mt-3 text-[13px]"
-                style={{ color: "var(--auth-error-text)" }}
-              >
-                {onlineRoom.socketError}
-              </div>
-            ) : null}
+              {onlineRoom.socketError ? (
+                <div
+                  className="mt-3 text-[13px]"
+                  style={{ color: "var(--auth-error-text)" }}
+                >
+                  {onlineRoom.socketError}
+                </div>
+              ) : null}
             </div>
           </div>
 
           <div className="flex-shrink-0">
             <GameSettingsPanel
+              emojiQuickAccessItems={emojiQuickAccessItems}
+              onEmojiSelect={handleEmojiSelect}
+              emojiCooldownActive={emojiCooldownActive}
               history={chessGameState.game.history()}
               activeHistoryPly={chessGameState.activeHistoryPly}
               canViewPrevious={chessGameState.canViewPrevious}

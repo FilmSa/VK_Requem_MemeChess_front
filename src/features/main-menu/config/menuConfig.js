@@ -6,7 +6,10 @@ import startGameIcon from "../../../../icons/startgame.svg";
 import friendGameIcon from "../../../../icons/friendgame.svg";
 import topTabIcon from "../../../../icons/sword.svg";
 import customizeTabIcon from "../../../../icons/bak.svg";
-import { createEmojiPreviewItems } from "../../../shared/constants/emojiPreviewMedia.js";
+import {
+  DEFAULT_EMOJI_QUICK_ACCESS_IDS,
+  EMOJI_PREVIEW_ITEMS,
+} from "../../../shared/constants/emojiPreviewMedia.js";
 
 const boardImage = "/images/Board.png";
 
@@ -19,7 +22,7 @@ function createItems(prefix, count, factory) {
   }));
 }
 
-const emojiItems = createEmojiPreviewItems(15).map((item) => ({
+const emojiItems = EMOJI_PREVIEW_ITEMS.map((item) => ({
   ...item,
   time: "",
   background: "#0B0F2B",
@@ -97,7 +100,7 @@ export const CUSTOMIZE_SECTIONS = [
     title: "\u042d\u043c\u043e\u0434\u0437\u0438:",
     quickAccessTitle: "\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u0434\u043e\u0441\u0442\u0443\u043f:",
     ownedTitle: "\u0423 \u043c\u0435\u043d\u044f \u0435\u0441\u0442\u044c:",
-    quickAccessIds: emojiItems.slice(0, 3).map((item) => item.id),
+    quickAccessIds: DEFAULT_EMOJI_QUICK_ACCESS_IDS,
     ownedIds: emojiItems.map((item) => item.id),
     collapsedCount: 6,
   },

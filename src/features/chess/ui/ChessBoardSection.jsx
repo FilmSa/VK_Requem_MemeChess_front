@@ -1,17 +1,17 @@
 import PlayerPanel from "../../../components/molecules/PlayerPanel.jsx";
-import { useGameSocket } from "../hooks/useGameSocket.js";
 import { useChessGame } from "../hooks/useChessGame.js";
 import { BOARD_SIZE, DEFAULT_AVATAR } from "../lib/boardConfig.js";
 import GameBoard from "./GameBoard.jsx";
 
 export default function ChessBoardSection({
   gameState,
-  enableSocket = true,
-  socketOptions,
-  topPlayerName = "\u0421\u043e\u043f\u0435\u0440\u043d\u0438\u043a",
-  bottomPlayerName = "\u0412\u044b",
+  sendMove,
+  topPlayerName = "Соперник",
+  bottomPlayerName = "Вы",
   topPlayerAvatar = DEFAULT_AVATAR,
   bottomPlayerAvatar = DEFAULT_AVATAR,
+  topReaction = null,
+  bottomReaction = null,
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -24,22 +24,7 @@ export default function ChessBoardSection({
     activeEffects,
     onSquareClick,
     onPieceDrop,
-    applyRemoteMove,
   } = gameStateLocal;
-
-  const { sendMove } = useGameSocket({
-    onRemoteMove: applyRemoteMove,
-    onStateChange: socketOptions?.onStateChange,
-    onJoined: socketOptions?.onJoined,
-    onOpen: socketOptions?.onOpen,
-    onClose: socketOptions?.onClose,
-    onError: socketOptions?.onError,
-    enabled: enableSocket,
-    gameId: socketOptions?.gameId,
-    userId: socketOptions?.userId,
-    token: socketOptions?.token,
-    allowDebugToken: socketOptions?.allowDebugToken,
-  });
 
   return (
     <div className="flex items-start justify-start overflow-visible">
@@ -51,6 +36,7 @@ export default function ChessBoardSection({
               level=""
               avatar={topPlayerAvatar || DEFAULT_AVATAR}
               time="15:00"
+              reaction={topReaction}
             />
           </div>
 
@@ -72,6 +58,7 @@ export default function ChessBoardSection({
               level=""
               avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
               time="15:00"
+              reaction={bottomReaction}
             />
           </div>
         </section>

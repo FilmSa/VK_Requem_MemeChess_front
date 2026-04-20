@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ShopPreviewBoard from "./ShopPreviewBoard.jsx";
+import { withAssetBase } from "../../shared/lib/assets.js";
 
 const skins = [
   {
     id: 1,
     title: "Шахматная рамка",
     price: 2500,
-    heroImage: "/images/image.jpg",
-    previewImage: "/images/Board.png",
+    heroImage: withAssetBase("/images/image.jpg"),
+    previewImage: withAssetBase("/images/Board.png"),
   },
   {
     id: 2,
-    title: "Тёмный легион",
+    title: "Темный легион",
     price: 2800,
-    heroImage: "/images/image.jpg",
-    previewImage: "/images/Board.png",
+    heroImage: withAssetBase("/images/image.jpg"),
+    previewImage: withAssetBase("/images/Board.png"),
   },
   {
     id: 3,
     title: "Короли пустоты",
     price: 3100,
-    heroImage: "/images/image.jpg",
-    previewImage: "/images/Board.png",
+    heroImage: withAssetBase("/images/image.jpg"),
+    previewImage: withAssetBase("/images/Board.png"),
   },
 ];
 
@@ -32,7 +33,11 @@ function PriceButton({ price }) {
       type="button"
       className="flex h-[42px] w-full items-center justify-center gap-[12px] rounded-[8px] bg-[#19d9ff] text-[24px] font-bold leading-none text-[#A346CE]"
     >
-      <img src="/icons/crown.svg" alt="корона" className="h-[22px] w-[22px]" />
+      <img
+        src={withAssetBase("/icons/crown.svg")}
+        alt="корона"
+        className="h-[22px] w-[22px]"
+      />
       <span>{price}</span>
     </button>
   );
@@ -40,7 +45,9 @@ function PriceButton({ price }) {
 
 function SliderArrow({ direction = "left", onClick }) {
   const iconSrc =
-    direction === "left" ? "/icons/left.svg" : "/icons/right.svg";
+    direction === "left"
+      ? withAssetBase("/icons/left.svg")
+      : withAssetBase("/icons/right.svg");
 
   return (
     <button
@@ -53,7 +60,7 @@ function SliderArrow({ direction = "left", onClick }) {
     >
       <img
         src={iconSrc}
-        alt={direction === "left" ? "Назад" : "Вперёд"}
+        alt={direction === "left" ? "Назад" : "Вперед"}
         className="h-[60px] w-[60px]"
       />
     </button>
@@ -177,7 +184,7 @@ export default function ShopSkinsSection() {
             <div className="flex items-center gap-[12px]">
               <span>Магазин</span>
               <img
-                src="/icons/cart.svg"
+                src={withAssetBase("/icons/cart.svg")}
                 alt="корзина"
                 className="h-[32px] w-[32px]"
               />

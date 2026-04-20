@@ -5,6 +5,11 @@ function resolveFallbackApiBaseUrl() {
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
       hostname === "::1";
+    const isGitHubPagesHost = hostname.endsWith(".github.io");
+
+    if (isGitHubPagesHost) {
+      return "";
+    }
 
     if (!isLocalHost) {
       return window.location.origin;
@@ -27,6 +32,12 @@ function normalizeBaseUrl(value) {
 export const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 export function buildApiUrl(path) {
+  if (!API_BASE_URL) {
+    throw new Error(
+      "VITE_API_BASE_URL is required for this deployment target."
+    );
+  }
+
   if (!path) {
     return API_BASE_URL;
   }

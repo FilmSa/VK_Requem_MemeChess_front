@@ -1,8 +1,9 @@
 import ButtonBase from "./ButtonBase.jsx";
 import Icon from "./Icon.jsx";
+import { withAssetBase } from "../../shared/lib/assets.js";
 
 export default function IconButton({
-  iconSrc = "/icons/right.svg",
+  iconSrc = withAssetBase("/icons/right.svg"),
   label = "Toggle section",
   isExpanded = false,
   className = "",

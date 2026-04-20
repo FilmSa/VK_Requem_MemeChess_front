@@ -1,7 +1,8 @@
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
+import { withAssetBase } from "../shared/lib/assets.js";
 
-const fallbackAvatar = "/images/default-avatar.png";
+const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 
 function formatDate(value) {
   if (!value) {

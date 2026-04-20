@@ -3,6 +3,7 @@ import {
   EMOJI_PREVIEW_ITEMS,
   MAX_EMOJI_QUICK_ACCESS_ITEMS,
 } from "../constants/emojiPreviewMedia.js";
+import { withAssetBase } from "./assets.js";
 
 const emojiQuickAccessStorageKeyPrefix =
   "meme-chess.main-menu.emoji-quick-access";
@@ -90,6 +91,6 @@ export function resolveEmojiReactionById(itemId) {
     id: item.id,
     title: item.title,
     videoSrc: item.videoSrc || "",
-    imageSrc: item.imageSrc || "/images/default-emoji.png",
+    imageSrc: item.imageSrc || withAssetBase("/images/default-emoji.png"),
   };
 }

@@ -3,11 +3,27 @@ import { useAuth } from "../../../features/auth/useAuth.js";
 import Logo from "../../../components/molecules/Logo.jsx";
 import MenuButton from "../../../components/molecules/MenuButton.jsx";
 import SidebarProfileCard from "../../../components/molecules/SidebarProfileCard.jsx";
+import { withAssetBase } from "../../lib/assets.js";
 
 const menuItems = [
-  { id: "play", label: "Играть", icon: "/icons/sword.svg", to: "/" },
-  { id: "tournaments", label: "Турниры", icon: "/icons/cup.svg", to: "/tournaments" },
-  { id: "shop", label: "Магазин", icon: "/icons/cart.svg", to: "/shop" },
+  {
+    id: "play",
+    label: "Играть",
+    icon: withAssetBase("/icons/sword.svg"),
+    to: "/",
+  },
+  {
+    id: "tournaments",
+    label: "Турниры",
+    icon: withAssetBase("/icons/cup.svg"),
+    to: "/tournaments",
+  },
+  {
+    id: "shop",
+    label: "Магазин",
+    icon: withAssetBase("/icons/cart.svg"),
+    to: "/shop",
+  },
 ];
 
 export default function AppSidebar() {

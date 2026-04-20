@@ -10,8 +10,9 @@ import {
   DEFAULT_EMOJI_QUICK_ACCESS_IDS,
   EMOJI_PREVIEW_ITEMS,
 } from "../../../shared/constants/emojiPreviewMedia.js";
+import { withAssetBase } from "../../../shared/lib/assets.js";
 
-const boardImage = "/images/Board.png";
+const boardImage = withAssetBase("/images/Board.png");
 
 function createItems(prefix, count, factory) {
   return Array.from({ length: count }, (_, index) => ({
@@ -34,7 +35,11 @@ const boardItems = createItems("board", 15, (index) => ({
   imageSrc: boardImage,
 }));
 
-const pieceIcons = ["/pieces/wQ.png", "/pieces/wB.png", "/pieces/bK.svg"];
+const pieceIcons = [
+  withAssetBase("/pieces/wQ.png"),
+  withAssetBase("/pieces/wB.png"),
+  withAssetBase("/pieces/bK.svg"),
+];
 const pieceTitles = [
   "\u0424\u0435\u0440\u0437\u044c",
   "\u0421\u043b\u043e\u043d",

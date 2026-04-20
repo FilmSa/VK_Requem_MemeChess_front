@@ -1,4 +1,5 @@
 import Icon from "../atoms/Icon.jsx";
+import { withAssetBase } from "../../shared/lib/assets.js";
 
 function NavigationButton({ iconSrc, title, onClick, disabled }) {
   return (
@@ -29,13 +30,13 @@ export default function MoveNavigationMolecule({
       }}
     >
       <NavigationButton
-        iconSrc="/icons/left.svg"
+        iconSrc={withAssetBase("/icons/left.svg")}
         title="Предыдущий ход"
         onClick={onPrevious}
         disabled={previousDisabled}
       />
       <NavigationButton
-        iconSrc="/icons/right.svg"
+        iconSrc={withAssetBase("/icons/right.svg")}
         title="Следующий ход"
         onClick={onNext}
         disabled={nextDisabled}

@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import ThemeSwitch from "../atoms/ThemeSwitch.jsx";
 import { useTheme } from "../../features/theme/useTheme.js";
+import { withAssetBase } from "../../shared/lib/assets.js";
 
-const fallbackAvatar = "/images/default-avatar.png";
+const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 
 function buildCardStyle() {
   return {

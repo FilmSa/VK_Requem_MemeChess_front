@@ -14,6 +14,7 @@ import {
   resolveEmojiQuickAccessItems,
   resolveEmojiReactionById,
 } from "../shared/lib/emojiQuickAccess.js";
+import { withAssetBase } from "../shared/lib/assets.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -78,7 +79,7 @@ function createReactionFromItem(item) {
     title: item.title || String(item.id),
     assetUrl: item.videoSrc || item.imageSrc || "",
     mediaType: item.videoSrc ? "video" : item.imageSrc ? "image" : "",
-    imageSrc: item.imageSrc || "/images/default-emoji.png",
+    imageSrc: item.imageSrc || withAssetBase("/images/default-emoji.png"),
     videoSrc: item.videoSrc || "",
     soundSrc: item.videoSrc || "",
   };
@@ -113,7 +114,7 @@ function normalizeReactionInput(reactionInput) {
     reactionInput.imageUrl ||
     reactionInput.image_url ||
     resolvedReaction?.imageSrc ||
-    "/images/default-emoji.png";
+    withAssetBase("/images/default-emoji.png");
   const videoSrc =
     reactionInput.videoSrc ||
     reactionInput.video_src ||

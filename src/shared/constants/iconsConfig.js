@@ -1,12 +1,14 @@
+import { withAssetBase } from "../lib/assets.js";
+
 export const ICONS = {
-  game: "/icons/gameIcon.svg",
-  surrender: "/icons/surrender.svg",
-  draw: "/icons/draw.svg",
-  cup: "/icons/cup.svg",
-  sword: "/images/toyota-yaris.gif",
-  rock: "/images/skeleton-mad-skeleton.gif",
-  cart: "/icons/cart.svg",
-  crown: "/icons/crown.svg",
+  game: withAssetBase("/icons/gameIcon.svg"),
+  surrender: withAssetBase("/icons/surrender.svg"),
+  draw: withAssetBase("/icons/draw.svg"),
+  cup: withAssetBase("/icons/cup.svg"),
+  sword: withAssetBase("/images/toyota-yaris.gif"),
+  rock: withAssetBase("/images/skeleton-mad-skeleton.gif"),
+  cart: withAssetBase("/icons/cart.svg"),
+  crown: withAssetBase("/icons/crown.svg"),
 };
 
 /**

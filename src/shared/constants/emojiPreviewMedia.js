@@ -1,3 +1,5 @@
+import { withAssetBase } from "../lib/assets.js";
+
 const EMOJI_FILES = [
   "axe.mp4",
   "cat.mp4",
@@ -28,7 +30,7 @@ export function createEmojiPreviewItems(count, prefix = "emoji") {
     return {
       id: `${prefix}-${index + 1}`,
       title: formatEmojiTitle(fileName, index),
-      videoSrc: `/emoji/${fileName}`,
+      videoSrc: withAssetBase(`/emoji/${fileName}`),
       previewTime: 0.05,
     };
   });

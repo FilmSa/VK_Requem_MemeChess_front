@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
-import { customPieces } from "../lib/boardPieces.jsx";
+import { createCustomPieces } from "../lib/boardPieces.jsx";
+import { readStoredPieceSkin, subscribePieceSkinChanges } from "../../../shared/lib/pieceSkin.js";
 import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
 
 export default function GameBoard({
@@ -11,6 +13,21 @@ export default function GameBoard({
   onSquareClick,
   onPieceDrop,
 }) {
+  const [selectedPieceSkin, setSelectedPieceSkin] = useState(
+    () => readStoredPieceSkin()
+  );
+
+  useEffect(() => {
+    return subscribePieceSkinChanges((skinId) => {
+      setSelectedPieceSkin(skinId);
+    });
+  }, []);
+
+  const customPieces = useMemo(
+    () => createCustomPieces(selectedPieceSkin),
+    [selectedPieceSkin]
+  );
+
   if (!boardWidth) {
     return null;
   }

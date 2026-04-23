@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { customPieces } from "../../features/chess/lib/boardPieces.jsx";
+import { createCustomPieces } from "../../features/chess/lib/boardPieces.jsx";
 
 export default function ShopPreviewBoard({
   boardWidth = 720,
   boardOrientation = "white",
+  pieceSkinId,
 }) {
   const [game, setGame] = useState(() => new Chess());
+
+  const customPieces = createCustomPieces(pieceSkinId);
 
   function onPieceDrop(sourceSquare, targetSquare) {
     const gameCopy = new Chess(game.fen());

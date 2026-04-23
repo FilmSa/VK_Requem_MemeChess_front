@@ -11,6 +11,7 @@ import {
   EMOJI_PREVIEW_ITEMS,
 } from "../../../shared/constants/emojiPreviewMedia.js";
 import { withAssetBase } from "../../../shared/lib/assets.js";
+import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
 
 const boardImage = withAssetBase("/images/Board.png");
 
@@ -35,21 +36,18 @@ const boardItems = createItems("board", 15, (index) => ({
   imageSrc: boardImage,
 }));
 
-const pieceIcons = [
-  withAssetBase("/pieces/wQ.png"),
-  withAssetBase("/pieces/wB.png"),
-  withAssetBase("/pieces/bK.svg"),
+const pieceSkinItems = [
+  {
+    id: DEFAULT_PIECE_SKIN_ID,
+    title: "\u041a\u043b\u0430\u0441\u0441\u0438\u043a\u0438\u0435 \u0444\u0438\u0433\u0443\u0440\u044b",
+    icon: withAssetBase("/pieces/wK.svg"),
+  },
+  {
+    id: "piece-skin-imperium",
+    title: "Imperium",
+    imageSrc: withAssetBase("/images/imperium.png"),
+  },
 ];
-const pieceTitles = [
-  "\u0424\u0435\u0440\u0437\u044c",
-  "\u0421\u043b\u043e\u043d",
-  "\u041a\u043e\u0440\u043e\u043b\u044c",
-];
-
-const pieceItems = createItems("piece", 15, (index) => ({
-  title: `${pieceTitles[index % pieceTitles.length]} ${index + 1}`,
-  icon: pieceIcons[index % pieceIcons.length],
-}));
 
 export const MENU_TABS = [
   {
@@ -96,8 +94,10 @@ export const CARD_SETS = {
         "linear-gradient(120.45deg, rgba(255,36,39,0.75) 0.4%, rgba(177,25,27,0.75) 76.72%, rgba(153,21,24,0.75) 100%)",
     },
   ],
-  customize: [...emojiItems, ...boardItems, ...pieceItems],
+  customize: [...emojiItems, ...boardItems, ...pieceSkinItems],
 };
+
+export const PIECE_SKIN_ITEM_IDS = new Set(pieceSkinItems.map((item) => item.id));
 
 export const CUSTOMIZE_SECTIONS = [
   {
@@ -124,7 +124,7 @@ export const CUSTOMIZE_SECTIONS = [
     quickAccessTitle: "",
     ownedTitle: "\u0423 \u043c\u0435\u043d\u044f \u0435\u0441\u0442\u044c:",
     quickAccessIds: [],
-    ownedIds: pieceItems.map((item) => item.id),
+    ownedIds: pieceSkinItems.map((item) => item.id),
     collapsedCount: 6,
   },
 ];

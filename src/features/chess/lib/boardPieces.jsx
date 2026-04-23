@@ -1,4 +1,5 @@
 import { withAssetBase } from "../../../shared/lib/assets.js";
+import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
 
 const makePiece = (src, alt) => ({ squareWidth, isDragging }) => (
   <img
@@ -15,17 +16,55 @@ const makePiece = (src, alt) => ({ squareWidth, isDragging }) => (
   />
 );
 
-export const customPieces = {
-  wK: makePiece(withAssetBase("/pieces/wK.svg"), "wK"),
-  wQ: makePiece(withAssetBase("/pieces/wQ.svg"), "wQ"),
-  wR: makePiece(withAssetBase("/pieces/wR.svg"), "wR"),
-  wB: makePiece(withAssetBase("/pieces/wB.svg"), "wB"),
-  wN: makePiece(withAssetBase("/pieces/wN.svg"), "wN"),
-  wP: makePiece(withAssetBase("/pieces/wP.svg"), "wP"),
-  bK: makePiece(withAssetBase("/pieces/bK.svg"), "bK"),
-  bQ: makePiece(withAssetBase("/pieces/bQ.svg"), "bQ"),
-  bR: makePiece(withAssetBase("/pieces/bR.svg"), "bR"),
-  bB: makePiece(withAssetBase("/pieces/bB.svg"), "bB"),
-  bN: makePiece(withAssetBase("/pieces/bN.svg"), "bN"),
-  bP: makePiece(withAssetBase("/pieces/bP.svg"), "bP"),
+const pieceSkins = {
+  [DEFAULT_PIECE_SKIN_ID]: {
+    wK: withAssetBase("/pieces/wK.svg"),
+    wQ: withAssetBase("/pieces/wQ.svg"),
+    wR: withAssetBase("/pieces/wR.svg"),
+    wB: withAssetBase("/pieces/wB.svg"),
+    wN: withAssetBase("/pieces/wN.svg"),
+    wP: withAssetBase("/pieces/wP.svg"),
+    bK: withAssetBase("/pieces/bK.svg"),
+    bQ: withAssetBase("/pieces/bQ.svg"),
+    bR: withAssetBase("/pieces/bR.svg"),
+    bB: withAssetBase("/pieces/bB.svg"),
+    bN: withAssetBase("/pieces/bN.svg"),
+    bP: withAssetBase("/pieces/bP.svg"),
+  },
+  "piece-skin-imperium": {
+    wK: withAssetBase("/pieces/imperium/wK.svg"),
+    wQ: withAssetBase("/pieces/imperium/wQ.svg"),
+    wR: withAssetBase("/pieces/imperium/wR.svg"),
+    wB: withAssetBase("/pieces/imperium/wB.svg"),
+    wN: withAssetBase("/pieces/imperium/wN.svg"),
+    wP: withAssetBase("/pieces/imperium/wP.svg"),
+    bK: withAssetBase("/pieces/imperium/bK.svg"),
+    bQ: withAssetBase("/pieces/imperium/bQ.svg"),
+    bR: withAssetBase("/pieces/imperium/bR.svg"),
+    bB: withAssetBase("/pieces/imperium/bB.svg"),
+    bN: withAssetBase("/pieces/imperium/bN.svg"),
+    bP: withAssetBase("/pieces/imperium/bP.svg"),
+  },
 };
+
+function createCustomPieces(skinId = DEFAULT_PIECE_SKIN_ID) {
+  const skin = pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
+
+  return {
+    wK: makePiece(skin.wK, "wK"),
+    wQ: makePiece(skin.wQ, "wQ"),
+    wR: makePiece(skin.wR, "wR"),
+    wB: makePiece(skin.wB, "wB"),
+    wN: makePiece(skin.wN, "wN"),
+    wP: makePiece(skin.wP, "wP"),
+    bK: makePiece(skin.bK, "bK"),
+    bQ: makePiece(skin.bQ, "bQ"),
+    bR: makePiece(skin.bR, "bR"),
+    bB: makePiece(skin.bB, "bB"),
+    bN: makePiece(skin.bN, "bN"),
+    bP: makePiece(skin.bP, "bP"),
+  };
+}
+
+export const customPieces = createCustomPieces();
+export { createCustomPieces };

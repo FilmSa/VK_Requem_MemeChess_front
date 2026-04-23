@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ShopPreviewBoard from "./ShopPreviewBoard.jsx";
 import { withAssetBase } from "../../shared/lib/assets.js";
+import { persistPieceSkin, readStoredPieceSkin } from "../../shared/lib/pieceSkin.js";
 
 const skins = [
   {
@@ -24,6 +25,14 @@ const skins = [
     price: 3100,
     heroImage: withAssetBase("/images/image.jpg"),
     previewImage: withAssetBase("/images/Board.png"),
+  },
+  {
+    id: 4,
+    title: "Imperium",
+    price: 3500,
+    heroImage: withAssetBase("/images/imperium.png"),
+    previewImage: withAssetBase("/images/imperium.png"),
+    pieceSkinId: "piece-skin-imperium",
   },
 ];
 
@@ -147,7 +156,7 @@ function SkinPreviewModal({ skin, onClose }) {
           </div>
         </div>
 
-        <ShopPreviewBoard boardWidth={720} boardOrientation="white" />
+        <ShopPreviewBoard boardWidth={720} boardOrientation="white" pieceSkinId={skin.pieceSkinId} />
       </div>
     </div>,
     document.body
@@ -157,8 +166,13 @@ function SkinPreviewModal({ skin, onClose }) {
 export default function ShopSkinsSection() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [openedSkin, setOpenedSkin] = useState(null);
+  const [selectedSkinId, setSelectedSkinId] = useState(() => readStoredPieceSkin());
 
   const activeSkin = skins[activeIndex];
+
+  useEffect(() => {
+    setSelectedSkinId(readStoredPieceSkin());
+  }, []);
 
   function handlePrev() {
     setActiveIndex((prev) => (prev - 1 + skins.length) % skins.length);
@@ -174,6 +188,15 @@ export default function ShopSkinsSection() {
 
   function handleClosePreview() {
     setOpenedSkin(null);
+  }
+
+  function handleApplySkin() {
+    if (!activeSkin.pieceSkinId) {
+      return;
+    }
+
+    persistPieceSkin(activeSkin.pieceSkinId);
+    setSelectedSkinId(activeSkin.pieceSkinId);
   }
 
   return (
@@ -199,7 +222,7 @@ export default function ShopSkinsSection() {
           </div>
 
           <div className="shrink-0">
-            <div className="h-[489px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] bg-[#0b0f2b] px-[20px] py-[10px]">
+            <div className="h-[590px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] bg-[#0b0f2b] px-[20px] py-[10px]">
               <div className="flex gap-[20px]">
                 <div className="relative h-full flex-1">
                   <img
@@ -224,6 +247,18 @@ export default function ShopSkinsSection() {
 
                   <div className="mt-auto w-full">
                     <PriceButton price={activeSkin.price} />
+                    {activeSkin.pieceSkinId ? (
+                      <button
+                        type="button"
+                        onClick={handleApplySkin}
+                        disabled={selectedSkinId === activeSkin.pieceSkinId}
+                        className="mt-[12px] flex h-[50px] w-full items-center justify-center rounded-[10px] bg-[#57dfff] text-[18px] font-semibold text-[#050b31] transition-colors duration-200 hover:bg-[#48c6ff] disabled:bg-[#4f6f9d] disabled:text-[#d1e0f5]"
+                      >
+                        {selectedSkinId === activeSkin.pieceSkinId
+                          ? "Применено"
+                          : "Использовать"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </div>

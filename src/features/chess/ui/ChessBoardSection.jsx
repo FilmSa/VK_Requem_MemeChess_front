@@ -1,11 +1,20 @@
+import { useLayoutEffect, useRef } from "react";
+
 import PlayerPanel from "../../../components/molecules/PlayerPanel.jsx";
 import { useChessGame } from "../hooks/useChessGame.js";
-import { BOARD_SIZE, DEFAULT_AVATAR } from "../lib/boardConfig.js";
+import {
+  BOARD_SIZE,
+  BOTTOM_PLAYER_PANEL_GAP,
+  DEFAULT_AVATAR,
+  TOP_PLAYER_PANEL_GAP,
+} from "../lib/boardConfig.js";
 import GameBoard from "./GameBoard.jsx";
 
 export default function ChessBoardSection({
   gameState,
   sendMove,
+  boardWidth = BOARD_SIZE,
+  onLayoutMetricsChange,
   topPlayerName = "Соперник",
   bottomPlayerName = "Вы",
   topPlayerAvatar = DEFAULT_AVATAR,
@@ -15,6 +24,8 @@ export default function ChessBoardSection({
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
+  const topPanelRef = useRef(null);
+  const bottomPanelRef = useRef(null);
 
   const {
     game,
@@ -26,43 +37,81 @@ export default function ChessBoardSection({
     onPieceDrop,
   } = gameStateLocal;
 
+  useLayoutEffect(() => {
+    if (!onLayoutMetricsChange) {
+      return undefined;
+    }
+
+    function reportMetrics() {
+      onLayoutMetricsChange({
+        topPanelHeight: topPanelRef.current?.offsetHeight || 0,
+        bottomPanelHeight: bottomPanelRef.current?.offsetHeight || 0,
+      });
+    }
+
+    reportMetrics();
+
+    const resizeObserver = new ResizeObserver(reportMetrics);
+
+    if (topPanelRef.current) {
+      resizeObserver.observe(topPanelRef.current);
+    }
+
+    if (bottomPanelRef.current) {
+      resizeObserver.observe(bottomPanelRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [onLayoutMetricsChange, topPlayerName, bottomPlayerName]);
+
   return (
-    <div className="flex items-start justify-start overflow-visible">
-      <div className="flex flex-row items-start gap-4">
-        <section className="flex flex-col" style={{ width: BOARD_SIZE }}>
-          <div className="mb-[26px]">
-            <PlayerPanel
-              name={topPlayerName}
-              level=""
-              avatar={topPlayerAvatar || DEFAULT_AVATAR}
-              time="15:00"
-              reaction={topReaction}
-            />
-          </div>
-
-          <GameBoard
-            fen={(displayedGame || game).fen()}
-            boardWidth={BOARD_SIZE}
-            boardOrientation={boardOrientation}
-            highlightedSquares={highlightedSquares}
-            activeEffects={activeEffects}
-            onSquareClick={(square) => onSquareClick(square, sendMove)}
-            onPieceDrop={(sourceSquare, targetSquare) =>
-              onPieceDrop(sourceSquare, targetSquare, sendMove)
-            }
+    <div className="flex h-full min-h-0 items-start justify-start overflow-visible">
+      <section
+        className="flex h-full flex-col"
+        style={{
+          width: boardWidth,
+        }}
+      >
+        <div
+          ref={topPanelRef}
+          style={{ marginBottom: TOP_PLAYER_PANEL_GAP }}
+        >
+          <PlayerPanel
+            name={topPlayerName}
+            level=""
+            avatar={topPlayerAvatar || DEFAULT_AVATAR}
+            time="15:00"
+            reaction={topReaction}
           />
+        </div>
 
-          <div className="mt-[18px]">
-            <PlayerPanel
-              name={bottomPlayerName}
-              level=""
-              avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
-              time="15:00"
-              reaction={bottomReaction}
-            />
-          </div>
-        </section>
-      </div>
+        <GameBoard
+          fen={(displayedGame || game).fen()}
+          boardWidth={boardWidth}
+          boardOrientation={boardOrientation}
+          highlightedSquares={highlightedSquares}
+          activeEffects={activeEffects}
+          onSquareClick={(square) => onSquareClick(square, sendMove)}
+          onPieceDrop={(sourceSquare, targetSquare) =>
+            onPieceDrop(sourceSquare, targetSquare, sendMove)
+          }
+        />
+
+        <div
+          ref={bottomPanelRef}
+          style={{ marginTop: BOTTOM_PLAYER_PANEL_GAP }}
+        >
+          <PlayerPanel
+            name={bottomPlayerName}
+            level=""
+            avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
+            time="15:00"
+            reaction={bottomReaction}
+          />
+        </div>
+      </section>
     </div>
   );
 }

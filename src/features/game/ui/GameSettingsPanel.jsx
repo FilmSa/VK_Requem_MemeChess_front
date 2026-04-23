@@ -5,9 +5,9 @@ import MoveNavigationMolecule from "../../../components/molecules/MoveNavigation
 import GameActionsMolecule from "../../../components/molecules/GameActionsMolecule.jsx";
 
 const panelStyle = {
-  width: 500,
+  width: "100%",
   maxWidth: "100%",
-  height: 830,
+  height: "100%",
   maxHeight: "100%",
   flexShrink: 0,
   display: "flex",
@@ -21,6 +21,7 @@ const panelStyle = {
 };
 
 export default function GameSettingsPanel({
+  style,
   emojiQuickAccessItems = [],
   onEmojiSelect,
   emojiCooldownActive = false,
@@ -35,7 +36,7 @@ export default function GameSettingsPanel({
   actionsDisabled = false,
 }) {
   return (
-    <section style={panelStyle}>
+    <section style={{ ...panelStyle, ...style }}>
       <GameHeaderMolecule iconKey="game" title="Партия" />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

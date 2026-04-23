@@ -1,3 +1,4 @@
+import process from "node:process";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -19,22 +20,7 @@ function normalizeBasePath(value) {
 }
 
 function resolveBasePath() {
-  const explicitBase = normalizeBasePath(process.env.VITE_BASE_PATH);
-  if (explicitBase !== "/") {
-    return explicitBase;
-  }
-
-  const repository = process.env.GITHUB_REPOSITORY?.split("/")[1];
-  const owner = process.env.GITHUB_REPOSITORY_OWNER;
-  if (!repository || !owner) {
-    return "/";
-  }
-
-  if (repository.toLowerCase() === `${owner.toLowerCase()}.github.io`) {
-    return "/";
-  }
-
-  return `/${repository}/`;
+  return normalizeBasePath(process.env.VITE_BASE_PATH);
 }
 
 export default defineConfig({

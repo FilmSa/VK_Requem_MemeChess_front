@@ -8,9 +8,9 @@ import MainMenuToggleField from "../molecules/MainMenuToggleField.jsx";
 import CustomizationSection from "./CustomizationSection.jsx";
 
 const panelStyle = {
-  width: 500,
+  width: "100%",
   maxWidth: "100%",
-  height: 830,
+  height: "100%",
   maxHeight: "100%",
   flexShrink: 0,
   display: "flex",
@@ -64,8 +64,8 @@ export default function MainMenuPanel({
       <div
         className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
           isCustomizeTab
-            ? "justify-start px-[3px] pb-[10px] pt-[15px]"
-            : "justify-between p-[10px] pt-[18px]"
+            ? "justify-start px-[10px] pb-[10px] pt-[15px]"
+            : "justify-start p-[10px] pt-[18px]"
         }`}
       >
         {isCustomizeTab ? (
@@ -87,40 +87,46 @@ export default function MainMenuPanel({
           </div>
         ) : (
           <>
-            <div
-              className="grid h-[330px] grid-cols-2 gap-[10px] overflow-hidden rounded-br-[40px] rounded-tl-[40px] px-[10px] pb-[10px] pt-[10px]"
-              style={{ boxShadow: "var(--main-menu-surface-shadow)" }}
-            >
-              {cards.map((card, index) => (
-                <MainMenuCardButton
-                  key={card.id}
-                  title={card.title}
-                  time={card.time}
-                  icon={card.icon}
-                  background={card.background}
-                  isSelected={activeCardId === card.id}
-                  index={index}
-                  onClick={() => onCardSelect(card.id)}
-                />
-              ))}
-            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CustomScrollbarWrapper className="h-full min-h-0 pr-[6px]">
+                <div className="flex min-h-full flex-col gap-[30px] pb-[2px]">
+                  <div
+                    className="grid min-h-[300px] grid-cols-2 gap-[10px] overflow-hidden rounded-br-[40px] rounded-tl-[40px] px-[10px] pb-[10px] pt-[10px]"
+                    style={{ boxShadow: "var(--main-menu-surface-shadow)" }}
+                  >
+                    {cards.map((card, index) => (
+                      <MainMenuCardButton
+                        key={card.id}
+                        title={card.title}
+                        time={card.time}
+                        icon={card.icon}
+                        background={card.background}
+                        isSelected={activeCardId === card.id}
+                        index={index}
+                        onClick={() => onCardSelect(card.id)}
+                      />
+                    ))}
+                  </div>
 
-            <div
-              className="mt-[10px] rounded-br-[40px] rounded-tl-[40px] px-[10px]"
-              style={{
-                background: "var(--main-menu-panel-bg)",
-                boxShadow: "var(--main-menu-surface-shadow)",
-              }}
-            >
-              <MainMenuSelectField {...modeField} />
-              <MainMenuToggleField {...memeField} />
-              <MainMenuDepositField {...depositField} />
+                  <div
+                    className="rounded-br-[40px] rounded-tl-[40px] px-[10px]"
+                    style={{
+                      background: "var(--main-menu-panel-bg)",
+                      boxShadow: "var(--main-menu-surface-shadow)",
+                    }}
+                  >
+                    <MainMenuSelectField {...modeField} />
+                    <MainMenuToggleField {...memeField} />
+                    <MainMenuDepositField {...depositField} />
+                  </div>
+                </div>
+              </CustomScrollbarWrapper>
             </div>
           </>
         )}
 
         {!isCustomizeTab ? (
-          <div className="mt-[10px] flex flex-col gap-[10px]">
+          <div className="mt-[10px] shrink-0 flex flex-col gap-[10px]">
             <MainMenuActionButton
               label={actions.startLabel}
               icon={actions.startIcon}

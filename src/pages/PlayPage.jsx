@@ -15,6 +15,7 @@ import {
   resolveEmojiReactionById,
 } from "../shared/lib/emojiQuickAccess.js";
 import { withAssetBase } from "../shared/lib/assets.js";
+import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -183,6 +184,8 @@ export default function PlayPage() {
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
+  const { viewportRef, layout, handleBoardMetricsChange } =
+    useResponsiveWorkspaceLayout();
 
   const onlineRoom = useOnlineGameRoom(gameId);
   const chessGameState = useChessGame({
@@ -256,14 +259,6 @@ export default function PlayPage() {
       return;
     }
 
-    console.log("[emoji] opponent reaction received", {
-      gameId,
-      senderUserId: event.senderUserId || "",
-      emojiId: event.emojiId || event.reaction?.id || "",
-      reaction: event.reaction || null,
-      raw: event.raw || null,
-    });
-
     showReaction("top", event.reaction || event.emojiId);
   }
 
@@ -320,7 +315,7 @@ export default function PlayPage() {
     return (
       <StatusCard
         title="Подключаем к игре"
-        description="Проверяем сохранённую сессию перед входом в комнату..."
+        description="Проверяем сохраненную сессию перед входом в комнату..."
       />
     );
   }
@@ -343,12 +338,18 @@ export default function PlayPage() {
     <div className="app-page h-screen w-screen overflow-hidden">
       <div className="flex h-full w-full overflow-hidden">
         <AppSidebar />
-        <main className="flex h-full items-start justify-center gap-[50px] px-[60px] pt-[24px]">
-          <div className="flex justify-center">
-            <div className="flex min-w-0 flex-1 flex-col">
+        <main className="flex h-full min-h-0 flex-1 overflow-hidden px-[clamp(20px,3vw,60px)] py-[clamp(16px,2.2vh,24px)]">
+          <div
+            ref={viewportRef}
+            className="mx-auto flex h-full w-full min-w-0 items-start justify-center overflow-hidden"
+            style={{ gap: layout.contentGap }}
+          >
+            <div className="flex h-full min-w-0 flex-1 justify-center overflow-hidden">
               <ChessBoardSection
                 gameState={chessGameState}
                 sendMove={socketClient.sendMove}
+                boardWidth={layout.boardSize}
+                onLayoutMetricsChange={handleBoardMetricsChange}
                 topPlayerName={onlineRoom.opponentName}
                 topPlayerAvatar={
                   onlineRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
@@ -370,21 +371,30 @@ export default function PlayPage() {
                 </div>
               ) : null}
             </div>
-          </div>
 
-          <div className="flex-shrink-0">
-            <GameSettingsPanel
-              emojiQuickAccessItems={emojiQuickAccessItems}
-              onEmojiSelect={handleEmojiSelect}
-              emojiCooldownActive={emojiCooldownActive}
-              history={chessGameState.game.history()}
-              activeHistoryPly={chessGameState.activeHistoryPly}
-              canViewPrevious={chessGameState.canViewPrevious}
-              canViewNext={chessGameState.canViewNext}
-              onPreviousMove={chessGameState.viewPreviousMove}
-              onNextMove={chessGameState.viewNextMove}
-              actionsDisabled
-            />
+            <div
+              className="shrink-0"
+              style={{
+                width: layout.panelWidth,
+              }}
+            >
+              <GameSettingsPanel
+                style={{
+                  width: "100%",
+                  height: layout.panelHeight,
+                }}
+                emojiQuickAccessItems={emojiQuickAccessItems}
+                onEmojiSelect={handleEmojiSelect}
+                emojiCooldownActive={emojiCooldownActive}
+                history={chessGameState.game.history()}
+                activeHistoryPly={chessGameState.activeHistoryPly}
+                canViewPrevious={chessGameState.canViewPrevious}
+                canViewNext={chessGameState.canViewNext}
+                onPreviousMove={chessGameState.viewPreviousMove}
+                onNextMove={chessGameState.viewNextMove}
+                actionsDisabled
+              />
+            </div>
           </div>
         </main>
       </div>

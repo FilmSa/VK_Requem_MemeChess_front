@@ -3,6 +3,23 @@ import { ApiError, apiFetch } from "../../shared/api/client.js";
 const pendingJoinRequests = new Map();
 const recentJoinResults = new Map();
 const JOIN_RESULT_TTL_MS = 5000;
+const useHashRouter = import.meta.env.VITE_ROUTER_MODE === "hash";
+
+function normalizeBasePath(value) {
+  const basePath = String(value || "").trim();
+
+  if (!basePath || basePath === "/") {
+    return "/";
+  }
+
+  const withLeadingSlash = basePath.startsWith("/")
+    ? basePath
+    : `/${basePath}`;
+
+  return withLeadingSlash.endsWith("/")
+    ? withLeadingSlash
+    : `${withLeadingSlash}/`;
+}
 
 function resolveFrontendOrigin() {
   if (typeof window !== "undefined" && window.location?.origin) {
@@ -12,6 +29,23 @@ function resolveFrontendOrigin() {
   return "";
 }
 
+function buildInviteHref(inviteToken) {
+  const normalizedToken = String(inviteToken || "").trim();
+  if (!normalizedToken) {
+    return "";
+  }
+
+  const invitePath = `/invite/${encodeURIComponent(normalizedToken)}`;
+  const basePath = normalizeBasePath(import.meta.env.BASE_URL || "/");
+  const normalizedBasePath = basePath === "/" ? "" : basePath.replace(/\/$/, "");
+
+  if (useHashRouter) {
+    return `${normalizedBasePath}/#${invitePath}`;
+  }
+
+  return `${normalizedBasePath}${invitePath}`;
+}
+
 function buildInviteUrl(inviteToken, fallbackUrl = "") {
   const normalizedToken = String(inviteToken || "").trim();
   if (!normalizedToken) {
@@ -19,21 +53,29 @@ function buildInviteUrl(inviteToken, fallbackUrl = "") {
   }
 
   const currentOrigin = resolveFrontendOrigin();
-  const invitePath = `/invite/${encodeURIComponent(normalizedToken)}`;
+  const inviteHref = buildInviteHref(normalizedToken);
 
-  if (currentOrigin) {
-    return `${currentOrigin}${invitePath}`;
+  if (currentOrigin && inviteHref) {
+    return `${currentOrigin}${inviteHref}`;
   }
 
   if (!fallbackUrl) {
-    return invitePath;
+    return inviteHref;
   }
 
   try {
     const parsedUrl = new URL(fallbackUrl);
-    parsedUrl.pathname = invitePath;
     parsedUrl.search = "";
-    parsedUrl.hash = "";
+
+    if (useHashRouter) {
+      const basePath = normalizeBasePath(import.meta.env.BASE_URL || "/");
+      parsedUrl.pathname = basePath;
+      parsedUrl.hash = `#/invite/${encodeURIComponent(normalizedToken)}`;
+    } else {
+      parsedUrl.pathname = buildInviteHref(normalizedToken) || parsedUrl.pathname;
+      parsedUrl.hash = "";
+    }
+
     return parsedUrl.toString();
   } catch {
     return fallbackUrl;

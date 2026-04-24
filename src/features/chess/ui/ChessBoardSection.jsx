@@ -33,8 +33,13 @@ export default function ChessBoardSection({
     highlightedSquares,
     boardOrientation,
     activeEffects,
+    promotionState,
     onSquareClick,
     onPieceDrop,
+    onPromotionSelect,
+    cancelPromotion,
+    canDragPieces,
+    isPieceDraggable,
   } = gameStateLocal;
 
   useLayoutEffect(() => {
@@ -93,10 +98,15 @@ export default function ChessBoardSection({
           boardOrientation={boardOrientation}
           highlightedSquares={highlightedSquares}
           activeEffects={activeEffects}
+          promotionState={promotionState}
           onSquareClick={(square) => onSquareClick(square, sendMove)}
           onPieceDrop={(sourceSquare, targetSquare) =>
             onPieceDrop(sourceSquare, targetSquare, sendMove)
           }
+          onPromotionSelect={(promotion) => onPromotionSelect(promotion, sendMove)}
+          onPromotionCancel={cancelPromotion}
+          canDragPieces={canDragPieces}
+          isPieceDraggable={isPieceDraggable}
         />
 
         <div

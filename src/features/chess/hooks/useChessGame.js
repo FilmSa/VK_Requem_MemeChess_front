@@ -4,8 +4,14 @@ import { getGameParams } from "../lib/gameParams";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
+const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
 
 let effectIndex = 1;
+
+function normalizePromotionPiece(piece) {
+  const normalized = String(piece || "").trim().toLowerCase();
+  return /^[qrbn]$/.test(normalized) ? normalized : undefined;
+}
 
 function parseUciMove(move) {
   const normalized = String(move || "").trim().toLowerCase();
@@ -18,7 +24,7 @@ function parseUciMove(move) {
   return {
     from: match[1],
     to: match[2],
-    promotion: match[3] || "q",
+    promotion: normalizePromotionPiece(match[3]),
   };
 }
 
@@ -115,6 +121,7 @@ export function useChessGame(options = {}) {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [highlightedSquares, setHighlightedSquares] = useState({});
   const [historyCursor, setHistoryCursor] = useState(0);
+  const [promotionState, setPromotionState] = useState(null);
 
   const { activeEffects, triggerEffect } = useBoardEffectsController();
   const gameRef = useRef(game);
@@ -141,6 +148,7 @@ export function useChessGame(options = {}) {
   function clearSelection() {
     setSelectedSquare(null);
     setHighlightedSquares({});
+    setPromotionState(null);
   }
 
   function triggerMoveEffect(move) {
@@ -172,8 +180,49 @@ export function useChessGame(options = {}) {
     return piece.color === playerColor;
   }
 
+  function getLegalMoves(square, chessInstance = gameRef.current) {
+    return chessInstance.moves({ square, verbose: true });
+  }
+
+  function getMoveCandidates(from, to, chessInstance = gameRef.current) {
+    return getLegalMoves(from, chessInstance).filter((move) => move.to === to);
+  }
+
+  function resolveMoveSelection(
+    { from, to, promotion },
+    chessInstance = gameRef.current
+  ) {
+    const moveCandidates = getMoveCandidates(from, to, chessInstance);
+
+    if (!moveCandidates.length) {
+      return { kind: "invalid" };
+    }
+
+    const promotionOptions = PROMOTION_PIECE_ORDER.filter((option) =>
+      moveCandidates.some((move) => move.promotion === option)
+    );
+
+    if (!promotionOptions.length) {
+      return { kind: "move" };
+    }
+
+    const normalizedPromotion = normalizePromotionPiece(promotion);
+
+    if (normalizedPromotion && promotionOptions.includes(normalizedPromotion)) {
+      return {
+        kind: "move",
+        promotion: normalizedPromotion,
+      };
+    }
+
+    return {
+      kind: "promotion",
+      options: promotionOptions,
+    };
+  }
+
   function buildHighlights(square, chessInstance = gameRef.current) {
-    const moves = chessInstance.moves({ square, verbose: true });
+    const moves = getLegalMoves(square, chessInstance);
 
     if (!moves.length) {
       setHighlightedSquares({});
@@ -205,14 +254,19 @@ export function useChessGame(options = {}) {
     return cloneGameInstance(gameRef.current);
   }
 
-  function applyMove({ from, to, promotion = "q" }) {
+  function applyMove({ from, to, promotion }) {
     const previousHistoryLength = gameRef.current.history().length;
     const gameCopy = cloneGameFromHistory();
-    const move = gameCopy.move({
+    const moveRequest = {
       from,
       to,
-      promotion,
-    });
+    };
+
+    if (promotion) {
+      moveRequest.promotion = promotion;
+    }
+
+    const move = gameCopy.move(moveRequest);
 
     if (!move) {
       return null;
@@ -226,10 +280,53 @@ export function useChessGame(options = {}) {
     return move;
   }
 
+  function sendValidatedMove(move, sendMove) {
+    const payload = {
+      from: move.from,
+      to: move.to,
+    };
+
+    if (move.promotion) {
+      payload.promotion = move.promotion;
+    }
+
+    sendMove?.(payload);
+  }
+
+  function completeMove(moveRequest, sendMove) {
+    const move = applyMove(moveRequest);
+
+    if (!move) {
+      return false;
+    }
+
+    sendValidatedMove(move, sendMove);
+    return true;
+  }
+
+  function openPromotionMenu({ from, to, piece, options }) {
+    setSelectedSquare(from);
+    buildHighlights(from);
+    setPromotionState({
+      from,
+      to,
+      color: piece?.color || playerColor,
+      options,
+    });
+  }
+
+  function cancelPromotion() {
+    setPromotionState(null);
+  }
+
   function onSquareClick(square, sendMove) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const clickedPiece = currentGame.get(square);
+
+    if (promotionState) {
+      return;
+    }
 
     if (isViewingHistory) {
       clearSelection();
@@ -253,20 +350,36 @@ export function useChessGame(options = {}) {
     }
 
     if (selectedSquare) {
-      const move = applyMove({
-        from: selectedSquare,
-        to: square,
-        promotion: "q",
-      });
+      const moveSelection = resolveMoveSelection(
+        {
+          from: selectedSquare,
+          to: square,
+        },
+        currentGame
+      );
 
-      if (move) {
-        sendMove?.({
-          from: move.from,
-          to: move.to,
-          promotion: move.promotion || "q",
+      if (moveSelection.kind === "promotion") {
+        openPromotionMenu({
+          from: selectedSquare,
+          to: square,
+          piece: currentGame.get(selectedSquare),
+          options: moveSelection.options,
         });
+        return;
       }
 
+      if (moveSelection.kind !== "move") {
+        return;
+      }
+
+      completeMove(
+        {
+          from: selectedSquare,
+          to: square,
+          promotion: moveSelection.promotion,
+        },
+        sendMove
+      );
       return;
     }
 
@@ -278,7 +391,11 @@ export function useChessGame(options = {}) {
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const piece = currentGame.get(sourceSquare);
 
-    if (isViewingHistory) {
+    if (promotionState) {
+      return false;
+    }
+
+    if (isViewingHistory || !targetSquare) {
       return false;
     }
 
@@ -286,29 +403,87 @@ export function useChessGame(options = {}) {
       return false;
     }
 
-    const move = applyMove({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: "q",
-    });
+    const moveSelection = resolveMoveSelection(
+      {
+        from: sourceSquare,
+        to: targetSquare,
+      },
+      currentGame
+    );
 
-    if (move) {
-      sendMove?.({
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion || "q",
+    if (moveSelection.kind === "promotion") {
+      openPromotionMenu({
+        from: sourceSquare,
+        to: targetSquare,
+        piece,
+        options: moveSelection.options,
       });
-      return true;
+      return false;
     }
 
-    return false;
+    if (moveSelection.kind !== "move") {
+      return false;
+    }
+
+    return completeMove(
+      {
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: moveSelection.promotion,
+      },
+      sendMove
+    );
+  }
+
+  function onPromotionSelect(promotion, sendMove) {
+    const currentPromotion = promotionState;
+    const normalizedPromotion = normalizePromotionPiece(promotion);
+
+    if (
+      !currentPromotion ||
+      !normalizedPromotion ||
+      !currentPromotion.options.includes(normalizedPromotion)
+    ) {
+      return false;
+    }
+
+    return completeMove(
+      {
+        from: currentPromotion.from,
+        to: currentPromotion.to,
+        promotion: normalizedPromotion,
+      },
+      sendMove
+    );
+  }
+
+  function isPieceDraggable({ sourceSquare }) {
+    const currentGame = gameRef.current;
+    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+
+    if (promotionState || isViewingHistory) {
+      return false;
+    }
+
+    return canControlPiece(currentGame.get(sourceSquare), currentGame);
+  }
+
+  function allowPieceDrag() {
+    const currentGame = gameRef.current;
+    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+
+    if (promotionState || isViewingHistory) {
+      return false;
+    }
+
+    return isPlayersTurn(currentGame);
   }
 
   function applyRemoteMove(move) {
     const appliedMove = applyMove({
       from: move.from,
       to: move.to,
-      promotion: move.promotion || "q",
+      promotion: move.promotion,
     });
 
     return Boolean(appliedMove);
@@ -358,9 +533,14 @@ export function useChessGame(options = {}) {
     highlightedSquares,
     boardOrientation,
     activeEffects,
+    promotionState,
     effect: triggerEffect,
     onSquareClick,
     onPieceDrop,
+    onPromotionSelect,
+    cancelPromotion,
+    isPieceDraggable,
+    canDragPieces: allowPieceDrag(),
     applyRemoteMove,
     syncFromServerState,
     getCurrentFen,

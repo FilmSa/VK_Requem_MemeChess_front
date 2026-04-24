@@ -214,20 +214,23 @@ function parseUciMove(move) {
   return {
     from: match[1],
     to: match[2],
-    promotion: match[3] || "q",
+    promotion: match[3] ? match[3].toLowerCase() : undefined,
   };
 }
 
-function serializeUciMove({ from, to, promotion = "q" }) {
+function serializeUciMove({ from, to, promotion }) {
   const source = String(from || "").trim().toLowerCase();
   const target = String(to || "").trim().toLowerCase();
+  const normalizedPromotion =
+    typeof promotion === "string" && /^[qrbn]$/i.test(promotion.trim())
+      ? promotion.trim().toLowerCase()
+      : "";
 
   if (!/^[a-h][1-8]$/.test(source) || !/^[a-h][1-8]$/.test(target)) {
     return "";
   }
 
-  const shouldAddPromotion = /[18]$/.test(target);
-  return `${source}${target}${shouldAddPromotion ? String(promotion || "q").toLowerCase() : ""}`;
+  return `${source}${target}${normalizedPromotion}`;
 }
 
 function normalizeEmojiEvent(data, currentUserId) {

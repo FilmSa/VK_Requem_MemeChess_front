@@ -41,6 +41,113 @@
   background: rgba(11, 15, 43, 0.95);
 }
 
+.promotion-menu__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 10, 28, 0.74);
+  backdrop-filter: blur(8px);
+}
+
+.promotion-menu__dialog {
+  width: min(100%, 360px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(17, 23, 58, 0.96), rgba(9, 14, 36, 0.96));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.35);
+  padding: 20px;
+}
+
+.promotion-menu__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f4f8ff;
+}
+
+.promotion-menu__subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(211, 226, 255, 0.82);
+}
+
+.promotion-menu__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.promotion-menu__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid rgba(138, 190, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 10px;
+  color: #f4f8ff;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+  cursor: pointer;
+}
+
+.promotion-menu__option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(99, 211, 255, 0.52);
+  background: rgba(69, 132, 214, 0.16);
+  box-shadow: 0 10px 24px rgba(3, 17, 46, 0.26);
+}
+
+.promotion-menu__option:focus-visible,
+.promotion-menu__cancel:focus-visible {
+  outline: 2px solid #49d8ff;
+  outline-offset: 2px;
+}
+
+.promotion-menu__piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.promotion-menu__label {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.promotion-menu__cancel {
+  width: 100%;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(228, 236, 251, 0.92);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.promotion-menu__cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .board-effects-layer {
   position: absolute;
   inset: 0;
@@ -151,5 +258,15 @@
   .game-settings__summary,
   .game-settings__actions {
     grid-template-columns: 1fr;
+  }
+
+  .promotion-menu__dialog {
+    width: min(100%, 320px);
+    padding: 18px;
+  }
+
+  .promotion-menu__piece {
+    width: 72px;
+    height: 72px;
   }
 }

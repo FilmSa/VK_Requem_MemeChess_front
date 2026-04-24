@@ -3,6 +3,7 @@ import { Chessboard } from "react-chessboard";
 import { createCustomPieces } from "../lib/boardPieces.jsx";
 import { readStoredPieceSkin, subscribePieceSkinChanges } from "../../../shared/lib/pieceSkin.js";
 import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
+import PromotionMenu from "./PromotionMenu.jsx";
 
 export default function GameBoard({
   fen,
@@ -10,8 +11,13 @@ export default function GameBoard({
   boardOrientation,
   highlightedSquares,
   activeEffects,
+  promotionState,
   onSquareClick,
   onPieceDrop,
+  onPromotionSelect,
+  onPromotionCancel,
+  canDragPieces,
+  isPieceDraggable,
 }) {
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
@@ -45,10 +51,13 @@ export default function GameBoard({
         position={fen}
         boardOrientation={boardOrientation}
         boardWidth={boardWidth}
+        arePiecesDraggable={canDragPieces}
         customPieces={customPieces}
         customLightSquareStyle={{ backgroundColor: "#c8cfdb" }}
         customDarkSquareStyle={{ backgroundColor: "#aab3c8" }}
         customSquareStyles={highlightedSquares}
+        isDraggablePiece={isPieceDraggable}
+        onPromotionCheck={() => false}
         onSquareClick={onSquareClick}
         onPieceDrop={onPieceDrop}
       />
@@ -57,6 +66,14 @@ export default function GameBoard({
         activeEffects={activeEffects}
         boardWidth={boardWidth}
         boardOrientation={boardOrientation}
+      />
+
+      <PromotionMenu
+        boardWidth={boardWidth}
+        customPieces={customPieces}
+        promotionState={promotionState}
+        onSelect={onPromotionSelect}
+        onCancel={onPromotionCancel}
       />
     </div>
   );

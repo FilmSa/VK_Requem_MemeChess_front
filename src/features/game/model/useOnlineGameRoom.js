@@ -144,11 +144,15 @@ export function useOnlineGameRoom(gameId) {
           setSocketError("");
           setRoomState(state);
 
-          const serverMoveCount = Array.isArray(state?.moves)
-            ? state.moves.length
-            : 0;
+          const localFen = chessGameState.getCurrentFen?.() || "";
+          const shouldSyncByFen =
+            Boolean(state?.fen) && Boolean(localFen) && state.fen !== localFen;
+          const shouldSyncByMoveCount =
+            !state?.fen &&
+            Array.isArray(state?.moves) &&
+            state.moves.length !== chessGameState.moveCount;
 
-          if (serverMoveCount !== chessGameState.moveCount) {
+          if (shouldSyncByFen || shouldSyncByMoveCount) {
             chessGameState.syncFromServerState(state);
           }
         },

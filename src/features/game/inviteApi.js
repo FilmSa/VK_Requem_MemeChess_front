@@ -4,6 +4,42 @@ const pendingJoinRequests = new Map();
 const recentJoinResults = new Map();
 const JOIN_RESULT_TTL_MS = 5000;
 
+function resolveFrontendOrigin() {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, "");
+  }
+
+  return "";
+}
+
+function buildInviteUrl(inviteToken, fallbackUrl = "") {
+  const normalizedToken = String(inviteToken || "").trim();
+  if (!normalizedToken) {
+    return fallbackUrl || "";
+  }
+
+  const currentOrigin = resolveFrontendOrigin();
+  const invitePath = `/invite/${encodeURIComponent(normalizedToken)}`;
+
+  if (currentOrigin) {
+    return `${currentOrigin}${invitePath}`;
+  }
+
+  if (!fallbackUrl) {
+    return invitePath;
+  }
+
+  try {
+    const parsedUrl = new URL(fallbackUrl);
+    parsedUrl.pathname = invitePath;
+    parsedUrl.search = "";
+    parsedUrl.hash = "";
+    return parsedUrl.toString();
+  } catch {
+    return fallbackUrl;
+  }
+}
+
 function buildInviteError(error, fallbackMessage) {
   if (!(error instanceof ApiError)) {
     return new Error(fallbackMessage);
@@ -83,11 +119,17 @@ export async function createFriendInvite(token) {
       token,
     });
 
+    const inviteToken = response.invite_token || "";
+    const inviteUrl = buildInviteUrl(
+      inviteToken,
+      response.invite_url || response.join_url || ""
+    );
+
     return {
       gameId: response.game_id || "",
-      inviteToken: response.invite_token || "",
-      inviteUrl: response.invite_url || response.join_url || "",
-      joinUrl: response.join_url || response.invite_url || "",
+      inviteToken,
+      inviteUrl,
+      joinUrl: inviteUrl,
       expiresAt: response.expires_at || "",
       status: response.status || "waiting",
     };

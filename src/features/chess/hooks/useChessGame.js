@@ -22,13 +22,50 @@ function parseUciMove(move) {
   };
 }
 
-function buildGameFromServerState(state) {
+function loadGameFromFen(fen) {
+  const nextGame = new Chess();
+
+  if (!fen || fen === nextGame.fen()) {
+    return nextGame;
+  }
+
+  try {
+    nextGame.load(fen);
+    return nextGame;
+  } catch {
+    return null;
+  }
+}
+
+function cloneGameInstance(chessInstance) {
+  if (!chessInstance) {
+    return new Chess();
+  }
+
+  const history = chessInstance.history({ verbose: true });
+
+  if (history.length > 0) {
+    const gameCopy = new Chess();
+
+    for (const historyMove of history) {
+      if (!gameCopy.move(historyMove)) {
+        return loadGameFromFen(chessInstance.fen());
+      }
+    }
+
+    return gameCopy;
+  }
+
+  return loadGameFromFen(chessInstance.fen());
+}
+
+function buildGameFromServerState(state, currentGame = null) {
   const nextGame = new Chess();
   const moveList = Array.isArray(state?.moves) ? state.moves : [];
 
   if (moveList.length === 0) {
     if (state?.fen && state.fen !== nextGame.fen()) {
-      nextGame.load(state.fen);
+      return loadGameFromFen(state.fen);
     }
     return nextGame;
   }
@@ -36,10 +73,20 @@ function buildGameFromServerState(state) {
   for (const moveEntry of moveList) {
     const parsedMove = parseUciMove(moveEntry?.move);
     if (!parsedMove || !nextGame.move(parsedMove)) {
+      const parsedLastMove = parseUciMove(state?.last_move);
+      if (currentGame && parsedLastMove) {
+        const currentGameCopy = cloneGameInstance(currentGame);
+
+        if (
+          currentGameCopy?.move(parsedLastMove) &&
+          (!state?.fen || currentGameCopy.fen() === state.fen)
+        ) {
+          return currentGameCopy;
+        }
+      }
+
       if (state?.fen) {
-        const fallbackGame = new Chess();
-        fallbackGame.load(state.fen);
-        return fallbackGame;
+        return loadGameFromFen(state.fen);
       }
       return null;
     }
@@ -155,14 +202,7 @@ export function useChessGame(options = {}) {
   }
 
   function cloneGameFromHistory() {
-    const gameCopy = new Chess();
-    const history = gameRef.current.history({ verbose: true });
-
-    history.forEach((historyMove) => {
-      gameCopy.move(historyMove);
-    });
-
-    return gameCopy;
+    return cloneGameInstance(gameRef.current);
   }
 
   function applyMove({ from, to, promotion = "q" }) {
@@ -276,7 +316,7 @@ export function useChessGame(options = {}) {
 
   function syncFromServerState(state) {
     const previousHistoryLength = gameRef.current.history().length;
-    const nextGame = buildGameFromServerState(state);
+    const nextGame = buildGameFromServerState(state, gameRef.current);
     if (!nextGame) {
       return false;
     }
@@ -306,6 +346,10 @@ export function useChessGame(options = {}) {
     clearSelection();
   }
 
+  function getCurrentFen() {
+    return gameRef.current.fen();
+  }
+
   return {
     game,
     displayedGame,
@@ -319,6 +363,7 @@ export function useChessGame(options = {}) {
     onPieceDrop,
     applyRemoteMove,
     syncFromServerState,
+    getCurrentFen,
     viewPreviousMove,
     viewNextMove,
     jumpToLatestMove,

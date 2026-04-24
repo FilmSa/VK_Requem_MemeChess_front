@@ -28,6 +28,8 @@ export default function MainMenuPanel({ style }) {
     openCustomizeSections,
     expandedCustomizeSections,
     selectedEmojiQuickAccessIds,
+    selectedPieceSkin,
+    selectedBoardSkin,
     cards,
     selectTab,
     selectCard,
@@ -104,6 +106,14 @@ export default function MainMenuPanel({ style }) {
         .map((id) => itemsById.get(id))
         .filter(Boolean),
       ownedItems: section.ownedIds.map((id) => itemsById.get(id)).filter(Boolean),
+      selectedItemIds:
+        section.id === "emoji"
+          ? selectedEmojiQuickAccessIds
+          : section.id === "boards"
+          ? [selectedBoardSkin]
+          : section.id === "pieces"
+          ? [selectedPieceSkin]
+          : [],
       isOpen: Boolean(openCustomizeSections[section.id]),
       isExpanded: Boolean(expandedCustomizeSections[section.id]),
     };

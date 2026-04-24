@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { createCustomPieces } from "../lib/boardPieces.jsx";
 import { readStoredPieceSkin, subscribePieceSkinChanges } from "../../../shared/lib/pieceSkin.js";
+import {
+  getBoardSkinConfig,
+  readStoredBoardSkin,
+  subscribeBoardSkinChanges,
+} from "../../../shared/lib/boardSkin.js";
 import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
 import PromotionMenu from "./PromotionMenu.jsx";
 
@@ -22,6 +27,9 @@ export default function GameBoard({
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
   );
+  const [selectedBoardSkin, setSelectedBoardSkin] = useState(
+    () => readStoredBoardSkin()
+  );
 
   useEffect(() => {
     return subscribePieceSkinChanges((skinId) => {
@@ -29,9 +37,19 @@ export default function GameBoard({
     });
   }, []);
 
+  useEffect(() => {
+    return subscribeBoardSkinChanges((skinId) => {
+      setSelectedBoardSkin(skinId);
+    });
+  }, []);
+
   const customPieces = useMemo(
     () => createCustomPieces(selectedPieceSkin),
     [selectedPieceSkin]
+  );
+  const boardSkinConfig = useMemo(
+    () => getBoardSkinConfig(selectedBoardSkin),
+    [selectedBoardSkin]
   );
 
   if (!boardWidth) {
@@ -53,8 +71,8 @@ export default function GameBoard({
         boardWidth={boardWidth}
         arePiecesDraggable={canDragPieces}
         customPieces={customPieces}
-        customLightSquareStyle={{ backgroundColor: "#c8cfdb" }}
-        customDarkSquareStyle={{ backgroundColor: "#aab3c8" }}
+        customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
+        customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
         customSquareStyles={highlightedSquares}
         isDraggablePiece={isPieceDraggable}
         onPromotionCheck={() => false}

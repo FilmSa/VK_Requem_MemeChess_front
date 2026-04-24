@@ -41,6 +41,25 @@
   background: rgba(11, 15, 43, 0.95);
 }
 
+@keyframes king-check-flash {
+  0%,
+  100% {
+    background: linear-gradient(
+      0deg,
+      rgba(255, 62, 62, 0.18) 0%,
+      rgba(145, 0, 0, 0.32) 100%
+    );
+  }
+
+  50% {
+    background: linear-gradient(
+      0deg,
+      rgba(255, 62, 62, 0.78) 0%,
+      rgba(145, 0, 0, 0.9) 100%
+    );
+  }
+}
+
 .promotion-menu__backdrop {
   position: absolute;
   inset: 0;

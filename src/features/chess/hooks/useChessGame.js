@@ -112,6 +112,69 @@ function buildGameToPly(history, plyCount) {
   return nextGame;
 }
 
+function findKingSquare(chessInstance, color = chessInstance.turn()) {
+  const board = chessInstance.board();
+
+  for (let rankIndex = 0; rankIndex < board.length; rankIndex += 1) {
+    const rank = board[rankIndex];
+
+    for (let fileIndex = 0; fileIndex < rank.length; fileIndex += 1) {
+      const piece = rank[fileIndex];
+
+      if (piece?.type !== "k" || piece.color !== color) {
+        continue;
+      }
+
+      const file = String.fromCharCode(97 + fileIndex);
+      const rankNumber = 8 - rankIndex;
+      return `${file}${rankNumber}`;
+    }
+  }
+
+  return "";
+}
+
+function mergeSquareStyles(baseStyles, overlayStyles) {
+  const mergedStyles = { ...baseStyles };
+
+  Object.entries(overlayStyles).forEach(([square, style]) => {
+    mergedStyles[square] = {
+      ...(baseStyles[square] || {}),
+      ...style,
+    };
+  });
+
+  return mergedStyles;
+}
+
+function buildKingThreatStyles(chessInstance) {
+  if (!chessInstance?.inCheck()) {
+    return {};
+  }
+
+  const kingSquare = findKingSquare(chessInstance);
+  if (!kingSquare) {
+    return {};
+  }
+
+  if (chessInstance.isCheckmate()) {
+    return {
+      [kingSquare]: {
+        background:
+          "linear-gradient(0deg, rgba(255, 56, 56, 0.72) 0%, rgba(164, 0, 0, 0.82) 100%)",
+        boxShadow: "inset 0 0 0 3px rgba(255, 186, 186, 0.92)",
+      },
+    };
+  }
+
+  return {
+    [kingSquare]: {
+      animation: "king-check-flash 1s ease-in-out infinite",
+      boxShadow: "inset 0 0 0 3px rgba(255, 200, 200, 0.95)",
+    },
+  };
+}
+
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
@@ -505,6 +568,10 @@ export function useChessGame(options = {}) {
   const history = game.history({ verbose: true });
   const displayedGame = buildGameToPly(history, historyCursor);
   const activeHistoryPly = Math.min(historyCursor, history.length);
+  const effectiveHighlightedSquares = mergeSquareStyles(
+    highlightedSquares,
+    buildKingThreatStyles(displayedGame)
+  );
 
   function viewPreviousMove() {
     setHistoryCursor((currentCursor) => Math.max(currentCursor - 1, 0));
@@ -530,7 +597,7 @@ export function useChessGame(options = {}) {
     displayedGame,
     activeHistoryPly,
     moveCount: game.history().length,
-    highlightedSquares,
+    highlightedSquares: effectiveHighlightedSquares,
     boardOrientation,
     activeEffects,
     promotionState,

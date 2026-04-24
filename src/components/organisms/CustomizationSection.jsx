@@ -57,6 +57,7 @@ export default function CustomizationSection({
               <CustomizationGrid
                 items={section.quickAccessItems}
                 activeItemId={activeItemId}
+                selectedItemIds={section.selectedItemIds}
                 onSelect={onSelect}
                 className="mt-[12px]"
               />
@@ -75,6 +76,7 @@ export default function CustomizationSection({
               <CustomizationGrid
                 items={visibleOwnedItems}
                 activeItemId={activeItemId}
+                selectedItemIds={section.selectedItemIds}
                 onSelect={onSelect}
                 className="mt-[12px]"
               />

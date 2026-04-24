@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  BOARD_SKIN_ITEM_IDS,
   CARD_SETS,
   DEFAULT_CARD_IDS,
   MODE_OPTIONS,
   PIECE_SKIN_ITEM_IDS,
 } from "../config/menuConfig.js";
+import {
+  persistBoardSkin,
+  readStoredBoardSkin,
+} from "../../../shared/lib/boardSkin.js";
 import {
   persistEmojiQuickAccess,
   readStoredEmojiQuickAccess,
@@ -35,6 +40,9 @@ export function useMainMenuPanelState({ userId } = {}) {
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
   );
+  const [selectedBoardSkin, setSelectedBoardSkin] = useState(
+    () => readStoredBoardSkin()
+  );
 
   const cards = useMemo(() => CARD_SETS[activeTab] || [], [activeTab]);
 
@@ -53,6 +61,14 @@ export function useMainMenuPanelState({ userId } = {}) {
   useEffect(() => {
     persistPieceSkin(selectedPieceSkin);
   }, [selectedPieceSkin]);
+
+  useEffect(() => {
+    setSelectedBoardSkin(readStoredBoardSkin());
+  }, []);
+
+  useEffect(() => {
+    persistBoardSkin(selectedBoardSkin);
+  }, [selectedBoardSkin]);
 
   function selectTab(tabId) {
     setActiveTab(tabId);
@@ -81,6 +97,10 @@ export function useMainMenuPanelState({ userId } = {}) {
       setSelectedPieceSkin(cardId);
     }
 
+    if (BOARD_SKIN_ITEM_IDS.has(cardId)) {
+      setSelectedBoardSkin(cardId);
+    }
+
     setSelectedEmojiQuickAccessIds((currentIds) => {
       return updateEmojiQuickAccessIds(currentIds, cardId);
     });
@@ -98,6 +118,7 @@ export function useMainMenuPanelState({ userId } = {}) {
     expandedCustomizeSections,
     selectedEmojiQuickAccessIds,
     selectedPieceSkin,
+    selectedBoardSkin,
     cards,
     selectTab,
     selectCard,

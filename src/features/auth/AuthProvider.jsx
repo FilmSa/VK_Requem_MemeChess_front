@@ -7,46 +7,27 @@ import {
 
 import * as authApi from "./authApi.js";
 import { AuthContext } from "./AuthContext.js";
-
-const tokenStorageKey = "meme-chess.auth.token";
-
-function readStoredToken() {
-  try {
-    return window.localStorage.getItem(tokenStorageKey) || "";
-  } catch {
-    return "";
-  }
-}
-
-function persistToken(token) {
-  try {
-    if (token) {
-      window.localStorage.setItem(tokenStorageKey, token);
-      return;
-    }
-
-    window.localStorage.removeItem(tokenStorageKey);
-  } catch {
-    // Ignore storage access issues and keep the session in memory only.
-  }
-}
+import {
+  persistAuthToken,
+  readStoredAuthToken,
+} from "../../shared/lib/authToken.js";
 
 export default function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => readStoredToken());
+  const [token, setToken] = useState(() => readStoredAuthToken());
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(() =>
-    Boolean(readStoredToken())
+    Boolean(readStoredAuthToken())
   );
 
   const clearSession = useCallback(() => {
-    persistToken("");
+    persistAuthToken("");
     setToken("");
     setUser(null);
     setIsInitializing(false);
   }, []);
 
-  const applySession = useCallback((nextToken, nextUser) => {
-    persistToken(nextToken);
+  const applySession = useCallback((nextToken, nextUser, options = {}) => {
+    persistAuthToken(nextToken, options);
     setToken(nextToken);
     setUser(nextUser);
     setIsInitializing(false);
@@ -110,9 +91,9 @@ export default function AuthProvider({ children }) {
   }, [clearSession, token]);
 
   const login = useCallback(
-    async (credentials) => {
+    async (credentials, options = {}) => {
       const response = await authApi.login(credentials);
-      applySession(response.token, response.user);
+      applySession(response.token, response.user, options);
       return response.user;
     },
     [applySession]

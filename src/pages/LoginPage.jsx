@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import AuthButton from "../components/auth/AuthButton.jsx";
 import AuthCard from "../components/auth/AuthCard.jsx";
 import AuthInput from "../components/auth/AuthInput.jsx";
+import AuthToggleField from "../components/auth/AuthToggleField.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
 
 import startGameIcon from "../../icons/startgame.svg";
@@ -12,6 +13,20 @@ const defaultValues = {
   login: "",
   password: "",
 };
+
+function validateLoginForm(form) {
+  const nextErrors = {};
+
+  if (!form.login.trim()) {
+    nextErrors.login = "Введите логин или почту.";
+  }
+
+  if (!form.password.trim()) {
+    nextErrors.password = "Введите пароль.";
+  }
+
+  return nextErrors;
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -22,15 +37,12 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberSession, setRememberSession] = useState(true);
 
   const redirectTo = location.state?.from?.pathname || "/profile";
   const isDisabled = useMemo(
-    () =>
-      isSubmitting ||
-      isInitializing ||
-      !form.login.trim() ||
-      !form.password.trim(),
-    [form.login, form.password, isInitializing, isSubmitting]
+    () => isSubmitting || isInitializing,
+    [isInitializing, isSubmitting]
   );
 
   if (!isInitializing && isAuthenticated) {
@@ -56,6 +68,13 @@ export default function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    const nextFieldErrors = validateLoginForm(form);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setSubmitError("");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError("");
     setFieldErrors({});
@@ -64,7 +83,7 @@ export default function LoginPage() {
       await login({
         login: form.login.trim(),
         password: form.password,
-      });
+      }, { remember: rememberSession });
       navigate(redirectTo, { replace: true });
     } catch (error) {
       setSubmitError(error.message || "Не удалось выполнить вход.");
@@ -104,6 +123,14 @@ export default function LoginPage() {
                 error={fieldErrors.password}
               />
             </div>
+
+            <AuthToggleField
+              id="remember-session"
+              label="Запомнить меня"
+              checked={rememberSession}
+              disabled={isDisabled}
+              onChange={setRememberSession}
+            />
 
             {submitError ? (
               <div

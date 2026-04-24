@@ -3,6 +3,7 @@ import CustomizationItemCard from "./CustomizationItemCard.jsx";
 export default function CustomizationGrid({
   items,
   activeItemId,
+  selectedItemIds = [],
   onSelect,
   className = "",
 }) {
@@ -18,7 +19,11 @@ export default function CustomizationGrid({
         <CustomizationItemCard
           key={item.id}
           item={item}
-          isSelected={item.id === activeItemId}
+          isSelected={
+            selectedItemIds.length > 0
+              ? selectedItemIds.includes(item.id)
+              : item.id === activeItemId
+          }
           onClick={() => onSelect(item.id)}
         />
       ))}

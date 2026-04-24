@@ -170,10 +170,6 @@ export default function ShopSkinsSection() {
 
   const activeSkin = skins[activeIndex];
 
-  useEffect(() => {
-    setSelectedSkinId(readStoredPieceSkin());
-  }, []);
-
   function handlePrev() {
     setActiveIndex((prev) => (prev - 1 + skins.length) % skins.length);
   }

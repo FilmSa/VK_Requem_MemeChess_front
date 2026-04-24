@@ -11,18 +11,8 @@ import {
   EMOJI_PREVIEW_ITEMS,
 } from "../../../shared/constants/emojiPreviewMedia.js";
 import { withAssetBase } from "../../../shared/lib/assets.js";
+import { DEFAULT_BOARD_SKIN_ID } from "../../../shared/lib/boardSkin.js";
 import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
-
-const boardImage = withAssetBase("/images/Board.png");
-
-function createItems(prefix, count, factory) {
-  return Array.from({ length: count }, (_, index) => ({
-    id: `${prefix}-${index + 1}`,
-    time: "",
-    background: "#0B0F2B",
-    ...factory(index),
-  }));
-}
 
 const emojiItems = EMOJI_PREVIEW_ITEMS.map((item) => ({
   ...item,
@@ -31,20 +21,44 @@ const emojiItems = EMOJI_PREVIEW_ITEMS.map((item) => ({
   cornerStyle: "diagonal",
 }));
 
-const boardItems = createItems("board", 15, (index) => ({
-  title: `\u0414\u043e\u0441\u043a\u0430 ${index + 1}`,
-  imageSrc: boardImage,
-}));
+const boardItems = [
+  {
+    id: DEFAULT_BOARD_SKIN_ID,
+    title: "\u0421\u0435\u0440\u043e-\u0433\u043e\u043b\u0443\u0431\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
+    previewType: "board",
+    previewShape: "square",
+    lightSquare: "#E8EDF9",
+    darkSquare: "#B7C0D8",
+  },
+  {
+    id: "board-skin-burgundy",
+    title: "\u0411\u043e\u0440\u0434\u043e\u0432\u043e-\u0431\u0435\u0436\u0435\u0432\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
+    previewType: "board",
+    previewShape: "square",
+    lightSquare: "#D9C2A0",
+    darkSquare: "#6B1F32",
+  },
+  {
+    id: "board-skin-mono",
+    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
+    previewType: "board",
+    previewShape: "square",
+    lightSquare: "#F4F4F4",
+    darkSquare: "#1A1A1A",
+  },
+];
 
 const pieceSkinItems = [
   {
     id: DEFAULT_PIECE_SKIN_ID,
-    title: "\u041a\u043b\u0430\u0441\u0441\u0438\u043a\u0438\u0435 \u0444\u0438\u0433\u0443\u0440\u044b",
-    icon: withAssetBase("/pieces/wK.svg"),
+    title: "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0444\u0438\u0433\u0443\u0440\u044b",
+    previewShape: "square",
+    imageSrc: withAssetBase("/images/image.jpg"),
   },
   {
     id: "piece-skin-imperium",
     title: "Imperium",
+    previewShape: "wide",
     imageSrc: withAssetBase("/images/imperium.png"),
   },
 ];
@@ -98,6 +112,7 @@ export const CARD_SETS = {
 };
 
 export const PIECE_SKIN_ITEM_IDS = new Set(pieceSkinItems.map((item) => item.id));
+export const BOARD_SKIN_ITEM_IDS = new Set(boardItems.map((item) => item.id));
 
 export const CUSTOMIZE_SECTIONS = [
   {

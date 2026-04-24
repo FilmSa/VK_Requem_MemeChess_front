@@ -106,6 +106,7 @@
     0 4px 4px rgba(0, 0, 0, 0.25),
     inset 0 4px 4px rgba(0, 0, 0, 0.25);
   --main-menu-card-ring: #ffffff;
+  --main-menu-preview-bg: #0b0f2b;
   --main-menu-error-bg: #3b1744;
   --main-menu-error-border: rgba(255, 140, 202, 0.4);
   --main-menu-error-text: #ffd8f3;
@@ -150,6 +151,27 @@
   --shadow-card: 0 22px 55px rgba(0, 0, 0, 0.34);
   --shadow-panel: 0 30px 80px rgba(0, 0, 0, 0.42);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --shop-title: #67e7ff;
+  --shop-panel-bg: #0b0f2b;
+  --shop-panel-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+  --shop-panel-overlay: linear-gradient(
+    180deg,
+    rgba(4, 10, 40, 0) 55%,
+    rgba(4, 10, 40, 0.55) 100%
+  );
+  --shop-arrow-bg: linear-gradient(159deg, #160936 0%, #0a183c 159%);
+  --shop-dot-active: #cbc0f7;
+  --shop-dot-inactive: #7a6db1;
+  --shop-modal-surface: #050b31;
+  --shop-modal-title: #67e7ff;
+  --shop-price-bg: #19d9ff;
+  --shop-price-text: #a346ce;
+  --shop-apply-bg: #57dfff;
+  --shop-apply-text: #050b31;
+  --shop-apply-hover: #48c6ff;
+  --shop-apply-disabled-bg: #4f6f9d;
+  --shop-apply-disabled-text: #d1e0f5;
 
   --radius-sm: 14px;
   --radius-md: 18px;
@@ -264,15 +286,16 @@
     0 12px 24px rgba(31, 58, 111, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --main-menu-card-ring: rgba(22, 33, 61, 0.4);
+  --main-menu-preview-bg: #f4f7ff;
   --main-menu-error-bg: #fff1f7;
   --main-menu-error-border: rgba(214, 73, 106, 0.22);
   --main-menu-error-text: #b23a59;
-  --main-menu-gradient-active: linear-gradient(90deg, #5238c8 0%, #2a1e5d 100%);
+  --main-menu-gradient-active: linear-gradient(180deg, #ffffff 0%, #e8efff 100%);
   --main-menu-gradient-pink: linear-gradient(180deg, #ff00c8 0%, #990078 100%);
   --main-menu-gradient-blue: linear-gradient(180deg, #16ceef 0%, #1f9fb5 100%);
-  --main-menu-customize-divider: #ffffff;
-  --main-menu-scroll-track: #2a1e5d;
-  --main-menu-scroll-thumb: rgba(255, 255, 255, 0.68);
+  --main-menu-customize-divider: rgba(22, 33, 61, 0.14);
+  --main-menu-scroll-track: rgba(22, 33, 61, 0.08);
+  --main-menu-scroll-thumb: rgba(22, 33, 61, 0.28);
   --main-menu-scroll-border: transparent;
 
   --game-panel-bg: #ffffff;
@@ -308,4 +331,25 @@
   --shadow-card: 0 18px 38px rgba(31, 58, 111, 0.12);
   --shadow-panel: 0 22px 50px rgba(31, 58, 111, 0.14);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  --shop-title: #0ea5c6;
+  --shop-panel-bg: #ffffff;
+  --shop-panel-shadow: 0 18px 40px rgba(31, 58, 111, 0.12);
+  --shop-panel-overlay: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 48%,
+    rgba(228, 236, 255, 0.74) 100%
+  );
+  --shop-arrow-bg: linear-gradient(159deg, #edf4ff 0%, #dde8ff 159%);
+  --shop-dot-active: #7d8fff;
+  --shop-dot-inactive: #c0caea;
+  --shop-modal-surface: #ffffff;
+  --shop-modal-title: #0ea5c6;
+  --shop-price-bg: #12b7da;
+  --shop-price-text: #ffffff;
+  --shop-apply-bg: #12b7da;
+  --shop-apply-text: #ffffff;
+  --shop-apply-hover: #0ea5c6;
+  --shop-apply-disabled-bg: #d6def5;
+  --shop-apply-disabled-text: #6d7a97;
 }

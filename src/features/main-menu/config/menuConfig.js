@@ -12,7 +12,6 @@ import {
   DEFAULT_EMOJI_QUICK_ACCESS_IDS,
   EMOJI_PREVIEW_ITEMS,
 } from "../../../shared/constants/emojiPreviewMedia.js";
-import { withAssetBase } from "../../../shared/lib/assets.js";
 import { DEFAULT_BOARD_SKIN_ID } from "../../../shared/lib/boardSkin.js";
 import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
 

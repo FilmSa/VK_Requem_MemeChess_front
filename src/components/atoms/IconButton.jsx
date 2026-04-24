@@ -25,6 +25,7 @@ export default function IconButton({
         style={{
           transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
           transition: "transform 0.22s ease",
+          filter: "var(--main-menu-icon-filter)",
         }}
       />
     </ButtonBase>

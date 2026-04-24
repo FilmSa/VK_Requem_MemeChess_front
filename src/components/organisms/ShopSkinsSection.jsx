@@ -40,7 +40,11 @@ function PriceButton({ price }) {
   return (
     <button
       type="button"
-      className="flex h-[42px] w-full items-center justify-center gap-[12px] rounded-[8px] bg-[#19d9ff] text-[24px] font-bold leading-none text-[#A346CE]"
+      className="flex h-[42px] w-full items-center justify-center gap-[12px] rounded-[8px] text-[24px] font-bold leading-none"
+      style={{
+        background: "var(--shop-price-bg)",
+        color: "var(--shop-price-text)",
+      }}
     >
       <img
         src={withAssetBase("/icons/crown.svg")}
@@ -64,7 +68,7 @@ function SliderArrow({ direction = "left", onClick }) {
       onClick={onClick}
       className="flex h-[126px] w-[47px] shrink-0 items-center justify-center border-0 p-0 outline-none"
       style={{
-        background: "linear-gradient(159deg, #160936 0%, #0a183c 159%)",
+        background: "var(--shop-arrow-bg)",
       }}
     >
       <img
@@ -82,9 +86,13 @@ function PaginationDots({ total, currentIndex }) {
       {Array.from({ length: total }).map((_, index) => (
         <span
           key={index}
-          className={`h-[12px] w-[30px] rounded-[2px] ${
-            index === currentIndex ? "bg-[#cbc0f7]" : "bg-[#7a6db1]"
-          }`}
+          className="h-[12px] w-[30px] rounded-[2px]"
+          style={{
+            background:
+              index === currentIndex
+                ? "var(--shop-dot-active)"
+                : "var(--shop-dot-inactive)",
+          }}
         />
       ))}
     </div>
@@ -141,7 +149,7 @@ function SkinPreviewModal({ skin, onClose }) {
         onClick={(event) => event.stopPropagation()}
         style={{
           position: "relative",
-          background: "#050b31",
+          background: "var(--shop-modal-surface)",
           borderRadius: "18px",
           padding: "30px",
           boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
@@ -151,7 +159,10 @@ function SkinPreviewModal({ skin, onClose }) {
         }}
       >
         <div className="mb-[20px] pr-[40px] text-center">
-          <div className="text-[18px] font-semibold tracking-[0.18em] text-[#67e7ff]">
+          <div
+            className="text-[18px] font-semibold tracking-[0.18em]"
+            style={{ color: "var(--shop-modal-title)" }}
+          >
             Предпросмотр скина
           </div>
         </div>
@@ -199,7 +210,10 @@ export default function ShopSkinsSection() {
     <>
       <section className="ml-[0px]">
         <div className="mb-[10px] flex items-start gap-[12px]">
-          <div className="text-[34px] font-medium leading-[1.05] text-[#67e7ff]">
+          <div
+            className="text-[34px] font-medium leading-[1.05]"
+            style={{ color: "var(--shop-title)" }}
+          >
             <div className="flex items-center gap-[12px]">
               <span>Магазин</span>
               <img
@@ -218,7 +232,13 @@ export default function ShopSkinsSection() {
           </div>
 
           <div className="shrink-0">
-            <div className="h-[590px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] bg-[#0b0f2b] px-[20px] py-[10px]">
+            <div
+              className="h-[590px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] px-[20px] py-[10px]"
+              style={{
+                background: "var(--shop-panel-bg)",
+                boxShadow: "var(--shop-panel-shadow)",
+              }}
+            >
               <div className="flex gap-[20px]">
                 <div className="relative h-full flex-1">
                   <img
@@ -227,13 +247,19 @@ export default function ShopSkinsSection() {
                     className="h-full w-full rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] object-cover"
                   />
 
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,10,40,0)_55%,rgba(4,10,40,0.55)_100%)]" />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "var(--shop-panel-overlay)" }}
+                  />
 
                   <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 text-center" />
                 </div>
 
                 <div className="flex h-[469px] w-[355px] shrink-0 flex-col items-center gap-[20px] rounded-tl-[0px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] px-[20px] pb-[16px] pt-[18px]">
-                  <div className="mb-[18px] w-full text-center text-[36px] font-semibold leading-none text-[#57dfff]">
+                  <div
+                    className="mb-[18px] w-full text-center text-[36px] font-semibold leading-none"
+                    style={{ color: "var(--shop-title)" }}
+                  >
                     {activeSkin.title}
                   </div>
 
@@ -248,7 +274,17 @@ export default function ShopSkinsSection() {
                         type="button"
                         onClick={handleApplySkin}
                         disabled={selectedSkinId === activeSkin.pieceSkinId}
-                        className="mt-[12px] flex h-[50px] w-full items-center justify-center rounded-[10px] bg-[#57dfff] text-[18px] font-semibold text-[#050b31] transition-colors duration-200 hover:bg-[#48c6ff] disabled:bg-[#4f6f9d] disabled:text-[#d1e0f5]"
+                        className="mt-[12px] flex h-[50px] w-full items-center justify-center rounded-[10px] text-[18px] font-semibold transition-colors duration-200"
+                        style={{
+                          background:
+                            selectedSkinId === activeSkin.pieceSkinId
+                              ? "var(--shop-apply-disabled-bg)"
+                              : "var(--shop-apply-bg)",
+                          color:
+                            selectedSkinId === activeSkin.pieceSkinId
+                              ? "var(--shop-apply-disabled-text)"
+                              : "var(--shop-apply-text)",
+                        }}
                       >
                         {selectedSkinId === activeSkin.pieceSkinId
                           ? "Применено"

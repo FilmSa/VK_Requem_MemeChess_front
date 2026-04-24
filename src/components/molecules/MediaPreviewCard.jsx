@@ -103,7 +103,7 @@ export default function MediaPreviewCard({
         overflow: "hidden",
         border: "none",
         padding: 0,
-        background: "#0B0F2B",
+        background: "var(--main-menu-preview-bg)",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
         boxShadow: isSelected
@@ -117,7 +117,7 @@ export default function MediaPreviewCard({
           position: "absolute",
           inset: 0,
           overflow: "hidden",
-          background: "#0B0F2B",
+          background: "var(--main-menu-preview-bg)",
           ...radiusStyle,
         }}
       >
@@ -137,7 +137,7 @@ export default function MediaPreviewCard({
               display: "block",
               objectFit: "cover",
               objectPosition: "center",
-              background: "#0B0F2B",
+              background: "var(--main-menu-preview-bg)",
             }}
           />
         ) : imageSrc ? (

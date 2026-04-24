@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { getGameParams } from "../lib/gameParams";
+import { pickRandomMemeEffect } from "../media/memeEffects.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
-
-let effectIndex = 1;
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -175,6 +174,44 @@ function buildKingThreatStyles(chessInstance) {
   };
 }
 
+function buildMoveMemeContext(move, chessAfterMove) {
+  const candidateTags = [];
+  let targetSquare = move.to;
+
+  if (chessAfterMove.isCheckmate()) {
+    candidateTags.push("CHECK", "DANGER");
+    targetSquare = findKingSquare(chessAfterMove) || targetSquare;
+  } else if (chessAfterMove.inCheck()) {
+    candidateTags.push("CHECK", "DANGER");
+    targetSquare = findKingSquare(chessAfterMove) || targetSquare;
+  }
+
+  if (move.promotion) {
+    candidateTags.push("SMART");
+  }
+
+  if (move.captured) {
+    candidateTags.push("ATTACK");
+
+    if (["q", "r"].includes(move.captured)) {
+      candidateTags.push("SMART");
+    }
+  }
+
+  if (move.flags?.includes("k") || move.flags?.includes("q")) {
+    candidateTags.push("SMART");
+  }
+
+  if (candidateTags.length === 0) {
+    candidateTags.push("DEFOLT");
+  }
+
+  return {
+    candidateTags,
+    targetSquare,
+  };
+}
+
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
@@ -214,19 +251,23 @@ export function useChessGame(options = {}) {
     setPromotionState(null);
   }
 
-  function triggerMoveEffect(move) {
+  function triggerMoveEffect(move, chessAfterMove) {
     if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE) {
       return;
     }
 
-    triggerEffect(String(effectIndex), {
-      square: move.to,
+    const { candidateTags, targetSquare } = buildMoveMemeContext(
+      move,
+      chessAfterMove
+    );
+    const memeEffect = pickRandomMemeEffect(candidateTags);
+
+    triggerEffect(memeEffect || "1", {
+      square: targetSquare,
       from: move.from,
       to: move.to,
       piece: move.piece,
     });
-
-    effectIndex = (effectIndex % 5) + 1;
   }
 
   function isPlayersTurn(chessInstance = gameRef.current) {
@@ -338,7 +379,7 @@ export function useChessGame(options = {}) {
     setGame(gameCopy);
     syncHistoryCursor(gameCopy.history().length, previousHistoryLength);
     clearSelection();
-    triggerMoveEffect(move);
+    triggerMoveEffect(move, gameCopy);
 
     return move;
   }

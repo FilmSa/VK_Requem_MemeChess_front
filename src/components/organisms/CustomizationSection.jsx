@@ -5,8 +5,11 @@ import CustomizationHeader from "../molecules/CustomizationHeader.jsx";
 function SecondaryLabel({ children, className = "" }) {
   return (
     <div
-      className={`text-[18px] font-medium leading-none text-white ${className}`}
-      style={{ fontFamily: '"Unbounded", sans-serif' }}
+      className={`text-[18px] font-medium leading-none ${className}`}
+      style={{
+        fontFamily: '"Unbounded", sans-serif',
+        color: "var(--main-menu-text)",
+      }}
     >
       {children}
     </div>
@@ -87,8 +90,11 @@ export default function CustomizationSection({
             <button
               type="button"
               onClick={onToggleExpanded}
-              className="mt-[14px] ml-auto block border-none bg-transparent p-0 text-right text-[14px] font-medium uppercase tracking-[0.02em] text-white"
-              style={{ fontFamily: '"Unbounded", sans-serif' }}
+              className="mt-[14px] ml-auto block border-none bg-transparent p-0 text-right text-[14px] font-medium uppercase tracking-[0.02em]"
+              style={{
+                fontFamily: '"Unbounded", sans-serif',
+                color: "var(--main-menu-text)",
+              }}
             >
               {section.isExpanded
                 ? "\u0441\u0432\u0435\u0440\u043d\u0443\u0442\u044c"

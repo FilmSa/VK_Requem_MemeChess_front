@@ -18,11 +18,14 @@ function CardButton({ children, isSelected, onClick, previewShape = "wide" }) {
       onClick={onClick}
       aria-pressed={isSelected}
       className={`
-        relative w-full overflow-hidden border border-transparent bg-[#0B0F2B] p-0
+        relative w-full overflow-hidden border border-transparent p-0
         transition-transform duration-200 hover:scale-[1.01]
         ${shapeClassName}
       `}
-      style={{ boxShadow: getCardShadow(isSelected) }}
+      style={{
+        background: "var(--main-menu-preview-bg)",
+        boxShadow: getCardShadow(isSelected),
+      }}
     >
       {children}
     </button>
@@ -45,11 +48,14 @@ function BoardPreview({ item }) {
 
 function PiecePreview({ item }) {
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#0B0F2B]">
+    <div
+      className="absolute inset-0 overflow-hidden"
+      style={{ background: "var(--main-menu-preview-bg)" }}
+    >
       <img
         src={item.icon}
         alt={item.title}
-        className="absolute inset-0 h-full w-full object-fill"
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
     </div>
   );
@@ -65,12 +71,13 @@ function PieceSetPreview({ item }) {
       {previewPieces.map((pieceSrc, index) => (
         <div
           key={`${pieceSrc}-${index}`}
-          className="relative overflow-hidden bg-[#0B0F2B]"
+          className="relative overflow-hidden"
+          style={{ background: "var(--main-menu-preview-bg)" }}
         >
           <img
             src={pieceSrc}
             alt=""
-            className="absolute inset-0 h-full w-full object-fill"
+            className="absolute inset-0 h-full w-full object-cover object-center"
           />
         </div>
       ))}

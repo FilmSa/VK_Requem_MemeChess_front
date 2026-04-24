@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { getBoardEffectConfig } from "./effectsManifest.js";
 
+function resolveEffectConfig(effectSource) {
+  if (
+    effectSource &&
+    typeof effectSource === "object" &&
+    typeof effectSource.asset === "string" &&
+    typeof effectSource.mediaType === "string"
+  ) {
+    return effectSource;
+  }
+
+  return getBoardEffectConfig(effectSource);
+}
+
 export function useBoardEffectsController() {
   const [activeEffects, setActiveEffects] = useState([]);
   const timeoutsRef = useRef(new Map());
@@ -38,15 +51,16 @@ export function useBoardEffectsController() {
     );
   }
 
-  function triggerEffect(effectId, options = {}) {
-    const config = getBoardEffectConfig(effectId);
+  function triggerEffect(effectSource, options = {}) {
+    const config = resolveEffectConfig(effectSource);
 
     if (!config) {
-      console.warn(`Effect "${effectId}" not found`);
+      console.warn(`Effect "${String(effectSource)}" not found`);
       return null;
     }
 
-    const instanceId = `${effectId}-${Date.now()}-${Math.random()}`;
+    const effectIdentifier = config.id || String(effectSource || "effect");
+    const instanceId = `${effectIdentifier}-${Date.now()}-${Math.random()}`;
 
     const effectInstance = {
       instanceId,

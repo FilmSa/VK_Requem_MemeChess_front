@@ -6,6 +6,8 @@ import startGameIcon from "../../../../icons/startgame.svg";
 import friendGameIcon from "../../../../icons/friendgame.svg";
 import topTabIcon from "../../../../icons/sword.svg";
 import customizeTabIcon from "../../../../icons/bak.svg";
+import defaultPiecePreviewImage from "/images/image.jpg?url";
+import imperiumPreviewImage from "/images/imperium.png?url";
 import {
   DEFAULT_EMOJI_QUICK_ACCESS_IDS,
   EMOJI_PREVIEW_ITEMS,
@@ -52,14 +54,16 @@ const pieceSkinItems = [
   {
     id: DEFAULT_PIECE_SKIN_ID,
     title: "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0444\u0438\u0433\u0443\u0440\u044b",
-    previewShape: "square",
-    imageSrc: withAssetBase("/images/image.jpg"),
+    previewShape: "wide",
+    previewContentFit: "fill",
+    imageSrc: defaultPiecePreviewImage,
   },
   {
     id: "piece-skin-imperium",
     title: "Imperium",
     previewShape: "wide",
-    imageSrc: withAssetBase("/images/imperium.png"),
+    previewContentFit: "fill",
+    imageSrc: imperiumPreviewImage,
   },
 ];
 

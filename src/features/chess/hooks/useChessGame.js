@@ -169,7 +169,7 @@ function buildKingThreatStyles(chessInstance) {
 
   return {
     [kingSquare]: {
-      animation: "king-check-flash 1s ease-in-out infinite",
+      animation: "king-check-flash 0.45s ease-in-out 2",
       boxShadow: "inset 0 0 0 3px rgba(255, 200, 200, 0.95)",
     },
   };

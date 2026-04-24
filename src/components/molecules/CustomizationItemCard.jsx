@@ -45,11 +45,11 @@ function BoardPreview({ item }) {
 
 function PiecePreview({ item }) {
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden bg-[#0B0F2B]">
       <img
         src={item.icon}
         alt={item.title}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-fill"
       />
     </div>
   );
@@ -63,11 +63,14 @@ function PieceSetPreview({ item }) {
   return (
     <div className="grid h-full w-full grid-cols-2 grid-rows-2 overflow-hidden">
       {previewPieces.map((pieceSrc, index) => (
-        <div key={`${pieceSrc}-${index}`} className="relative overflow-hidden">
+        <div
+          key={`${pieceSrc}-${index}`}
+          className="relative overflow-hidden bg-[#0B0F2B]"
+        >
           <img
             src={pieceSrc}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-fill"
           />
         </div>
       ))}
@@ -134,21 +137,21 @@ export default function CustomizationItemCard({
   }
 
   if (item.imageSrc) {
-  return (
-    <CardButton
-      isSelected={isSelected}
-      onClick={onClick}
-      previewShape={item.previewShape}
-    >
-      <img
-        src={item.imageSrc}
-        alt={item.title}
-        className="absolute inset-0 h-full w-full object-cover object-center"
-      />
-      <SelectedOverlay isSelected={isSelected} />
-    </CardButton>
-  );
-}
+    return (
+      <CardButton
+        isSelected={isSelected}
+        onClick={onClick}
+        previewShape={item.previewShape}
+      >
+        <img
+          src={item.imageSrc}
+          alt={item.title}
+          className="absolute left-0 top-[-35%] h-[135%] w-full object-cover object-center"
+        />
+        <SelectedOverlay isSelected={isSelected} />
+      </CardButton>
+    );
+  }
 
   return (
     <CardButton

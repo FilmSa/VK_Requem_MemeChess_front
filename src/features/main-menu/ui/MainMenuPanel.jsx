@@ -136,7 +136,6 @@ export default function MainMenuPanel({ style }) {
         onToggleCustomizeSection={toggleCustomizeSection}
         onToggleCustomizeExpanded={toggleCustomizeExpanded}
         actions={actions}
-        inviteError={inviteLobby.inviteError}
       />
 
       <InviteLobbyModal

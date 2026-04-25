@@ -14,6 +14,13 @@ import {
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
+const RANDOM_MEME_FALLBACK_TAGS = [
+  "ATTACK",
+  "CHECK",
+  "DANGER",
+  "SMART",
+  "DEFOLT",
+];
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -308,13 +315,22 @@ export function useChessGame(options = {}) {
       chessAfterMove
     );
     let candidateTags = localContext.candidateTags;
+    let shouldUseRandomFallback = false;
+    let randomFallbackReason = "";
 
     try {
       const analysisResult = await analyzeMove({
         moves: buildMoveHistoryDtos(historyBeforeMove),
         move: buildMoveDto(move),
         depth: 3,
+        timeoutMs: 1500,
       });
+
+      if (!analysisResult) {
+        shouldUseRandomFallback = true;
+        randomFallbackReason = "empty-analysis-result";
+      }
+
       const analyzerTags = mapAnalyzerTagsToMemeTags(
         analysisResult?.tags,
         analysisResult?.quality
@@ -324,10 +340,22 @@ export function useChessGame(options = {}) {
         candidateTags = analyzerTags;
       }
     } catch {
-      // Keep local fallback classification when analyzer is unavailable.
+      shouldUseRandomFallback = true;
+      randomFallbackReason = "analysis-request-failed";
     }
 
-    const memeEffect = pickRandomMemeEffect(candidateTags);
+    const memeEffect = pickRandomMemeEffect(
+      shouldUseRandomFallback ? RANDOM_MEME_FALLBACK_TAGS : candidateTags
+    );
+
+    if (shouldUseRandomFallback && memeEffect) {
+      console.info("[meme-fallback] Meme selected without backend analysis", {
+        reason: randomFallbackReason || "unknown",
+        move: buildMoveDto(move),
+        selectedMemeId: memeEffect.id,
+        selectedMemeTag: memeEffect.tag,
+      });
+    }
 
     triggerEffect(memeEffect || "1", {
       square: localContext.targetSquare,

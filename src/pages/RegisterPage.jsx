@@ -45,7 +45,7 @@ export default function RegisterPage() {
 
   const [form, setForm] = useState(defaultValues);
   const [serverErrors, setServerErrors] = useState({});
-  const [submitError, setSubmitError] = useState("");
+  const [, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clientErrors = useMemo(() => validateForm(form), [form]);
@@ -163,19 +163,6 @@ export default function RegisterPage() {
                 error={clientErrors.confirmPassword}
               />
             </div>
-
-            {submitError ? (
-              <div
-                className="rounded-[14px] border px-[14px] py-[12px] text-[14px]"
-                style={{
-                  borderColor: "var(--auth-error-border)",
-                  background: "var(--auth-error-background)",
-                  color: "var(--auth-error-text)",
-                }}
-              >
-                {submitError}
-              </div>
-            ) : null}
 
             <div>
               <AuthButton type="submit" icon={friendGameIcon} disabled={isDisabled}>

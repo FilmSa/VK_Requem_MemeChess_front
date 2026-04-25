@@ -38,7 +38,6 @@ export default function MainMenuPanel({
   onToggleCustomizeSection,
   onToggleCustomizeExpanded,
   actions,
-  inviteError,
 }) {
   const isCustomizeTab = activeTabId === "customize";
 
@@ -142,19 +141,6 @@ export default function MainMenuPanel({
               onClick={actions.onFriendPlay}
               disabled={actions.friendDisabled}
             />
-
-            {inviteError ? (
-              <div
-                className="rounded-br-[0px] rounded-tl-[20px] p-[14px] text-[14px]"
-                style={{
-                  borderColor: "var(--main-menu-error-border)",
-                  background: "var(--main-menu-error-bg)",
-                  color: "var(--main-menu-error-text)",
-                }}
-              >
-                {inviteError}
-              </div>
-            ) : null}
           </div>
         ) : null}
       </div>

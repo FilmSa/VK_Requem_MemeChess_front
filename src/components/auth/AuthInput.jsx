@@ -121,24 +121,15 @@ export default function AuthInput({
           type={type}
           value={value}
           onChange={onChange}
+          aria-invalid={Boolean(error)}
           placeholder={placeholder}
-          className={`h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] ${
-            error
-              ? "shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_rgba(255,95,95,0.95)]"
-              : "shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)] focus:shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_var(--color-accent),0_0_18px_rgba(47,200,227,0.22)]"
-          }`}
+          className="h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)] focus:shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_var(--color-accent),0_0_18px_rgba(47,200,227,0.22)]"
           style={{
             background: "var(--auth-input-background)",
             color: "var(--color-text)",
           }}
         />
       </div>
-
-      {error ? (
-        <p className="mt-[10px] text-[13px]" style={{ color: "var(--color-danger)" }}>
-          {error}
-        </p>
-      ) : null}
     </label>
   );
 }

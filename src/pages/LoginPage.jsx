@@ -35,7 +35,7 @@ export default function LoginPage() {
 
   const [form, setForm] = useState(defaultValues);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [submitError, setSubmitError] = useState("");
+  const [, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
 
@@ -131,19 +131,6 @@ export default function LoginPage() {
               disabled={isDisabled}
               onChange={setRememberSession}
             />
-
-            {submitError ? (
-              <div
-                className="rounded-[14px] border px-[14px] py-[12px] text-[14px]"
-                style={{
-                  borderColor: "var(--auth-error-border)",
-                  background: "var(--auth-error-background)",
-                  color: "var(--auth-error-text)",
-                }}
-              >
-                {submitError}
-              </div>
-            ) : null}
 
             <div>
               <AuthButton type="submit" icon={startGameIcon} disabled={isDisabled}>

@@ -361,15 +361,6 @@ export default function PlayPage() {
                 topReaction={topReaction}
                 bottomReaction={bottomReaction}
               />
-
-              {onlineRoom.socketError ? (
-                <div
-                  className="mt-3 text-[13px]"
-                  style={{ color: "var(--auth-error-text)" }}
-                >
-                  {onlineRoom.socketError}
-                </div>
-              ) : null}
             </div>
 
             <div

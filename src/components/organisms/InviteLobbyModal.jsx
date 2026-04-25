@@ -150,18 +150,6 @@ export default function InviteLobbyModal({
           </div>
         </div>
 
-        {inviteLobby.connectionError ? (
-          <div
-            className="mt-5 rounded-[16px] border px-4 py-3 text-[13px] leading-6"
-            style={{
-              borderColor: "var(--auth-error-border)",
-              background: "var(--auth-error-background)",
-              color: "var(--auth-error-text)",
-            }}
-          >
-            {inviteLobby.connectionError}
-          </div>
-        ) : null}
       </div>
     </div>,
     document.body

@@ -21,7 +21,65 @@ function buildAnalyzerUrl(path) {
   return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export async function analyzeMove({ moves, move, depth = 3, signal } = {}) {
+function createTimedRequestSignal(externalSignal, timeoutMs) {
+  if (!externalSignal && !(Number.isFinite(timeoutMs) && timeoutMs > 0)) {
+    return {
+      signal: undefined,
+      cleanup() {},
+    };
+  }
+
+  const controller = new AbortController();
+  let timeoutId = null;
+
+  const abortRequest = () => {
+    if (!controller.signal.aborted) {
+      controller.abort();
+    }
+  };
+
+  const handleExternalAbort = () => {
+    abortRequest();
+  };
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      abortRequest();
+    } else {
+      externalSignal.addEventListener("abort", handleExternalAbort, {
+        once: true,
+      });
+    }
+  }
+
+  if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+    timeoutId = window.setTimeout(() => {
+      abortRequest();
+    }, timeoutMs);
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup() {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+
+      if (externalSignal) {
+        externalSignal.removeEventListener("abort", handleExternalAbort);
+      }
+    },
+  };
+}
+
+export async function analyzeMove({
+  moves,
+  move,
+  depth = 3,
+  signal,
+  timeoutMs = 1500,
+} = {}) {
+  const requestSignal = createTimedRequestSignal(signal, timeoutMs);
   const response = await fetch(buildAnalyzerUrl("/api/v1/analyze/move"), {
     method: "POST",
     headers: {
@@ -33,7 +91,9 @@ export async function analyzeMove({ moves, move, depth = 3, signal } = {}) {
       move: move || {},
       depth,
     }),
-    signal,
+    signal: requestSignal.signal,
+  }).finally(() => {
+    requestSignal.cleanup();
   });
 
   const payload = await response.json().catch(() => null);

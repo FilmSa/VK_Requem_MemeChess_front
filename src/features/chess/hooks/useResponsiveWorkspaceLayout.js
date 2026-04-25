@@ -31,35 +31,52 @@ function getFallbackViewportSize() {
 }
 
 export function useResponsiveWorkspaceLayout() {
-  const viewportRef = useRef(null);
+  const resizeObserverRef = useRef(null);
+  const [viewportNode, setViewportNode] = useState(null);
   const [viewportSize, setViewportSize] = useState(getFallbackViewportSize);
   const [playerPanelHeights, setPlayerPanelHeights] = useState({
     topPanelHeight: DEFAULT_PLAYER_PANEL_HEIGHT,
     bottomPanelHeight: DEFAULT_PLAYER_PANEL_HEIGHT,
   });
 
-  useEffect(() => {
-    const node = viewportRef.current;
+  const viewportRef = useCallback((node) => {
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+      resizeObserverRef.current = null;
+    }
+
     if (!node) {
+      setViewportSize(getFallbackViewportSize());
+    }
+
+    setViewportNode(node || null);
+  }, []);
+
+  useEffect(() => {
+    if (!viewportNode) {
       return undefined;
     }
 
     function updateViewportSize() {
       setViewportSize({
-        width: node.clientWidth,
-        height: node.clientHeight,
+        width: viewportNode.clientWidth,
+        height: viewportNode.clientHeight,
       });
     }
 
     updateViewportSize();
 
     const resizeObserver = new ResizeObserver(updateViewportSize);
-    resizeObserver.observe(node);
+    resizeObserver.observe(viewportNode);
+    resizeObserverRef.current = resizeObserver;
 
     return () => {
       resizeObserver.disconnect();
+      if (resizeObserverRef.current === resizeObserver) {
+        resizeObserverRef.current = null;
+      }
     };
-  }, []);
+  }, [viewportNode]);
 
   const handleBoardMetricsChange = useCallback((nextMetrics) => {
     setPlayerPanelHeights((currentMetrics) => {

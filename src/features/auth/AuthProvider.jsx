@@ -50,6 +50,21 @@ export default function AuthProvider({ children }) {
     [clearSession, token]
   );
 
+  const refreshCurrency = useCallback(
+    async (activeToken) => {
+      const sessionToken = activeToken || token;
+
+      if (!sessionToken) {
+        return null;
+      }
+
+      const currency = await authApi.getCurrency(sessionToken);
+      setUser((currentUser) => authApi.applyCurrencyToUser(currentUser, currency));
+      return currency;
+    },
+    [token]
+  );
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -136,8 +151,18 @@ export default function AuthProvider({ children }) {
       register,
       logout,
       refreshSession,
+      refreshCurrency,
     }),
-    [isInitializing, login, logout, refreshSession, register, token, user]
+    [
+      isInitializing,
+      login,
+      logout,
+      refreshCurrency,
+      refreshSession,
+      register,
+      token,
+      user,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -31,9 +31,12 @@ export default function GameActionsMolecule({
   onResign = async () => {},
   onDraw = async () => {},
   disabled = false,
+  resignDisabled = false,
+  drawDisabled = false,
 }) {
   const [isLoading, setIsLoading] = useState(false);
-  const isDisabled = disabled || isLoading;
+  const isResignDisabled = disabled || isLoading || resignDisabled;
+  const isDrawDisabled = disabled || isLoading || drawDisabled;
 
   async function handleAction(action) {
     setIsLoading(true);
@@ -52,7 +55,7 @@ export default function GameActionsMolecule({
         title="Сдаться"
         background="linear-gradient(180deg, #F33856 0%, #99152F 100%)"
         onClick={() => handleAction(onResign)}
-        disabled={isDisabled}
+        disabled={isResignDisabled}
       />
       <ActionButton
         label="Ничья"
@@ -60,7 +63,7 @@ export default function GameActionsMolecule({
         title="Предложить ничью"
         background="var(--main-menu-gradient-pink)"
         onClick={() => handleAction(onDraw)}
-        disabled={isDisabled}
+        disabled={isDrawDisabled}
       />
     </div>
   );

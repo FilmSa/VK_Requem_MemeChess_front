@@ -7,6 +7,7 @@ export default function MainMenuDepositField({
   toValue,
   fromPlaceholder,
   toPlaceholder,
+  disabled = false,
   onFromChange,
   onToChange,
 }) {
@@ -17,12 +18,22 @@ export default function MainMenuDepositField({
       <div className="flex w-[210px] items-center justify-between py-[6px]">
         <SurfaceInput
           value={fromValue}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          disabled={disabled}
           onChange={(event) => onFromChange(event.target.value)}
           placeholder={fromPlaceholder}
           shape="start"
         />
         <SurfaceInput
           value={toValue}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          disabled={disabled}
           onChange={(event) => onToChange(event.target.value)}
           placeholder={toPlaceholder}
           shape="end"

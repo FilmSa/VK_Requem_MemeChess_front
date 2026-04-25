@@ -18,7 +18,7 @@ export default function SurfaceInput({
 }) {
   return (
     <input
-      className={`h-[36px] w-[98px] border-none px-[14px] outline-none placeholder:text-[var(--color-text-soft)] ${
+      className={`h-[36px] w-[98px] border-none px-[14px] outline-none placeholder:text-[var(--color-text-soft)] disabled:cursor-not-allowed disabled:opacity-70 ${
         shapeClasses[shape] || shapeClasses.full
       } ${className}`}
       style={{

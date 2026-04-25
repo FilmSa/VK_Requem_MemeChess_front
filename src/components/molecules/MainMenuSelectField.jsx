@@ -23,6 +23,7 @@ export default function MainMenuSelectField({
   value,
   options,
   isOpen,
+  disabled = false,
   onToggle,
   onSelect,
 }) {
@@ -33,7 +34,8 @@ export default function MainMenuSelectField({
       <div className="relative">
         <ButtonBase
           onClick={onToggle}
-          className="flex h-[61px] min-w-[225px] items-center justify-between rounded-[15px] border-none px-[16px]"
+          disabled={disabled}
+          className="flex h-[61px] min-w-[225px] items-center justify-between rounded-[15px] border-none px-[16px] disabled:cursor-not-allowed disabled:opacity-70"
           style={{
             background: "var(--main-menu-control-bg)",
             boxShadow: "var(--main-menu-surface-shadow)",

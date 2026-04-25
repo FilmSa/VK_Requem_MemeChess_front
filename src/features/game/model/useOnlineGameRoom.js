@@ -27,6 +27,44 @@ function normalizeProfile(profile) {
   };
 }
 
+function normalizeMatch(match) {
+  if (!match || typeof match !== "object") {
+    return null;
+  }
+
+  const agreedStake = Number(match.agreedStake ?? match.agreed_stake ?? 0);
+  const gameMode = String(match.gameMode || match.game_mode || "")
+    .trim()
+    .toLowerCase();
+  const gameCurrency = String(match.gameCurrency || match.game_currency || "").trim();
+
+  return {
+    agreedStake: Number.isFinite(agreedStake) ? agreedStake : 0,
+    gameMode,
+    gameCurrency,
+  };
+}
+
+function resolveMatchGameModeLabel(gameMode) {
+  if (gameMode === "meme") {
+    return "Мемы";
+  }
+
+  if (gameMode === "classic") {
+    return "Классика";
+  }
+
+  return "";
+}
+
+function resolveMatchCurrencyLabel(gameCurrency) {
+  if (!gameCurrency || gameCurrency === "game_currency") {
+    return "Игровая валюта";
+  }
+
+  return gameCurrency;
+}
+
 export function useOnlineGameRoom(gameId) {
   const location = useLocation();
   const { token, user, isInitializing } = useAuth();
@@ -41,6 +79,10 @@ export function useOnlineGameRoom(gameId) {
         storedSession,
       }),
     [location.state, storedSession, token, user]
+  );
+  const match = useMemo(
+    () => normalizeMatch(location.state?.match) || normalizeMatch(storedSession?.match),
+    [location.state, storedSession]
   );
 
   const [roomState, setRoomState] = useState(null);
@@ -120,10 +162,20 @@ export function useOnlineGameRoom(gameId) {
     visibleParticipants?.player2,
   ]);
 
+  const currentUserId = String(
+    currentUserProfile?.id || onlineIdentity.user?.id || ""
+  ).trim();
+  const opponentUserId =
+    String(opponentProfile?.id || "").trim() ||
+    (currentUserId && roomState?.player1_id === currentUserId
+      ? String(roomState?.player2_id || "").trim()
+      : String(roomState?.player1_id || "").trim());
+
   const currentUserName =
     currentUserProfile?.username || (isOnlineGame ? "Игрок" : "Вы");
   const opponentName =
-    opponentProfile?.username || (isOnlineGame ? "Ожидаем игрока" : "Соперник");
+    opponentProfile?.username ||
+    (isOnlineGame ? "Ожидаем игрока" : "Соперник");
 
   const buildSocketOptions = useCallback(
     (chessGameState) => {
@@ -179,10 +231,16 @@ export function useOnlineGameRoom(gameId) {
     isWaitingForAuthBootstrap,
     hasOnlineAccess,
     playerColor,
+    currentUserId,
+    opponentUserId,
     currentUserProfile,
     opponentProfile,
     currentUserName,
     opponentName,
+    matchStake: match?.agreedStake ?? 0,
+    matchGameMode: match?.gameMode || "",
+    matchGameModeLabel: resolveMatchGameModeLabel(match?.gameMode || ""),
+    matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
     buildSocketOptions,
   };
 }

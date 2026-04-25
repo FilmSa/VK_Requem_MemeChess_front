@@ -20,6 +20,14 @@ const panelStyle = {
   fontFamily: '"Unbounded", sans-serif',
 };
 
+function formatStakeValue(value) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "Дипозит: 0";
+  }
+
+  return `Дипозит: ${new Intl.NumberFormat("ru-RU").format(value)}`;
+}
+
 export default function GameSettingsPanel({
   style,
   emojiQuickAccessItems = [],
@@ -34,10 +42,17 @@ export default function GameSettingsPanel({
   onResign,
   onDraw,
   actionsDisabled = false,
+  resignDisabled = false,
+  drawDisabled = false,
+  stakeAmount = 0,
 }) {
   return (
     <section style={{ ...panelStyle, ...style }}>
-      <GameHeaderMolecule iconKey="game" title="Партия" />
+      <GameHeaderMolecule
+        iconKey="game"
+        title="Партия"
+        meta={formatStakeValue(stakeAmount)}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <QuickAccessMolecule
@@ -68,6 +83,8 @@ export default function GameSettingsPanel({
               onResign={onResign}
               onDraw={onDraw}
               disabled={actionsDisabled}
+              resignDisabled={resignDisabled}
+              drawDisabled={drawDisabled}
             />
           </div>
         </div>

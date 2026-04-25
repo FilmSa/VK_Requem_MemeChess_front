@@ -11,6 +11,8 @@ function normalizeUser(user) {
     ...user,
     avatar_url: user.avatar_url || "",
     created_at: user.created_at || "",
+    shop_funds: Number(user.shop_funds ?? 0),
+    game_funds: Number(user.game_funds ?? 0),
   };
 }
 
@@ -18,6 +20,25 @@ function normalizeAuthResponse(response) {
   return {
     token: response.token,
     user: normalizeUser(response.user),
+  };
+}
+
+function normalizeCurrency(response) {
+  return {
+    shopFunds: Number(response?.shop_funds ?? 0),
+    gameFunds: Number(response?.game_funds ?? 0),
+  };
+}
+
+export function applyCurrencyToUser(user, currency) {
+  if (!user || !currency) {
+    return user;
+  }
+
+  return {
+    ...user,
+    shop_funds: Number(currency.shopFunds ?? user.shop_funds ?? 0),
+    game_funds: Number(currency.gameFunds ?? user.game_funds ?? 0),
   };
 }
 
@@ -131,6 +152,19 @@ export async function getCurrentUser(token) {
     return { user: normalizeUser(user) };
   } catch (error) {
     throw buildError(error, "Не удалось загрузить профиль.");
+  }
+}
+
+export async function getCurrency(token) {
+  try {
+    const response = await apiFetch(`${authBasePath}/currency`, {
+      method: "GET",
+      token,
+    });
+
+    return normalizeCurrency(response);
+  } catch (error) {
+    throw buildError(error, "Не удалось загрузить баланс.");
   }
 }
 

@@ -150,6 +150,32 @@ function normalizeReactionInput(reactionInput) {
   };
 }
 
+function findKingSquareByColor(chessInstance, color) {
+  if (!chessInstance || !color) {
+    return "";
+  }
+
+  const board = chessInstance.board();
+
+  for (let rankIndex = 0; rankIndex < board.length; rankIndex += 1) {
+    const rank = board[rankIndex];
+
+    for (let fileIndex = 0; fileIndex < rank.length; fileIndex += 1) {
+      const piece = rank[fileIndex];
+
+      if (piece?.type !== "k" || piece.color !== color) {
+        continue;
+      }
+
+      const file = String.fromCharCode(97 + fileIndex);
+      const rankNumber = 8 - rankIndex;
+      return `${file}${rankNumber}`;
+    }
+  }
+
+  return "";
+}
+
 function StatusCard({ title, description, action }) {
   return (
     <div className="app-page flex min-h-screen items-center justify-center px-4 py-8">
@@ -177,19 +203,41 @@ function StatusCard({ title, description, action }) {
 export default function PlayPage() {
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get("game") || "";
-  const { user } = useAuth();
+  const { user, refreshCurrency } = useAuth();
   const [topReaction, setTopReaction] = useState(null);
   const [bottomReaction, setBottomReaction] = useState(null);
   const [emojiCooldownActive, setEmojiCooldownActive] = useState(false);
+  const [localFinishState, setLocalFinishState] = useState(null);
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
+  const finishedCurrencyRefreshKeyRef = useRef("");
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
 
   const onlineRoom = useOnlineGameRoom(gameId);
+  const isServerFinished = onlineRoom.roomState?.status === "finished";
+  const activeLocalFinishState =
+    localFinishState?.gameId === gameId && !isServerFinished ? localFinishState : null;
+  const resignationKingSquare = activeLocalFinishState?.kingSquare || "";
+  const resignationHighlightSquares = useMemo(() => {
+    if (!resignationKingSquare) {
+      return {};
+    }
+
+    return {
+      [resignationKingSquare]: {
+        background:
+          "linear-gradient(0deg, rgba(255, 56, 56, 0.72) 0%, rgba(164, 0, 0, 0.82) 100%)",
+        boxShadow: "inset 0 0 0 3px rgba(255, 186, 186, 0.92)",
+      },
+    };
+  }, [resignationKingSquare]);
+  const isGameFinished = isServerFinished || Boolean(activeLocalFinishState);
   const chessGameState = useChessGame({
     playerColor: onlineRoom.playerColor,
+    interactionLocked: isGameFinished,
+    extraHighlightedSquares: resignationHighlightSquares,
   });
 
   const emojiOwnerId = onlineRoom.currentUserProfile?.id || user?.id;
@@ -288,6 +336,33 @@ export default function PlayPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!onlineRoom.isOnlineGame) {
+      return;
+    }
+
+    void refreshCurrency().catch(() => {});
+  }, [onlineRoom.isOnlineGame, refreshCurrency]);
+
+  useEffect(() => {
+    if (onlineRoom.roomState?.status !== "finished" || !gameId) {
+      return;
+    }
+
+    const refreshKey = `${gameId}:${onlineRoom.roomState?.winner_id || ""}`;
+    if (finishedCurrencyRefreshKeyRef.current === refreshKey) {
+      return;
+    }
+
+    finishedCurrencyRefreshKeyRef.current = refreshKey;
+    void refreshCurrency().catch(() => {});
+  }, [
+    gameId,
+    onlineRoom.roomState?.status,
+    onlineRoom.roomState?.winner_id,
+    refreshCurrency,
+  ]);
+
   function startEmojiCooldown() {
     if (cooldownTimeoutRef.current) {
       window.clearTimeout(cooldownTimeoutRef.current);
@@ -309,6 +384,28 @@ export default function PlayPage() {
     startEmojiCooldown();
     showReaction("bottom", reaction);
     socketClient.sendEmoji(reaction);
+  }
+
+  async function handleResign() {
+    if (isGameFinished) {
+      return;
+    }
+
+    chessGameState.jumpToLatestMove();
+    socketClient.sendResign();
+
+    const loserColor = onlineRoom.playerColor === "b" ? "b" : "w";
+    const kingSquare =
+      findKingSquareByColor(chessGameState.game, loserColor) ||
+      findKingSquareByColor(chessGameState.displayedGame, loserColor);
+
+    setLocalFinishState({
+      gameId,
+      finishedReason: "resign",
+      winnerId: onlineRoom.opponentUserId || "",
+      loserId: onlineRoom.currentUserId || user?.id || "",
+      kingSquare,
+    });
   }
 
   if (onlineRoom.isWaitingForAuthBootstrap) {
@@ -383,7 +480,14 @@ export default function PlayPage() {
                 canViewNext={chessGameState.canViewNext}
                 onPreviousMove={chessGameState.viewPreviousMove}
                 onNextMove={chessGameState.viewNextMove}
-                actionsDisabled
+                onResign={handleResign}
+                onDraw={async () => {}}
+                stakeAmount={onlineRoom.matchStake}
+                gameCurrencyLabel={onlineRoom.matchGameCurrencyLabel}
+                gameModeLabel={onlineRoom.matchGameModeLabel}
+                actionsDisabled={!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess}
+                resignDisabled={isGameFinished}
+                drawDisabled
               />
             </div>
           </div>

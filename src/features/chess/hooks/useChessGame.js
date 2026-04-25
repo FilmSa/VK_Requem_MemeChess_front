@@ -248,6 +248,12 @@ export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
   const boardOrientation = playerColor === "b" ? "black" : "white";
+  const interactionLocked = Boolean(options.interactionLocked);
+  const externalHighlightedSquares =
+    options.extraHighlightedSquares &&
+    typeof options.extraHighlightedSquares === "object"
+      ? options.extraHighlightedSquares
+      : {};
 
   const [game, setGame] = useState(() => new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -288,6 +294,12 @@ export function useChessGame(options = {}) {
       setIsMemeModeEnabled(enabled);
     });
   }, []);
+
+  useEffect(() => {
+    if (interactionLocked) {
+      clearSelection();
+    }
+  }, [interactionLocked]);
 
   function syncHistoryCursor(nextHistoryLength, previousHistoryLength) {
     setHistoryCursor((currentCursor) => {
@@ -524,7 +536,7 @@ export function useChessGame(options = {}) {
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const clickedPiece = currentGame.get(square);
 
-    if (promotionState) {
+    if (promotionState || interactionLocked) {
       return;
     }
 
@@ -591,7 +603,7 @@ export function useChessGame(options = {}) {
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
     const piece = currentGame.get(sourceSquare);
 
-    if (promotionState) {
+    if (promotionState || interactionLocked) {
       return false;
     }
 
@@ -661,7 +673,7 @@ export function useChessGame(options = {}) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
 
-    if (promotionState || isViewingHistory) {
+    if (promotionState || isViewingHistory || interactionLocked) {
       return false;
     }
 
@@ -672,7 +684,7 @@ export function useChessGame(options = {}) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
 
-    if (promotionState || isViewingHistory) {
+    if (promotionState || isViewingHistory || interactionLocked) {
       return false;
     }
 
@@ -706,8 +718,8 @@ export function useChessGame(options = {}) {
   const displayedGame = buildGameToPly(history, historyCursor);
   const activeHistoryPly = Math.min(historyCursor, history.length);
   const effectiveHighlightedSquares = mergeSquareStyles(
-    highlightedSquares,
-    buildKingThreatStyles(displayedGame)
+    mergeSquareStyles(highlightedSquares, buildKingThreatStyles(displayedGame)),
+    externalHighlightedSquares
   );
 
   function viewPreviousMove() {

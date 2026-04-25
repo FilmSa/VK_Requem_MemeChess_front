@@ -24,14 +24,19 @@ import {
   readStoredMemeMode,
 } from "../../../shared/lib/memeMode.js";
 
+function normalizeStakeInput(value) {
+  const digitsOnly = String(value ?? "").replace(/\D+/g, "");
+  return digitsOnly.replace(/^0+(?=\d)/, "");
+}
+
 export function useMainMenuPanelState({ userId } = {}) {
   const [activeTab, setActiveTab] = useState("new");
   const [activeCardId, setActiveCardId] = useState(DEFAULT_CARD_IDS.new);
   const [selectedMode, setSelectedMode] = useState(MODE_OPTIONS[0]);
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [memeMode, setMemeMode] = useState(() => readStoredMemeMode());
-  const [depositFrom, setDepositFrom] = useState("");
-  const [depositTo, setDepositTo] = useState("");
+  const [depositFrom, setDepositFromState] = useState("");
+  const [depositTo, setDepositToState] = useState("");
   const [openCustomizeSections, setOpenCustomizeSections] = useState({
     emoji: true,
     boards: true,
@@ -111,6 +116,32 @@ export function useMainMenuPanelState({ userId } = {}) {
 
     setSelectedEmojiQuickAccessIds((currentIds) => {
       return updateEmojiQuickAccessIds(currentIds, cardId);
+    });
+  }
+
+  function setDepositFrom(value) {
+    const nextFrom = normalizeStakeInput(value);
+
+    setDepositFromState(nextFrom);
+    setDepositToState((currentTo) => {
+      if (!nextFrom || !currentTo) {
+        return currentTo;
+      }
+
+      return Number(currentTo) < Number(nextFrom) ? nextFrom : currentTo;
+    });
+  }
+
+  function setDepositTo(value) {
+    const nextTo = normalizeStakeInput(value);
+
+    setDepositToState(nextTo);
+    setDepositFromState((currentFrom) => {
+      if (!nextTo || !currentFrom) {
+        return currentFrom;
+      }
+
+      return Number(currentFrom) > Number(nextTo) ? nextTo : currentFrom;
     });
   }
 

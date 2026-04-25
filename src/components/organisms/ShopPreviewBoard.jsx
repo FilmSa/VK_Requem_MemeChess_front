@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { createCustomPieces } from "../../features/chess/lib/boardPieces.jsx";
+import {
+  getBoardSkinConfig,
+  readStoredBoardSkin,
+  subscribeBoardSkinChanges,
+} from "../../shared/lib/boardSkin.js";
 
 export default function ShopPreviewBoard({
   boardWidth = 720,
@@ -9,8 +14,21 @@ export default function ShopPreviewBoard({
   pieceSkinId,
 }) {
   const [game, setGame] = useState(() => new Chess());
+  const [selectedBoardSkin, setSelectedBoardSkin] = useState(() =>
+    readStoredBoardSkin()
+  );
 
   const customPieces = createCustomPieces(pieceSkinId);
+  const boardSkinConfig = useMemo(
+    () => getBoardSkinConfig(selectedBoardSkin),
+    [selectedBoardSkin]
+  );
+
+  useEffect(() => {
+    return subscribeBoardSkinChanges((skinId) => {
+      setSelectedBoardSkin(skinId);
+    });
+  }, []);
 
   function onPieceDrop(sourceSquare, targetSquare) {
     const gameCopy = new Chess(game.fen());
@@ -38,8 +56,8 @@ export default function ShopPreviewBoard({
         boardWidth={boardWidth}
         boardOrientation={boardOrientation}
         customPieces={customPieces}
-        customLightSquareStyle={{ backgroundColor: "#c8cfdb" }}
-        customDarkSquareStyle={{ backgroundColor: "#aab3c8" }}
+        customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
+        customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
       />
     </div>
   );

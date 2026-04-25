@@ -19,13 +19,17 @@ import {
   persistPieceSkin,
   readStoredPieceSkin,
 } from "../../../shared/lib/pieceSkin.js";
+import {
+  persistMemeMode,
+  readStoredMemeMode,
+} from "../../../shared/lib/memeMode.js";
 
 export function useMainMenuPanelState({ userId } = {}) {
   const [activeTab, setActiveTab] = useState("new");
   const [activeCardId, setActiveCardId] = useState(DEFAULT_CARD_IDS.new);
   const [selectedMode, setSelectedMode] = useState(MODE_OPTIONS[0]);
   const [isModeOpen, setIsModeOpen] = useState(false);
-  const [memeMode, setMemeMode] = useState(true);
+  const [memeMode, setMemeMode] = useState(() => readStoredMemeMode());
   const [depositFrom, setDepositFrom] = useState("");
   const [depositTo, setDepositTo] = useState("");
   const [openCustomizeSections, setOpenCustomizeSections] = useState({
@@ -69,6 +73,10 @@ export function useMainMenuPanelState({ userId } = {}) {
   useEffect(() => {
     persistBoardSkin(selectedBoardSkin);
   }, [selectedBoardSkin]);
+
+  useEffect(() => {
+    persistMemeMode(memeMode);
+  }, [memeMode]);
 
   function selectTab(tabId) {
     setActiveTab(tabId);

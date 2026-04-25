@@ -26,7 +26,8 @@ export const MEME_MANIFEST = {
   "DEFOLT": [
     "/mem/Defolt/157d9427b1438a75430e4c981a0dcfba.mp4",
     "/mem/Defolt/22377329392007237.mp4",
-    "/mem/Defolt/456e21150d0987dd6542a47da2b81908_720w.mp4"
+    "/mem/Defolt/456e21150d0987dd6542a47da2b81908_720w.mp4",
+    "/mem/Defolt/8d015806f6eae3b7d409dd8eae55b6df_720w.mp4"
   ],
   "SMART": [
     "/mem/SMART/0c0f6e16c49a0ce386c57e3aa53f6846.mp4",

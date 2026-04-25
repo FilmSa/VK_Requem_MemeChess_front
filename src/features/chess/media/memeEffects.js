@@ -22,6 +22,38 @@ const TAG_DURATIONS = {
   [DEFAULT_TAG]: 3600,
 };
 
+const ANALYZER_TAG_TO_MEME_TAGS = {
+  attack: ["ATTACK"],
+  blunder: ["DANGER"],
+  castling: ["SMART"],
+  castling_attack: ["SMART", "ATTACK"],
+  castling_check: ["SMART", "CHECK"],
+  check: ["CHECK"],
+  checkmate: ["CHECK", "DANGER"],
+  conversion: ["SMART"],
+  double_check: ["CHECK", "DANGER"],
+  forced_mate: ["DANGER", "CHECK"],
+  fork: ["SMART", "ATTACK"],
+  hanging_piece: ["ATTACK", "DANGER"],
+  inaccuracy: ["DANGER"],
+  mate_threat: ["DANGER"],
+  mistake: ["DANGER"],
+  missed_opportunity: ["DANGER"],
+  opening: ["SMART"],
+  opening_caro_kann_defense: ["SMART"],
+  opening_french_defense: ["SMART"],
+  opening_italian_game: ["SMART"],
+  opening_kings_indian_defense: ["SMART"],
+  opening_open_game: ["SMART"],
+  opening_queens_gambit: ["SMART"],
+  opening_ruy_lopez: ["SMART"],
+  opening_sicilian_defense: ["SMART"],
+  perpetual_check: ["CHECK", "DANGER"],
+  pin_to_king: ["SMART", "ATTACK"],
+  relative_pin: ["SMART"],
+  win_material: ["ATTACK", "SMART"],
+};
+
 function getFileExtension(assetPath) {
   return assetPath.slice(assetPath.lastIndexOf(".")).toLowerCase();
 }
@@ -107,4 +139,29 @@ export function pickRandomMemeEffect(candidateTags = []) {
     duration: TAG_DURATIONS[selectedTag] ?? TAG_DURATIONS[DEFAULT_TAG],
     mediaType,
   };
+}
+
+export function mapAnalyzerTagsToMemeTags(tags = [], quality = "") {
+  const candidateTags = [];
+
+  tags.forEach((tag) => {
+    const normalizedTag = String(tag || "").trim().toLowerCase();
+    const mappedTags = ANALYZER_TAG_TO_MEME_TAGS[normalizedTag];
+
+    if (Array.isArray(mappedTags)) {
+      candidateTags.push(...mappedTags);
+    }
+  });
+
+  const normalizedQuality = String(quality || "").trim().toLowerCase();
+
+  if (["blunder", "mistake", "inaccuracy"].includes(normalizedQuality)) {
+    candidateTags.push("DANGER");
+  }
+
+  if (normalizedQuality === "best" || normalizedQuality === "excellent") {
+    candidateTags.push("SMART");
+  }
+
+  return [...new Set(candidateTags)];
 }

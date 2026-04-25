@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
+import { analyzeMove } from "../lib/analyzerApi.js";
 import { getGameParams } from "../lib/gameParams";
-import { pickRandomMemeEffect } from "../media/memeEffects.js";
+import {
+  mapAnalyzerTagsToMemeTags,
+  pickRandomMemeEffect,
+} from "../media/memeEffects.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
+import {
+  readStoredMemeMode,
+  subscribeMemeModeChanges,
+} from "../../../shared/lib/memeMode.js";
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
@@ -212,6 +220,23 @@ function buildMoveMemeContext(move, chessAfterMove) {
   };
 }
 
+function buildMoveDto(move) {
+  const moveDto = {
+    from: String(move?.from || "").toLowerCase(),
+    to: String(move?.to || "").toLowerCase(),
+  };
+
+  if (move?.promotion) {
+    moveDto.promotion = String(move.promotion).toLowerCase();
+  }
+
+  return moveDto;
+}
+
+function buildMoveHistoryDtos(history) {
+  return history.map((move) => buildMoveDto(move));
+}
+
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
@@ -222,10 +247,16 @@ export function useChessGame(options = {}) {
   const [highlightedSquares, setHighlightedSquares] = useState({});
   const [historyCursor, setHistoryCursor] = useState(0);
   const [promotionState, setPromotionState] = useState(null);
+  const [isMemeModeEnabled, setIsMemeModeEnabled] = useState(() =>
+    typeof options.memeModeEnabled === "boolean"
+      ? options.memeModeEnabled
+      : readStoredMemeMode()
+  );
 
   const { activeEffects, triggerEffect } = useBoardEffectsController();
   const gameRef = useRef(game);
   const historyCursorRef = useRef(historyCursor);
+  const memeModeEnabledRef = useRef(isMemeModeEnabled);
 
   useEffect(() => {
     gameRef.current = game;
@@ -234,6 +265,22 @@ export function useChessGame(options = {}) {
   useEffect(() => {
     historyCursorRef.current = historyCursor;
   }, [historyCursor]);
+
+  useEffect(() => {
+    memeModeEnabledRef.current = isMemeModeEnabled;
+  }, [isMemeModeEnabled]);
+
+  useEffect(() => {
+    if (typeof options.memeModeEnabled === "boolean") {
+      setIsMemeModeEnabled(options.memeModeEnabled);
+    }
+  }, [options.memeModeEnabled]);
+
+  useEffect(() => {
+    return subscribeMemeModeChanges((enabled) => {
+      setIsMemeModeEnabled(enabled);
+    });
+  }, []);
 
   function syncHistoryCursor(nextHistoryLength, previousHistoryLength) {
     setHistoryCursor((currentCursor) => {
@@ -251,19 +298,39 @@ export function useChessGame(options = {}) {
     setPromotionState(null);
   }
 
-  function triggerMoveEffect(move, chessAfterMove) {
-    if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE) {
+  async function triggerMoveEffect(move, chessAfterMove, historyBeforeMove = []) {
+    if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE || !memeModeEnabledRef.current) {
       return;
     }
 
-    const { candidateTags, targetSquare } = buildMoveMemeContext(
+    const localContext = buildMoveMemeContext(
       move,
       chessAfterMove
     );
+    let candidateTags = localContext.candidateTags;
+
+    try {
+      const analysisResult = await analyzeMove({
+        moves: buildMoveHistoryDtos(historyBeforeMove),
+        move: buildMoveDto(move),
+        depth: 3,
+      });
+      const analyzerTags = mapAnalyzerTagsToMemeTags(
+        analysisResult?.tags,
+        analysisResult?.quality
+      );
+
+      if (analyzerTags.length > 0) {
+        candidateTags = analyzerTags;
+      }
+    } catch {
+      // Keep local fallback classification when analyzer is unavailable.
+    }
+
     const memeEffect = pickRandomMemeEffect(candidateTags);
 
     triggerEffect(memeEffect || "1", {
-      square: targetSquare,
+      square: localContext.targetSquare,
       from: move.from,
       to: move.to,
       piece: move.piece,
@@ -359,6 +426,7 @@ export function useChessGame(options = {}) {
   }
 
   function applyMove({ from, to, promotion }) {
+    const historyBeforeMove = gameRef.current.history({ verbose: true });
     const previousHistoryLength = gameRef.current.history().length;
     const gameCopy = cloneGameFromHistory();
     const moveRequest = {
@@ -379,7 +447,7 @@ export function useChessGame(options = {}) {
     setGame(gameCopy);
     syncHistoryCursor(gameCopy.history().length, previousHistoryLength);
     clearSelection();
-    triggerMoveEffect(move, gameCopy);
+    void triggerMoveEffect(move, gameCopy, historyBeforeMove);
 
     return move;
   }

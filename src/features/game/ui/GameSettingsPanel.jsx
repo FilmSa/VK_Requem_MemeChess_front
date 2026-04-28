@@ -41,6 +41,9 @@ export default function GameSettingsPanel({
   onNextMove,
   onResign,
   onDraw,
+  onDrawAccept,
+  onDrawDecline,
+  drawOfferState = null,
   actionsDisabled = false,
   resignDisabled = false,
   drawDisabled = false,
@@ -61,8 +64,10 @@ export default function GameSettingsPanel({
           disabled={emojiCooldownActive}
         />
 
-        <div className="flex min-h-0 flex-1 flex-col px-[12px] pb-[12px] pt-[14px]">
-          <MoveHistoryMolecule history={history} activePly={activeHistoryPly} />
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[12px] pb-[12px] pt-[14px]">
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <MoveHistoryMolecule history={history} activePly={activeHistoryPly} />
+          </div>
 
           <div className="mt-[16px]">
             <MoveNavigationMolecule
@@ -74,14 +79,17 @@ export default function GameSettingsPanel({
           </div>
 
           <div
-            className="mt-[18px] h-px w-full"
+            className="mt-[18px] h-px w-full flex-shrink-0"
             style={{ background: "var(--main-menu-divider)" }}
           />
 
-          <div className="pt-[18px]">
+          <div className="pt-[18px] flex-shrink-0">
             <GameActionsMolecule
               onResign={onResign}
               onDraw={onDraw}
+              onDrawAccept={onDrawAccept}
+              onDrawDecline={onDrawDecline}
+              drawOfferState={drawOfferState}
               disabled={actionsDisabled}
               resignDisabled={resignDisabled}
               drawDisabled={drawDisabled}

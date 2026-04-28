@@ -3,6 +3,10 @@ const WS_MESSAGE_TYPE = {
   JOINED: "game.joined",
   MOVE: "game.move",
   MOVE_ACCEPTED: "game.move.accepted",
+  RESIGN: "game.resign",
+  DRAW_OFFER: "game.draw.offer",
+  DRAW_ACCEPT: "game.draw.accept",
+  DRAW_DECLINE: "game.draw.decline",
   STICKER: "game.sticker",
   STICKER_ACCEPTED: "game.sticker.accepted",
   MESSAGE: "game.message",
@@ -419,6 +423,56 @@ function normalizeEmojiEvent(data, currentUserId) {
   };
 }
 
+function normalizeGameActionEvent(data, currentUserId) {
+  const type = String(data?.type || "");
+  const supportedTypes = new Set([
+    WS_MESSAGE_TYPE.RESIGN,
+    WS_MESSAGE_TYPE.DRAW_OFFER,
+    WS_MESSAGE_TYPE.DRAW_ACCEPT,
+    WS_MESSAGE_TYPE.DRAW_DECLINE,
+  ]);
+
+  if (!supportedTypes.has(type)) {
+    return null;
+  }
+
+  const payload = data?.payload || {};
+  const candidates = [
+    data,
+    payload,
+    payload?.data,
+    payload?.event,
+    data?.data,
+  ].filter(Boolean);
+  const senderUserId = candidates.reduce((foundValue, candidate) => {
+    if (foundValue) {
+      return foundValue;
+    }
+
+    return extractFirstString(candidate, [
+      "user_id",
+      "userId",
+      "player_id",
+      "playerId",
+      "sender_user_id",
+      "senderUserId",
+      "by_user_id",
+    ]);
+  }, "");
+
+  return {
+    type,
+    gameId:
+      extractFirstString(data, ["game_id", "gameId"]) ||
+      extractFirstString(payload, ["game_id", "gameId"]),
+    senderUserId,
+    isOwnMessage:
+      Boolean(senderUserId) && String(senderUserId) === String(currentUserId),
+    payload,
+    raw: data,
+  };
+}
+
 export async function getDebugToken(baseHttpUrl, userId) {
   const response = await fetch(
     `${baseHttpUrl}/debug/token?user_id=${encodeURIComponent(userId)}`
@@ -449,6 +503,7 @@ export function createGameSocket({
   onMove,
   onEmoji,
   onState,
+  onGameEvent,
   onRawMessage,
 }) {
   let knownMoveCount = 0;
@@ -646,6 +701,12 @@ export function createGameSocket({
         markSeenEmojiEvent(eventKey);
       }
       onEmoji?.(emojiEvent);
+      return;
+    }
+
+    const gameActionEvent = normalizeGameActionEvent(data, userId);
+    if (gameActionEvent) {
+      onGameEvent?.(gameActionEvent);
       return;
     }
 

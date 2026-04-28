@@ -230,6 +230,7 @@ export function useOnlineGameRoom(gameId) {
     isOnlineGame,
     isWaitingForAuthBootstrap,
     hasOnlineAccess,
+    sessionToken: onlineIdentity.token,
     playerColor,
     currentUserId,
     opponentUserId,

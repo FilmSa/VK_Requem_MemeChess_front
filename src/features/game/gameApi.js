@@ -124,3 +124,54 @@ export async function leaveMatchSearch(token) {
     throw buildGameError(error, "Не удалось выйти из поиска.");
   }
 }
+
+async function postGameAction(gameId, pathSuffix, token, fallbackMessage) {
+  try {
+    const response = await apiFetch(
+      `/api/v1/games/${encodeURIComponent(gameId)}${pathSuffix}`,
+      {
+        method: "POST",
+        token,
+      }
+    );
+
+    return {
+      status: response?.status || "",
+      gameId: response?.game_id || gameId,
+      payload: response,
+    };
+  } catch (error) {
+    throw buildGameError(error, fallbackMessage);
+  }
+}
+
+export function resignGame(gameId, token) {
+  return postGameAction(gameId, "/resign", token, "Не удалось сдаться.");
+}
+
+export function offerDraw(gameId, token) {
+  return postGameAction(
+    gameId,
+    "/draw/offer",
+    token,
+    "Не удалось предложить ничью."
+  );
+}
+
+export function acceptDrawOffer(gameId, token) {
+  return postGameAction(
+    gameId,
+    "/draw/accept",
+    token,
+    "Не удалось принять ничью."
+  );
+}
+
+export function declineDrawOffer(gameId, token) {
+  return postGameAction(
+    gameId,
+    "/draw/decline",
+    token,
+    "Не удалось отклонить ничью."
+  );
+}

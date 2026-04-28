@@ -131,9 +131,15 @@ export default function MainMenuPanel({ style }) {
       savePlaySession({
         gameId: result.gameId,
         match,
+        sessionToken: token,
+        player: user,
       });
 
-      navigateToPlay(result.gameId, { match });
+      navigateToPlay(result.gameId, {
+        match,
+        sessionToken: token,
+        player: user,
+      });
     },
   });
 

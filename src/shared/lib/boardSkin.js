@@ -59,7 +59,6 @@ function persistBoardSkin(skinId) {
     window.localStorage.setItem(BOARD_SKIN_STORAGE_KEY, skinId);
     dispatchBoardSkinChange(skinId);
   } catch {
-    // Ignore storage failures.
   }
 }
 

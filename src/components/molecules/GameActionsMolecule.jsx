@@ -34,12 +34,12 @@ function SecondaryButton({ label, onClick, disabled, tone = "neutral" }) {
       borderColor: "rgba(255, 255, 255, 0.12)",
     },
     success: {
-      background: "rgba(40, 167, 69, 0.18)",
-      borderColor: "rgba(78, 214, 109, 0.32)",
+      background: "rgba(40, 167, 69, 0.22)",
+      borderColor: "rgba(78, 214, 109, 0.34)",
     },
     danger: {
-      background: "rgba(243, 56, 86, 0.18)",
-      borderColor: "rgba(243, 56, 86, 0.3)",
+      background: "rgba(243, 56, 86, 0.22)",
+      borderColor: "rgba(243, 56, 86, 0.34)",
     },
   };
 
@@ -48,7 +48,7 @@ function SecondaryButton({ label, onClick, disabled, tone = "neutral" }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex-1 rounded-[14px] border px-[12px] py-[10px] text-[14px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-[46px] flex-1 items-center justify-center rounded-tl-[20px] rounded-br-[20px] border px-[14px] py-[10px] text-[14px] font-medium text-white shadow-[0_4px_4px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.06)] disabled:cursor-not-allowed disabled:opacity-60"
       style={{
         ...styleByTone[tone],
         fontFamily: '"Unbounded", sans-serif',
@@ -102,7 +102,7 @@ export default function GameActionsMolecule({
       {showIncomingDrawOffer ? (
         <div className="flex items-center gap-[12px]">
           <SecondaryButton
-            label="Принять"
+            label="Принять ничью"
             onClick={() => handleAction(onDrawAccept)}
             disabled={disabled || isLoading}
             tone="success"

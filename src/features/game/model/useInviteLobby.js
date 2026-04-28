@@ -83,6 +83,25 @@ export function useInviteLobby({
   useEffect(() => clearInviteLobby, [clearInviteLobby]);
 
   useEffect(() => {
+    if (!inviteLobby?.readyToEnter || !inviteLobby?.gameId) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      closeInviteSocket();
+      setIsInviteModalOpen(false);
+      onGameReady?.(inviteLobby.gameId);
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    closeInviteSocket,
+    inviteLobby?.gameId,
+    inviteLobby?.readyToEnter,
+    onGameReady,
+  ]);
+
+  useEffect(() => {
     if (!inviteLobby?.expiresAt) {
       return undefined;
     }

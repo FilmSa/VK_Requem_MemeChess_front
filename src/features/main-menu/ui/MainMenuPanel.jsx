@@ -112,7 +112,18 @@ export default function MainMenuPanel({ style }) {
     isAuthenticated,
     isInitializing,
     onAuthRequired: handleAuthRequired,
-    onGameReady: (gameId) => navigateToPlay(gameId),
+    onGameReady: (gameId) => {
+      savePlaySession({
+        gameId,
+        sessionToken: token,
+        player: user,
+      });
+
+      navigateToPlay(gameId, {
+        sessionToken: token,
+        player: user,
+      });
+    },
   });
 
   const matchmaking = useMatchmaking({

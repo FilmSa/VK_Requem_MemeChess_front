@@ -1,5 +1,17 @@
 import { useEffect, useRef } from "react";
 
+const HISTORY_VISIBLE_ROWS = 12;
+const HISTORY_ROW_HEIGHT = 34;
+const HISTORY_SCROLL_AREA_HEIGHT = HISTORY_VISIBLE_ROWS * HISTORY_ROW_HEIGHT + 8;
+const HISTORY_HEADER_HEIGHT = 50;
+const HISTORY_COLUMNS_HEIGHT = 42;
+const HISTORY_FOOTER_HEIGHT = 44;
+const HISTORY_CARD_HEIGHT =
+  HISTORY_HEADER_HEIGHT +
+  HISTORY_COLUMNS_HEIGHT +
+  HISTORY_SCROLL_AREA_HEIGHT +
+  HISTORY_FOOTER_HEIGHT;
+
 function groupMoves(history) {
   const pairs = [];
 
@@ -53,8 +65,9 @@ export default function MoveHistoryMolecule({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-tl-[20px] rounded-br-[20px]"
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-tl-[20px] rounded-br-[20px]"
       style={{
+        height: HISTORY_CARD_HEIGHT,
         background: "var(--main-menu-control-bg)",
         boxShadow: "var(--main-menu-surface-shadow)",
       }}
@@ -102,7 +115,8 @@ export default function MoveHistoryMolecule({
       {pairs.length ? (
         <div
           ref={listRef}
-          className="game-history-scroll min-h-0 flex-1 overflow-y-auto px-[6px] py-[4px]"
+          className="game-history-scroll overflow-y-auto px-[6px] py-[4px]"
+          style={{ height: HISTORY_SCROLL_AREA_HEIGHT }}
         >
           {pairs.map((pair, index) => {
             const isActiveRow = index === activePairIndex;
@@ -112,7 +126,7 @@ export default function MoveHistoryMolecule({
             return (
               <div
                 key={pair.num}
-                className="flex items-center gap-[2px] rounded-[8px] px-[6px] py-[4px]"
+                className="flex h-[34px] items-center gap-[2px] rounded-[8px] px-[6px] py-[4px]"
                 style={{
                   background: isActiveRow
                     ? "rgba(82, 56, 200, 0.18)"
@@ -166,8 +180,9 @@ export default function MoveHistoryMolecule({
         </div>
       ) : (
         <div
-          className="flex flex-1 items-center justify-center px-[24px] text-center text-[16px]"
+          className="flex items-center justify-center px-[24px] text-center text-[16px]"
           style={{
+            height: HISTORY_SCROLL_AREA_HEIGHT,
             color: "var(--color-text-muted)",
             fontFamily: '"Unbounded", sans-serif',
           }}

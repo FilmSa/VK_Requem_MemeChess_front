@@ -4,8 +4,6 @@ import MoveHistoryMolecule from "../../../components/molecules/MoveHistoryMolecu
 import MoveNavigationMolecule from "../../../components/molecules/MoveNavigationMolecule.jsx";
 import GameActionsMolecule from "../../../components/molecules/GameActionsMolecule.jsx";
 
-const HISTORY_PANEL_HEIGHT = 320;
-
 const panelStyle = {
   width: "100%",
   maxWidth: "100%",
@@ -67,10 +65,7 @@ export default function GameSettingsPanel({
         />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[12px] pb-[12px] pt-[14px]">
-          <div
-            className="min-h-0 flex-shrink-0 overflow-hidden"
-            style={{ height: HISTORY_PANEL_HEIGHT }}
-          >
+          <div className="flex-shrink-0 overflow-hidden">
             <MoveHistoryMolecule history={history} activePly={activeHistoryPly} />
           </div>
 

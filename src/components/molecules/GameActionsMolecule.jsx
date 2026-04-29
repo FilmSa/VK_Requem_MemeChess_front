@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "../atoms/Icon.jsx";
 
 function ActionButton({
@@ -64,7 +64,10 @@ export default function GameActionsMolecule({
   onDraw = async () => {},
   onDrawAccept = async () => {},
   onDrawDecline = async () => {},
+  onResignConfirm = async () => {},
+  onResignCancel = () => {},
   drawOfferState = null,
+  isResignConfirmMode = false,
   disabled = false,
   resignDisabled = false,
   drawDisabled = false,
@@ -73,7 +76,18 @@ export default function GameActionsMolecule({
   const isResignDisabled = disabled || isLoading || resignDisabled;
   const isDrawDisabled = disabled || isLoading || drawDisabled;
   const showIncomingDrawOffer = drawOfferState?.mode === "incoming";
-  const drawStatusText = drawOfferState?.message || "";
+
+  useEffect(() => {
+    if (disabled || resignDisabled) {
+      onResignCancel?.();
+    }
+  }, [disabled, onResignCancel, resignDisabled]);
+
+  useEffect(() => {
+    if (showIncomingDrawOffer && isResignConfirmMode) {
+      onResignCancel?.();
+    }
+  }, [isResignConfirmMode, onResignCancel, showIncomingDrawOffer]);
 
   async function handleAction(action) {
     setIsLoading(true);
@@ -84,56 +98,62 @@ export default function GameActionsMolecule({
     }
   }
 
-  return (
-    <div className="flex flex-col gap-[12px]">
-      {drawStatusText ? (
-        <div
-          className="rounded-[16px] px-[14px] py-[12px] text-[13px] leading-6"
-          style={{
-            background: "rgba(255, 255, 255, 0.06)",
-            color: "var(--main-menu-text)",
-            fontFamily: '"Unbounded", sans-serif',
-          }}
-        >
-          {drawStatusText}
-        </div>
-      ) : null}
-
-      {showIncomingDrawOffer ? (
-        <div className="flex items-center gap-[12px]">
-          <SecondaryButton
-            label="Принять ничью"
-            onClick={() => handleAction(onDrawAccept)}
-            disabled={disabled || isLoading}
-            tone="success"
-          />
-          <SecondaryButton
-            label="Отклонить"
-            onClick={() => handleAction(onDrawDecline)}
-            disabled={disabled || isLoading}
-            tone="danger"
-          />
-        </div>
-      ) : null}
-
-      <div className="flex items-center gap-[16px]">
-        <ActionButton
-          label="Сдаться"
-          iconKey="surrender"
-          title="Сдаться"
-          background="linear-gradient(180deg, #F33856 0%, #99152F 100%)"
-          onClick={() => handleAction(onResign)}
-          disabled={isResignDisabled}
+  if (isResignConfirmMode) {
+    return (
+      <div className="flex items-center gap-[12px]">
+        <SecondaryButton
+          label="Отмена"
+          onClick={onResignCancel}
+          disabled={disabled || isLoading}
+          tone="neutral"
         />
-        <ActionButton
-          label={showIncomingDrawOffer ? "Ничья ждёт" : "Ничья"}
-          iconKey="draw"
-          title="Предложить ничью"
-          background="var(--main-menu-gradient-pink)"
-          onClick={() => handleAction(onDraw)}
-          disabled={isDrawDisabled}
+        <SecondaryButton
+          label="Подтвердить"
+          onClick={() => handleAction(onResignConfirm)}
+          disabled={disabled || isLoading}
+          tone="danger"
         />
       </div>
+    );
+  }
+
+  if (showIncomingDrawOffer) {
+    return (
+      <div className="flex items-center gap-[12px]">
+        <SecondaryButton
+          label="Принять ничью"
+          onClick={() => handleAction(onDrawAccept)}
+          disabled={disabled || isLoading}
+          tone="success"
+        />
+        <SecondaryButton
+          label="Отклонить"
+          onClick={() => handleAction(onDrawDecline)}
+          disabled={disabled || isLoading}
+          tone="danger"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-[16px]">
+      <ActionButton
+        label="Сдаться"
+        iconKey="surrender"
+        title="Сдаться"
+        background="linear-gradient(180deg, #F33856 0%, #99152F 100%)"
+        onClick={() => handleAction(onResign)}
+        disabled={isResignDisabled}
+      />
+      <ActionButton
+        label="Ничья"
+        iconKey="draw"
+        title="Предложить ничью"
+        background="var(--main-menu-gradient-pink)"
+        onClick={() => handleAction(onDraw)}
+        disabled={isDrawDisabled}
+      />
     </div>
   );
 }

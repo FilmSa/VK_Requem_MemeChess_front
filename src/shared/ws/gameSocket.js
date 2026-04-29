@@ -4,9 +4,16 @@ const WS_MESSAGE_TYPE = {
   MOVE: "game.move",
   MOVE_ACCEPTED: "game.move.accepted",
   RESIGN: "game.resign",
+  RESIGN_ACCEPTED: "game.resign.accepted",
   DRAW_OFFER: "game.draw.offer",
+  DRAW_OFFER_ACCEPTED: "game.draw.offer.accepted",
   DRAW_ACCEPT: "game.draw.accept",
+  DRAW_ACCEPT_ACCEPTED: "game.draw.accept.accepted",
   DRAW_DECLINE: "game.draw.decline",
+  DRAW_DECLINE_ACCEPTED: "game.draw.decline.accepted",
+  FINISHED: "game.finished",
+  DRAW_EVENT_OFFERED: "game.event.draw_offered",
+  DRAW_EVENT_DECLINED: "game.event.draw_declined",
   STICKER: "game.sticker",
   STICKER_ACCEPTED: "game.sticker.accepted",
   MESSAGE: "game.message",
@@ -427,9 +434,16 @@ function normalizeGameActionEvent(data, currentUserId) {
   const type = String(data?.type || "");
   const supportedTypes = new Set([
     WS_MESSAGE_TYPE.RESIGN,
+    WS_MESSAGE_TYPE.RESIGN_ACCEPTED,
     WS_MESSAGE_TYPE.DRAW_OFFER,
+    WS_MESSAGE_TYPE.DRAW_OFFER_ACCEPTED,
     WS_MESSAGE_TYPE.DRAW_ACCEPT,
+    WS_MESSAGE_TYPE.DRAW_ACCEPT_ACCEPTED,
     WS_MESSAGE_TYPE.DRAW_DECLINE,
+    WS_MESSAGE_TYPE.DRAW_DECLINE_ACCEPTED,
+    WS_MESSAGE_TYPE.FINISHED,
+    WS_MESSAGE_TYPE.DRAW_EVENT_OFFERED,
+    WS_MESSAGE_TYPE.DRAW_EVENT_DECLINED,
   ]);
 
   if (!supportedTypes.has(type)) {
@@ -473,6 +487,24 @@ function normalizeGameActionEvent(data, currentUserId) {
   };
 }
 
+function sendGameAction(socket, type, gameId) {
+  if (socket.readyState !== WebSocket.OPEN || !gameId) {
+    return false;
+  }
+
+  socket.send(
+    JSON.stringify({
+      type,
+      request_id: crypto.randomUUID(),
+      payload: {
+        game_id: gameId,
+      },
+    })
+  );
+
+  return true;
+}
+
 export async function getDebugToken(baseHttpUrl, userId) {
   const response = await fetch(
     `${baseHttpUrl}/debug/token?user_id=${encodeURIComponent(userId)}`
@@ -513,6 +545,12 @@ export function createGameSocket({
   const emojiRetryTimers = new Map();
   const seenEmojiEventIds = new Map();
   const socket = new WebSocket(buildWsUrl(baseHttpUrl, token));
+
+  function createSocketConnectionError() {
+    const error = new Error("Не удалось подключиться к игровой комнате.");
+    error.code = "SOCKET_CONNECTION_FAILED";
+    return error;
+  }
 
   function clearSeenEmojiEvent(eventId) {
     if (!eventId) {
@@ -783,7 +821,7 @@ export function createGameSocket({
   };
 
   socket.onerror = () => {
-    onError?.(new Error("Не удалось подключиться к игровой комнате."));
+    onError?.(createSocketConnectionError());
   };
 
   socket.onclose = (event) => {
@@ -833,11 +871,19 @@ export function createGameSocket({
     },
 
     sendResign() {
-      return false;
+      return sendGameAction(socket, WS_MESSAGE_TYPE.RESIGN, gameId);
     },
 
-    sendDraw() {
-      return false;
+    sendDrawOffer() {
+      return sendGameAction(socket, WS_MESSAGE_TYPE.DRAW_OFFER, gameId);
+    },
+
+    sendDrawAccept() {
+      return sendGameAction(socket, WS_MESSAGE_TYPE.DRAW_ACCEPT, gameId);
+    },
+
+    sendDrawDecline() {
+      return sendGameAction(socket, WS_MESSAGE_TYPE.DRAW_DECLINE, gameId);
     },
 
     close() {

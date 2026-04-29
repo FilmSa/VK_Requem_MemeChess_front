@@ -16,12 +16,7 @@ import {
 } from "../shared/lib/emojiQuickAccess.js";
 import { withAssetBase } from "../shared/lib/assets.js";
 import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
-import {
-  acceptDrawOffer,
-  declineDrawOffer,
-  offerDraw,
-  resignGame,
-} from "../features/game/gameApi.js";
+import { useNotifications } from "../features/notifications/useNotifications.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -186,6 +181,20 @@ function getOpponentColor(playerColor) {
   return playerColor === "b" ? "w" : "b";
 }
 
+function buildResignHighlight(square) {
+  if (!square) {
+    return {};
+  }
+
+  return {
+    [square]: {
+      background:
+        "linear-gradient(0deg, rgba(255, 56, 56, 0.72) 0%, rgba(164, 0, 0, 0.82) 100%)",
+      boxShadow: "inset 0 0 0 3px rgba(255, 186, 186, 0.92)",
+    },
+  };
+}
+
 function StatusCard({ title, description, action }) {
   return (
     <div className="app-page flex min-h-screen items-center justify-center px-4 py-8">
@@ -214,14 +223,13 @@ export default function PlayPage() {
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get("game") || "";
   const { user, refreshCurrency } = useAuth();
+  const { showNotification, dismissNotification } = useNotifications();
   const [topReaction, setTopReaction] = useState(null);
   const [bottomReaction, setBottomReaction] = useState(null);
   const [emojiCooldownActive, setEmojiCooldownActive] = useState(false);
-  const [localFinishState, setLocalFinishState] = useState(null);
-  const [drawOfferState, setDrawOfferState] = useState({
-    mode: "idle",
-    message: "",
-  });
+  const [actionNotice, setActionNotice] = useState("");
+  const [isResignConfirmMode, setIsResignConfirmMode] = useState(false);
+  const [extraHighlightedSquares, setExtraHighlightedSquares] = useState({});
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
@@ -230,28 +238,18 @@ export default function PlayPage() {
     useResponsiveWorkspaceLayout();
 
   const onlineRoom = useOnlineGameRoom(gameId);
-  const isServerFinished = onlineRoom.roomState?.status === "finished";
-  const activeLocalFinishState =
-    localFinishState?.gameId === gameId && !isServerFinished ? localFinishState : null;
-  const resignationKingSquare = activeLocalFinishState?.kingSquare || "";
-  const resignationHighlightSquares = useMemo(() => {
-    if (!resignationKingSquare) {
-      return {};
-    }
+  const currentUserId = String(onlineRoom.currentUserId || user?.id || "").trim();
+  const opponentColor = getOpponentColor(onlineRoom.playerColor);
+  const roomState = onlineRoom.roomState;
+  const isGameFinished = roomState?.status === "finished";
+  const finishedReason = String(roomState?.finished_reason || "").trim();
+  const winnerId = String(roomState?.winner_id || "").trim();
+  const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
 
-    return {
-      [resignationKingSquare]: {
-        background:
-          "linear-gradient(0deg, rgba(255, 56, 56, 0.72) 0%, rgba(164, 0, 0, 0.82) 100%)",
-        boxShadow: "inset 0 0 0 3px rgba(255, 186, 186, 0.92)",
-      },
-    };
-  }, [resignationKingSquare]);
-  const isGameFinished = isServerFinished || Boolean(activeLocalFinishState);
   const chessGameState = useChessGame({
     playerColor: onlineRoom.playerColor,
     interactionLocked: isGameFinished,
-    extraHighlightedSquares: resignationHighlightSquares,
+    extraHighlightedSquares,
   });
 
   const emojiOwnerId = onlineRoom.currentUserProfile?.id || user?.id;
@@ -261,34 +259,62 @@ export default function PlayPage() {
   }, [emojiOwnerId]);
 
   const socketOptions = onlineRoom.buildSocketOptions(chessGameState);
-  const opponentColor = getOpponentColor(onlineRoom.playerColor);
+
   const drawControls = useMemo(() => {
-    switch (drawOfferState.mode) {
-      case "incoming":
-        return {
-          mode: "incoming",
-          message: `${onlineRoom.opponentName} предлагает ничью.`,
-        };
-      case "outgoing":
-        return {
-          mode: "outgoing",
-          message: "Предложение ничьей отправлено. Ждем ответ соперника.",
-        };
-      case "accepted":
-        return {
-          mode: "accepted",
-          message: "Ничья принята. Партия завершена.",
-        };
-      case "declined":
-      case "notice":
-        return {
-          mode: drawOfferState.mode,
-          message: drawOfferState.message,
-        };
-      default:
-        return null;
+    if (isResignConfirmMode) {
+      return {
+        mode: "resign_confirm",
+        message: "Вы уверены, что хотите сдаться?",
+      };
     }
-  }, [drawOfferState, onlineRoom.opponentName]);
+
+    if (isGameFinished && finishedReason === "draw_agreed") {
+      return {
+        mode: "accepted",
+        message: "Ничья согласована. Партия завершена.",
+      };
+    }
+
+    if (isGameFinished && finishedReason === "resign") {
+      return {
+        mode: "notice",
+        message:
+          winnerId && winnerId === currentUserId
+            ? "Соперник сдался."
+            : "Вы сдались.",
+      };
+    }
+
+    if (drawOfferedBy) {
+      return drawOfferedBy === currentUserId
+        ? {
+            mode: "outgoing",
+            message: "Предложение ничьей отправлено. Ждем ответ соперника.",
+          }
+        : {
+            mode: "incoming",
+            message: `${onlineRoom.opponentName} предлагает ничью.`,
+          };
+    }
+
+    if (actionNotice) {
+      return {
+        mode: "notice",
+        message: actionNotice,
+      };
+    }
+
+    return null;
+  }, [
+    actionNotice,
+    currentUserId,
+    drawOfferedBy,
+    finishedReason,
+    isResignConfirmMode,
+    isGameFinished,
+    onlineRoom.opponentName,
+    winnerId,
+  ]);
 
   function playEmojiSound(reaction) {
     const reactionPayload = normalizeReactionInput(reaction);
@@ -357,61 +383,32 @@ export default function PlayPage() {
       return;
     }
 
-    if (event.type === "game.resign") {
-      const loserIsCurrentPlayer = event.isOwnMessage;
-      const loserColor = loserIsCurrentPlayer
-        ? onlineRoom.playerColor
-        : opponentColor;
-      const kingSquare =
-        findKingSquareByColor(chessGameState.game, loserColor) ||
-        findKingSquareByColor(chessGameState.displayedGame, loserColor);
+    if (event.type === "game.event.draw_declined") {
+      const declinedBy = String(
+        event.payload?.by_user_id || event.payload?.byUserId || event.senderUserId || ""
+      ).trim();
 
-      setDrawOfferState({
-        mode: "idle",
-        message: "",
-      });
-      setLocalFinishState({
-        gameId,
-        finishedReason: "resign",
-        winnerId: loserIsCurrentPlayer
-          ? onlineRoom.opponentUserId || ""
-          : onlineRoom.currentUserId || user?.id || "",
-        loserId: loserIsCurrentPlayer
-          ? onlineRoom.currentUserId || user?.id || ""
-          : onlineRoom.opponentUserId || "",
-        kingSquare,
-      });
+      setActionNotice(
+        declinedBy && declinedBy === currentUserId
+          ? "Вы отклонили предложение ничьей."
+          : "Соперник отклонил предложение ничьей."
+      );
       return;
     }
 
-    if (event.type === "game.draw.offer") {
-      setDrawOfferState({
-        mode: event.isOwnMessage ? "outgoing" : "incoming",
-        message: "",
-      });
+    if (event.type === "game.finished") {
+      setIsResignConfirmMode(false);
+      setActionNotice("");
       return;
     }
 
-    if (event.type === "game.draw.accept") {
-      setDrawOfferState({
-        mode: "accepted",
-        message: "",
-      });
-      setLocalFinishState({
-        gameId,
-        finishedReason: "draw",
-        winnerId: "",
-        loserId: "",
-        kingSquare: "",
-      });
+    if (
+      event.type === "game.draw.offer.accepted" ||
+      event.type === "game.draw.accept.accepted" ||
+      event.type === "game.draw.decline.accepted" ||
+      event.type === "game.resign.accepted"
+    ) {
       return;
-    }
-
-    if (event.type === "game.draw.decline") {
-      setDrawOfferState({
-        mode: "declined",
-        message: "Предложение ничьей отклонено.",
-      });
     }
   }
 
@@ -421,7 +418,17 @@ export default function PlayPage() {
     onJoined: socketOptions?.onJoined,
     onOpen: socketOptions?.onOpen,
     onClose: socketOptions?.onClose,
-    onError: socketOptions?.onError,
+    onError: (error) => {
+      socketOptions?.onError?.(error);
+
+      if (error?.code === "SOCKET_CONNECTION_FAILED") {
+        return;
+      }
+
+      setActionNotice(
+        error?.message || "Не удалось выполнить действие в игровой комнате."
+      );
+    },
     onEmoji: handleIncomingEmoji,
     onGameEvent: handleIncomingGameEvent,
     enabled: Boolean(onlineRoom.isOnlineGame && onlineRoom.hasOnlineAccess),
@@ -432,23 +439,22 @@ export default function PlayPage() {
   });
 
   useEffect(() => {
-    setLocalFinishState(null);
-    setDrawOfferState({
-      mode: "idle",
-      message: "",
-    });
+    setActionNotice("");
+    setIsResignConfirmMode(false);
+    setExtraHighlightedSquares({});
   }, [gameId]);
 
   useEffect(() => {
     return () => {
       clearReactionTimer("top");
       clearReactionTimer("bottom");
+      dismissNotification("play-status");
 
       if (cooldownTimeoutRef.current) {
         window.clearTimeout(cooldownTimeoutRef.current);
       }
     };
-  }, []);
+  }, [dismissNotification]);
 
   useEffect(() => {
     if (!onlineRoom.isOnlineGame) {
@@ -459,38 +465,85 @@ export default function PlayPage() {
   }, [onlineRoom.isOnlineGame, refreshCurrency]);
 
   useEffect(() => {
-    if (onlineRoom.roomState?.status !== "finished" || !gameId) {
+    if (roomState?.status !== "finished" || !gameId) {
       return;
     }
 
-    const refreshKey = `${gameId}:${onlineRoom.roomState?.winner_id || ""}`;
+    const refreshKey = `${gameId}:${winnerId}`;
     if (finishedCurrencyRefreshKeyRef.current === refreshKey) {
       return;
     }
 
     finishedCurrencyRefreshKeyRef.current = refreshKey;
     void refreshCurrency().catch(() => {});
-  }, [
-    gameId,
-    onlineRoom.roomState?.status,
-    onlineRoom.roomState?.winner_id,
-    refreshCurrency,
-  ]);
+  }, [gameId, refreshCurrency, roomState?.status, winnerId]);
 
   useEffect(() => {
-    if (onlineRoom.roomState?.status !== "finished") {
+    if (drawOfferedBy || isGameFinished) {
+      setActionNotice("");
+      setIsResignConfirmMode(false);
+    }
+  }, [drawOfferedBy, isGameFinished]);
+
+  useEffect(() => {
+    if (!drawControls?.message) {
+      dismissNotification("play-status");
       return;
     }
 
-    setDrawOfferState((current) =>
-      current.mode === "accepted"
-        ? current
-        : {
-            mode: "idle",
-            message: "",
-          }
-    );
-  }, [onlineRoom.roomState?.status]);
+    const isPersistent =
+      drawControls.mode === "incoming" || drawControls.mode === "outgoing";
+    const extendedPersistent =
+      isPersistent || drawControls.mode === "resign_confirm";
+    const tone =
+      drawControls.mode === "notice" &&
+      !isGameFinished &&
+      !drawOfferedBy &&
+      Boolean(actionNotice)
+        ? "error"
+        : "info";
+
+    showNotification({
+      id: "play-status",
+      message: drawControls.message,
+      tone,
+      persist: extendedPersistent,
+      duration: extendedPersistent ? 0 : 4500,
+    });
+  }, [
+    actionNotice,
+    dismissNotification,
+    drawControls,
+    drawOfferedBy,
+    isGameFinished,
+    showNotification,
+  ]);
+
+  useEffect(() => {
+    if (!isGameFinished || finishedReason !== "resign") {
+      setExtraHighlightedSquares({});
+      return;
+    }
+
+    const loserColor =
+      winnerId && winnerId === currentUserId
+        ? opponentColor
+        : onlineRoom.playerColor;
+    const kingSquare =
+      findKingSquareByColor(chessGameState.game, loserColor) ||
+      findKingSquareByColor(chessGameState.displayedGame, loserColor);
+
+    setExtraHighlightedSquares(buildResignHighlight(kingSquare));
+  }, [
+    chessGameState.displayedGame,
+    chessGameState.game,
+    currentUserId,
+    finishedReason,
+    isGameFinished,
+    onlineRoom.playerColor,
+    opponentColor,
+    winnerId,
+  ]);
 
   function startEmojiCooldown() {
     if (cooldownTimeoutRef.current) {
@@ -516,112 +569,71 @@ export default function PlayPage() {
   }
 
   async function handleResign() {
-    if (isGameFinished || !gameId || !onlineRoom.sessionToken) {
+    if (isGameFinished || !gameId || !roomState) {
+      return;
+    }
+
+    setActionNotice("");
+    setIsResignConfirmMode(true);
+  }
+
+  function handleResignCancel() {
+    setIsResignConfirmMode(false);
+  }
+
+  async function handleResignConfirm() {
+    if (isGameFinished || !gameId || !roomState) {
       return;
     }
 
     chessGameState.jumpToLatestMove();
-    try {
-      await resignGame(gameId, onlineRoom.sessionToken);
-    } catch (error) {
-      setDrawOfferState({
-        mode: "notice",
-        message: error?.message || "Не удалось сдаться.",
-      });
+
+    if (!socketClient.sendResign()) {
+      setActionNotice("Не удалось отправить сдачу. Попробуйте еще раз.");
+      setIsResignConfirmMode(false);
       return;
     }
 
-    const loserColor = onlineRoom.playerColor === "b" ? "b" : "w";
-    const kingSquare =
-      findKingSquareByColor(chessGameState.game, loserColor) ||
-      findKingSquareByColor(chessGameState.displayedGame, loserColor);
-
-    setLocalFinishState({
-      gameId,
-      finishedReason: "resign",
-      winnerId: onlineRoom.opponentUserId || "",
-      loserId: onlineRoom.currentUserId || user?.id || "",
-      kingSquare,
-    });
+    setIsResignConfirmMode(false);
   }
 
   async function handleDrawOffer() {
-    if (
-      isGameFinished ||
-      !gameId ||
-      !onlineRoom.sessionToken ||
-      drawOfferState.mode === "outgoing" ||
-      drawOfferState.mode === "incoming"
-    ) {
+    if (isGameFinished || !gameId || !roomState || drawOfferedBy) {
       return;
     }
 
-    try {
-      await offerDraw(gameId, onlineRoom.sessionToken);
-      setDrawOfferState({
-        mode: "outgoing",
-        message: "",
-      });
-    } catch (error) {
-      setDrawOfferState({
-        mode: "notice",
-        message: error?.message || "Не удалось предложить ничью.",
-      });
+    chessGameState.jumpToLatestMove();
+
+    if (!socketClient.sendDrawOffer()) {
+      setActionNotice("Не удалось предложить ничью. Попробуйте еще раз.");
     }
   }
 
   async function handleDrawAccept() {
-    if (
-      isGameFinished ||
-      !gameId ||
-      !onlineRoom.sessionToken ||
-      drawOfferState.mode !== "incoming"
-    ) {
+    if (isGameFinished || !gameId || !roomState || drawOfferedBy === currentUserId) {
       return;
     }
 
-    try {
-      await acceptDrawOffer(gameId, onlineRoom.sessionToken);
-      setDrawOfferState({
-        mode: "accepted",
-        message: "",
-      });
-      setLocalFinishState({
-        gameId,
-        finishedReason: "draw",
-        winnerId: "",
-        loserId: "",
-        kingSquare: "",
-      });
-    } catch (error) {
-      setDrawOfferState({
-        mode: "notice",
-        message: error?.message || "Не удалось принять ничью.",
-      });
+    if (!drawOfferedBy) {
+      return;
+    }
+
+    if (!socketClient.sendDrawAccept()) {
+      setActionNotice("Не удалось принять ничью. Попробуйте еще раз.");
     }
   }
 
   async function handleDrawDecline() {
-    if (
-      isGameFinished ||
-      !gameId ||
-      !onlineRoom.sessionToken ||
-      drawOfferState.mode !== "incoming"
-    ) {
+    if (isGameFinished || !gameId || !roomState || drawOfferedBy === currentUserId) {
       return;
     }
 
-    try {
-      await declineDrawOffer(gameId, onlineRoom.sessionToken);
-      setDrawOfferState({
-        mode: "declined",
-        message: "Предложение ничьей отклонено.",
-      });
-    } catch (error) {
-      setDrawOfferState({
-        mode: "notice",
-        message: error?.message || "Не удалось отклонить ничью.",
-      });
+    if (!drawOfferedBy) {
+      return;
+    }
+
+    if (!socketClient.sendDrawDecline()) {
+      setActionNotice("Не удалось отклонить ничью. Попробуйте еще раз.");
     }
   }
 
@@ -698,21 +710,23 @@ export default function PlayPage() {
                 onPreviousMove={chessGameState.viewPreviousMove}
                 onNextMove={chessGameState.viewNextMove}
                 onResign={handleResign}
+                onResignConfirm={handleResignConfirm}
+                onResignCancel={handleResignCancel}
                 onDraw={handleDrawOffer}
                 onDrawAccept={handleDrawAccept}
                 onDrawDecline={handleDrawDecline}
                 drawOfferState={drawControls}
+                isResignConfirmMode={isResignConfirmMode}
                 stakeAmount={onlineRoom.matchStake}
                 gameCurrencyLabel={onlineRoom.matchGameCurrencyLabel}
                 gameModeLabel={onlineRoom.matchGameModeLabel}
-                actionsDisabled={!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess}
-                resignDisabled={isGameFinished}
-                drawDisabled={
-                  isGameFinished ||
-                  drawOfferState.mode === "outgoing" ||
-                  drawOfferState.mode === "incoming" ||
-                  drawOfferState.mode === "accepted"
+                actionsDisabled={
+                  !onlineRoom.isOnlineGame ||
+                  !onlineRoom.hasOnlineAccess ||
+                  !roomState
                 }
+                resignDisabled={isGameFinished}
+                drawDisabled={isGameFinished || Boolean(drawOfferedBy)}
               />
             </div>
           </div>

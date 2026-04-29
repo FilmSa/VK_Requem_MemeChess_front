@@ -40,10 +40,13 @@ export default function GameSettingsPanel({
   onPreviousMove,
   onNextMove,
   onResign,
+  onResignConfirm,
+  onResignCancel,
   onDraw,
   onDrawAccept,
   onDrawDecline,
   drawOfferState = null,
+  isResignConfirmMode = false,
   actionsDisabled = false,
   resignDisabled = false,
   drawDisabled = false,
@@ -86,10 +89,13 @@ export default function GameSettingsPanel({
           <div className="pt-[18px] flex-shrink-0">
             <GameActionsMolecule
               onResign={onResign}
+              onResignConfirm={onResignConfirm}
+              onResignCancel={onResignCancel}
               onDraw={onDraw}
               onDrawAccept={onDrawAccept}
               onDrawDecline={onDrawDecline}
               drawOfferState={drawOfferState}
+              isResignConfirmMode={isResignConfirmMode}
               disabled={actionsDisabled}
               resignDisabled={resignDisabled}
               drawDisabled={drawDisabled}

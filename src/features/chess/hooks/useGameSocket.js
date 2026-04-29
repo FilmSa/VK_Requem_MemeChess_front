@@ -164,17 +164,33 @@ export function useGameSocket({
     return socketRef.current?.sendResign() ?? false;
   }
 
-  function sendDraw() {
+  function sendDrawOffer() {
     if (!enabled) {
       return false;
     }
-    return socketRef.current?.sendDraw() ?? false;
+    return socketRef.current?.sendDrawOffer() ?? false;
+  }
+
+  function sendDrawAccept() {
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendDrawAccept() ?? false;
+  }
+
+  function sendDrawDecline() {
+    if (!enabled) {
+      return false;
+    }
+    return socketRef.current?.sendDrawDecline() ?? false;
   }
 
   return {
     sendMove,
     sendEmoji,
     sendResign,
-    sendDraw,
+    sendDrawOffer,
+    sendDrawAccept,
+    sendDrawDecline,
   };
 }

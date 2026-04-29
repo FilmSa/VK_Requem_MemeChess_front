@@ -148,6 +148,21 @@
   --modal-chip-bg: #121945;
   --modal-chip-border: rgba(47, 200, 227, 0.2);
 
+  --notification-surface: linear-gradient(
+    180deg,
+    rgba(18, 24, 58, 0.96) 0%,
+    rgba(9, 14, 36, 0.98) 100%
+  );
+  --notification-border: rgba(255, 255, 255, 0.12);
+  --notification-text: #f5f7ff;
+  --notification-title: #b7c4e7;
+  --notification-dismiss-border: rgba(255, 255, 255, 0.12);
+  --notification-dismiss-text: #d9e5ff;
+  --notification-info-accent: #2fc8e3;
+  --notification-success-accent: #32d86f;
+  --notification-error-accent: #ff7c93;
+  --notification-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+
   --shadow-card: 0 22px 55px rgba(0, 0, 0, 0.34);
   --shadow-panel: 0 30px 80px rgba(0, 0, 0, 0.42);
   --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -327,6 +342,21 @@
   --modal-shadow: 0 24px 70px rgba(31, 58, 111, 0.16);
   --modal-chip-bg: #f6f9ff;
   --modal-chip-border: rgba(18, 183, 218, 0.18);
+
+  --notification-surface: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(240, 245, 255, 0.98) 100%
+  );
+  --notification-border: rgba(26, 53, 104, 0.12);
+  --notification-text: #16213d;
+  --notification-title: #5a6b88;
+  --notification-dismiss-border: rgba(26, 53, 104, 0.12);
+  --notification-dismiss-text: #3b4d72;
+  --notification-info-accent: #12b7da;
+  --notification-success-accent: #2aa35a;
+  --notification-error-accent: #d6496a;
+  --notification-shadow: 0 20px 44px rgba(31, 58, 111, 0.16);
 
   --shadow-card: 0 18px 38px rgba(31, 58, 111, 0.12);
   --shadow-panel: 0 22px 50px rgba(31, 58, 111, 0.14);

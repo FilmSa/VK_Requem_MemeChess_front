@@ -15,6 +15,7 @@ import { useMainMenuPanelState } from "../model/useMainMenuPanelState.js";
 import { useInviteLobby } from "../../game/model/useInviteLobby.js";
 import { useMatchmaking } from "../../game/model/useMatchmaking.js";
 import { savePlaySession } from "../../game/playSession.js";
+import { useNotifications } from "../../notifications/useNotifications.js";
 
 function parseStakeValue(value) {
   const parsedValue = Number.parseInt(String(value || ""), 10);
@@ -32,6 +33,7 @@ export default function MainMenuPanel({ style }) {
     isInitializing,
     refreshCurrency,
   } = useAuth();
+  const { showNotification, dismissNotification } = useNotifications();
   const [panelError, setPanelError] = useState("");
 
   const clearNavigationFallback = useCallback(() => {
@@ -255,6 +257,32 @@ export default function MainMenuPanel({ style }) {
       }
     : null;
 
+  useEffect(() => {
+    if (!statusBanner?.message) {
+      dismissNotification("main-menu-status");
+      return;
+    }
+
+    showNotification({
+      id: "main-menu-status",
+      message: statusBanner.message,
+      tone: statusBanner.tone,
+      persist: true,
+      duration: 0,
+    });
+  }, [
+    dismissNotification,
+    showNotification,
+    statusBanner?.message,
+    statusBanner?.tone,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      dismissNotification("main-menu-status");
+    };
+  }, [dismissNotification]);
+
   const actions = {
     startLabel: matchmaking.isSearching
       ? MENU_ACTIONS.searchingLabel
@@ -317,7 +345,6 @@ export default function MainMenuPanel({ style }) {
         modeField={modeField}
         memeField={memeField}
         depositField={depositField}
-        statusBanner={statusBanner}
         customizeSections={customizeSections}
         onToggleCustomizeSection={toggleCustomizeSection}
         onToggleCustomizeExpanded={toggleCustomizeExpanded}

@@ -34,7 +34,6 @@ export default function MainMenuPanel({
   modeField,
   memeField,
   depositField,
-  statusBanner,
   customizeSections,
   onToggleCustomizeSection,
   onToggleCustomizeExpanded,
@@ -118,29 +117,6 @@ export default function MainMenuPanel({
                     <MainMenuSelectField {...modeField} />
                     <MainMenuToggleField {...memeField} />
                     <MainMenuDepositField {...depositField} />
-                    {statusBanner ? (
-                      <div className="px-[10px] pb-[16px] pt-[6px]">
-                        <div
-                          className="rounded-[18px] border px-[14px] py-[12px] text-[13px] leading-[1.45]"
-                          style={{
-                            borderColor:
-                              statusBanner.tone === "error"
-                                ? "rgba(243,56,86,0.38)"
-                                : "rgba(22,206,239,0.34)",
-                            background:
-                              statusBanner.tone === "error"
-                                ? "rgba(243,56,86,0.08)"
-                                : "rgba(22,206,239,0.08)",
-                            color:
-                              statusBanner.tone === "error"
-                                ? "#F33856"
-                                : "var(--main-menu-text)",
-                          }}
-                        >
-                          {statusBanner.message}
-                        </div>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               </CustomScrollbarWrapper>

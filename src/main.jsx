@@ -2,15 +2,18 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App/App.jsx";
 import AuthProvider from "./features/auth/AuthProvider.jsx";
+import NotificationProvider from "./features/notifications/NotificationProvider.jsx";
 import ThemeProvider from "./features/theme/ThemeProvider.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </NotificationProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

@@ -22,10 +22,10 @@ const panelStyle = {
 
 function formatStakeValue(value) {
   if (!Number.isFinite(value) || value <= 0) {
-    return "Дипозит: 0";
+    return "Депозит: 0";
   }
 
-  return `Дипозит: ${new Intl.NumberFormat("ru-RU").format(value)}`;
+  return `Депозит: ${new Intl.NumberFormat("ru-RU").format(value)}`;
 }
 
 export default function GameSettingsPanel({

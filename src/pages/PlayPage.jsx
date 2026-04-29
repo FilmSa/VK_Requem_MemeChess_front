@@ -289,7 +289,7 @@ export default function PlayPage() {
       return drawOfferedBy === currentUserId
         ? {
             mode: "outgoing",
-            message: "Предложение ничьей отправлено. Ждем ответ соперника.",
+            message: "Предложение ничьи отправлено. Ждем ответ соперника.",
           }
         : {
             mode: "incoming",

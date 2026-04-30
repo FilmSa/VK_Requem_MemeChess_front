@@ -1,4 +1,5 @@
 import CustomScrollbarWrapper from "../atoms/CustomScrollbarWrapper.jsx";
+import ResponsivePanelFrame from "../atoms/ResponsivePanelFrame.jsx";
 import MainMenuActionButton from "../molecules/MainMenuActionButton.jsx";
 import MainMenuCardButton from "../molecules/MainMenuCardButton.jsx";
 import MainMenuDepositField from "../molecules/MainMenuDepositField.jsx";
@@ -7,11 +8,12 @@ import MainMenuTabButton from "../molecules/MainMenuTabButton.jsx";
 import MainMenuToggleField from "../molecules/MainMenuToggleField.jsx";
 import CustomizationSection from "./CustomizationSection.jsx";
 
+const MAIN_MENU_BASE_WIDTH = 625;
+const MAIN_MENU_BASE_HEIGHT = 840;
+
 const panelStyle = {
-  width: "100%",
-  maxWidth: "100%",
-  height: "100%",
-  maxHeight: "100%",
+  width: MAIN_MENU_BASE_WIDTH,
+  height: MAIN_MENU_BASE_HEIGHT,
   flexShrink: 0,
   display: "flex",
   flexDirection: "column",
@@ -42,50 +44,54 @@ export default function MainMenuPanel({
   const isCustomizeTab = activeTabId === "customize";
 
   return (
-    <section style={{ ...panelStyle, ...style }}>
-      <div className="relative flex h-[80px] w-full items-start overflow-hidden">
-        <div
-          className="absolute inset-x-0 bottom-0 h-px"
-          style={{ background: "var(--main-menu-divider)" }}
-        />
-        {tabs.map((tab, index) => (
-          <MainMenuTabButton
-            key={tab.id}
-            label={tab.label}
-            icon={tab.icon}
-            isActive={tab.id === activeTabId}
-            isRightTab={index === 1}
-            onClick={() => onTabSelect(tab.id)}
+    <ResponsivePanelFrame
+      baseWidth={MAIN_MENU_BASE_WIDTH}
+      baseHeight={MAIN_MENU_BASE_HEIGHT}
+      style={style}
+    >
+      <section style={panelStyle}>
+        <div className="relative flex h-[80px] w-full items-start overflow-hidden">
+          <div
+            className="absolute inset-x-0 bottom-0 h-px"
+            style={{ background: "var(--main-menu-divider)" }}
           />
-        ))}
-      </div>
+          {tabs.map((tab, index) => (
+            <MainMenuTabButton
+              key={tab.id}
+              label={tab.label}
+              icon={tab.icon}
+              isActive={tab.id === activeTabId}
+              isRightTab={index === 1}
+              onClick={() => onTabSelect(tab.id)}
+            />
+          ))}
+        </div>
 
-      <div
-        className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
-          isCustomizeTab
-            ? "justify-start px-[10px] pb-[10px] pt-[15px]"
-            : "justify-start p-[10px] pt-[18px]"
-        }`}
-      >
-        {isCustomizeTab ? (
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <CustomScrollbarWrapper className="h-full min-h-0 pr-[8px]">
-              <div className="flex min-h-full flex-col gap-[17px]">
-                {customizeSections.map((section) => (
-                  <CustomizationSection
-                    key={section.id}
-                    section={section}
-                    activeItemId={activeCardId}
-                    onSelect={onCardSelect}
-                    onToggle={() => onToggleCustomizeSection(section.id)}
-                    onToggleExpanded={() => onToggleCustomizeExpanded(section.id)}
-                  />
-                ))}
-              </div>
-            </CustomScrollbarWrapper>
-          </div>
-        ) : (
-          <>
+        <div
+          className={`flex min-h-0 flex-1 flex-col overflow-hidden ${
+            isCustomizeTab
+              ? "justify-start px-[10px] pb-[10px] pt-[15px]"
+              : "justify-start p-[10px] pt-[18px]"
+          }`}
+        >
+          {isCustomizeTab ? (
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CustomScrollbarWrapper className="h-full min-h-0 pr-[8px]">
+                <div className="flex min-h-full flex-col gap-[17px]">
+                  {customizeSections.map((section) => (
+                    <CustomizationSection
+                      key={section.id}
+                      section={section}
+                      activeItemId={activeCardId}
+                      onSelect={onCardSelect}
+                      onToggle={() => onToggleCustomizeSection(section.id)}
+                      onToggleExpanded={() => onToggleCustomizeExpanded(section.id)}
+                    />
+                  ))}
+                </div>
+              </CustomScrollbarWrapper>
+            </div>
+          ) : (
             <div className="min-h-0 flex-1 overflow-hidden">
               <CustomScrollbarWrapper className="h-full min-h-0 pr-[6px]">
                 <div className="flex min-h-full flex-col gap-[30px] pb-[2px]">
@@ -121,29 +127,29 @@ export default function MainMenuPanel({
                 </div>
               </CustomScrollbarWrapper>
             </div>
-          </>
-        )}
+          )}
 
-        {!isCustomizeTab ? (
-          <div className="mt-[10px] shrink-0 flex flex-col gap-[10px]">
-            <MainMenuActionButton
-              label={actions.startLabel}
-              icon={actions.startIcon}
-              backgroundStyle={{ background: "var(--main-menu-gradient-blue)" }}
-              onClick={actions.onStart}
-              disabled={actions.startDisabled}
-            />
+          {!isCustomizeTab ? (
+            <div className="mt-[10px] shrink-0 flex flex-col gap-[10px]">
+              <MainMenuActionButton
+                label={actions.startLabel}
+                icon={actions.startIcon}
+                backgroundStyle={{ background: "var(--main-menu-gradient-blue)" }}
+                onClick={actions.onStart}
+                disabled={actions.startDisabled}
+              />
 
-            <MainMenuActionButton
-              label={actions.friendLabel}
-              icon={actions.friendIcon}
-              backgroundStyle={{ background: "var(--main-menu-gradient-pink)" }}
-              onClick={actions.onFriendPlay}
-              disabled={actions.friendDisabled}
-            />
-          </div>
-        ) : null}
-      </div>
-    </section>
+              <MainMenuActionButton
+                label={actions.friendLabel}
+                icon={actions.friendIcon}
+                backgroundStyle={{ background: "var(--main-menu-gradient-pink)" }}
+                onClick={actions.onFriendPlay}
+                disabled={actions.friendDisabled}
+              />
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </ResponsivePanelFrame>
   );
 }

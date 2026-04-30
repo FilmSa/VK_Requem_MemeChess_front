@@ -8,6 +8,9 @@ import topTabIcon from "../../../../icons/sword.svg";
 import customizeTabIcon from "../../../../icons/bak.svg";
 import defaultPiecePreviewImage from "/images/image.jpg?url";
 import imperiumPreviewImage from "/images/imperium.png?url";
+import RomePreviewImage from "/images/Rome.png?url";
+import LotrPreviewImage from "/images/Lotr.png?url";
+import HaloPreviewImage from "/images/Halo.png?url";
 import {
   DEFAULT_EMOJI_QUICK_ACCESS_IDS,
   EMOJI_PREVIEW_ITEMS,
@@ -47,6 +50,22 @@ const boardItems = [
     lightSquare: "#F4F4F4",
     darkSquare: "#1A1A1A",
   },
+  {
+    id: "board-skin-rome",
+    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
+    previewType: "board",
+    previewShape: "square",
+    lightSquare: "#e9d7bc",
+        darkSquare: "#E5BA57",
+  },
+  {
+    id: "board-skin-halo",
+    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
+    previewType: "board",
+    previewShape: "square",
+    lightSquare: "#5ad2f0",
+    darkSquare: "#2d394b",
+  },
 ];
 
 const pieceSkinItems = [
@@ -63,6 +82,27 @@ const pieceSkinItems = [
     previewShape: "wide",
     previewContentFit: "fill",
     imageSrc: imperiumPreviewImage,
+  },
+  {
+    id: "piece-skin-ROME",
+    title: "ROME",
+    previewShape: "wide",
+    previewContentFit: "fill",
+    imageSrc: RomePreviewImage,
+  },
+  {
+    id: "piece-skin-Halo",
+    title: "Halo",
+    previewShape: "wide",
+    previewContentFit: "fill",
+    imageSrc: HaloPreviewImage,
+  },
+  {
+    id: "piece-skin-Lotr",
+    title: "Lotr",
+    previewShape: "wide",
+    previewContentFit: "fill",
+    imageSrc: LotrPreviewImage,
   },
 ];
 

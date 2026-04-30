@@ -15,6 +15,18 @@ const BOARD_SKINS = {
     lightSquare: "#D9C2A0",
     darkSquare: "#6B1F32",
   },
+  "board-skin-rome": {
+    id: "board-skin-burgundy",
+    title: "\u0411\u043e\u0440\u0434\u043e\u0432\u043e-\u0431\u0435\u0436\u0435\u0432\u0430\u044f",
+        lightSquare: "#e9d7bc",
+        darkSquare: "#E5BA57",
+  },
+  "board-skin-halo": {
+    id: "board-skin-burgundy",
+    title: "\u0411\u043e\u0440\u0434\u043e\u0432\u043e-\u0431\u0435\u0436\u0435\u0432\u0430\u044f",
+        lightSquare: "#5ad2f0",
+        darkSquare: "#2d394b",
+  },
   "board-skin-green": {
     id: "board-skin-green",
     title: "\u0421\u0435\u0440\u043e-\u0433\u043e\u043b\u0443\u0431\u0430\u044f",

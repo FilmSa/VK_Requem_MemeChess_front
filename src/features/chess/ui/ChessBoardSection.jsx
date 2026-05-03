@@ -31,6 +31,7 @@ export default function ChessBoardSection({
     game,
     displayedGame,
     highlightedSquares,
+    customArrows,
     boardOrientation,
     activeEffects,
     promotionState,
@@ -97,6 +98,7 @@ export default function ChessBoardSection({
           boardWidth={boardWidth}
           boardOrientation={boardOrientation}
           highlightedSquares={highlightedSquares}
+          customArrows={customArrows}
           activeEffects={activeEffects}
           promotionState={promotionState}
           onSquareClick={(square) => onSquareClick(square, sendMove)}

@@ -110,6 +110,30 @@ export async function searchMatch(params, token) {
   }
 }
 
+export async function createRobotGame(params, token) {
+  try {
+    const response = await apiFetch("/api/v1/games/robot", {
+      method: "POST",
+      token,
+      body: {
+        game_mode: params.gameMode,
+        difficulty: params.difficulty,
+      },
+    });
+
+    return {
+      gameId: response?.game_id || "",
+      gameMode: response?.game_mode || params.gameMode || "classic",
+      botDifficulty: response?.bot_difficulty || params.difficulty || "easy",
+      playUrl: response?.play_url || "",
+      status: response?.status || "active",
+      opponent: normalizeParticipant(response?.opponent),
+    };
+  } catch (error) {
+    throw buildGameError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РёРіСЂСѓ СЃ СЂРѕР±РѕС‚РѕРј.");
+  }
+}
+
 export async function leaveMatchSearch(token) {
   try {
     const response = await apiFetch("/api/v1/games/match-search/leave", {

@@ -189,12 +189,38 @@ export const CUSTOMIZE_SECTIONS = [
 
 export const MODE_OPTIONS = [
   "\u041a\u043b\u0430\u0441\u0441\u0438\u043a\u0430",
-  "\u041c\u0435\u043c\u044b",
+  "\u0424\u0438\u0448\u0435\u0440",
+  "\u042d\u0432\u043e\u043b\u044e\u0446\u0438\u044f",
 ];
 
 export function resolveMatchmakingGameMode(label) {
-  return label === "\u041c\u0435\u043c\u044b" ? "meme" : "classic";
+  switch (label) {
+    case "\u0424\u0438\u0448\u0435\u0440":
+      return "fischer";
+    case "\u042d\u0432\u043e\u043b\u044e\u0446\u0438\u044f":
+      return "evolution";
+    default:
+      return "classic";
+  }
 }
+
+export const BOT_DIFFICULTY_OPTIONS = [
+  {
+    id: "easy",
+    label: "\u041b\u0435\u0433\u043a\u0438\u0439",
+    description: "\u041d\u0435\u0431\u043e\u043b\u044c\u0448\u0430\u044f \u0433\u043b\u0443\u0431\u0438\u043d\u0430 \u0440\u0430\u0441\u0447\u0435\u0442\u0430",
+  },
+  {
+    id: "medium",
+    label: "\u0421\u0440\u0435\u0434\u043d\u0438\u0439",
+    description: "\u0411\u0430\u043b\u0430\u043d\u0441 \u0441\u043a\u043e\u0440\u043e\u0441\u0442\u0438 \u0438 \u0441\u0438\u043b\u044b",
+  },
+  {
+    id: "hard",
+    label: "\u0421\u043b\u043e\u0436\u043d\u044b\u0439",
+    description: "\u041c\u0430\u043a\u0441\u0438\u043c\u0443\u043c \u0433\u043b\u0443\u0431\u0438\u043d\u044b \u0438\u0437 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0445",
+  },
+];
 
 export const MENU_FIELD_LABELS = {
   mode: "\u0420\u0435\u0436\u0438\u043c:",

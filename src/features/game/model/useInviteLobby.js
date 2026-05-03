@@ -264,7 +264,7 @@ export function useInviteLobby({
     userId,
   ]);
 
-  const createInvite = useCallback(async () => {
+  const createInvite = useCallback(async ({ gameMode = "classic" } = {}) => {
     if (isInitializing) {
       return;
     }
@@ -279,9 +279,10 @@ export function useInviteLobby({
     clearInviteLobby();
 
     try {
-      const response = await createFriendInvite(token);
+      const response = await createFriendInvite(token, gameMode);
       setInviteLobby({
         gameId: response.gameId,
+        gameMode: response.gameMode || gameMode,
         inviteToken: response.inviteToken,
         inviteUrl: response.inviteUrl,
         expiresAt: response.expiresAt,

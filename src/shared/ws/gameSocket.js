@@ -244,6 +244,26 @@ function serializeUciMove({ from, to, promotion }) {
   return `${source}${target}${normalizedPromotion}`;
 }
 
+function serializeMovePayload(move) {
+  if (typeof move === "string") {
+    const normalized = move.trim().toLowerCase();
+    if (
+      /^([a-h][1-8][a-h][1-8][qrbn]?)(,([a-h][1-8][a-h][1-8][qrbn]?))*$/.test(
+        normalized
+      )
+    ) {
+      return normalized;
+    }
+    return "";
+  }
+
+  if (move?.raw) {
+    return serializeMovePayload(move.raw);
+  }
+
+  return serializeUciMove(move);
+}
+
 function normalizeEmojiEvent(data, currentUserId) {
   const type = String(data?.type || "");
   const payload = data?.payload || {};
@@ -834,7 +854,7 @@ export function createGameSocket({
         return false;
       }
 
-      const serializedMove = serializeUciMove(move);
+      const serializedMove = serializeMovePayload(move);
       if (!serializedMove) {
         return false;
       }

@@ -15,6 +15,7 @@ export default function GameBoard({
   boardWidth,
   boardOrientation,
   highlightedSquares,
+  customArrows,
   activeEffects,
   promotionState,
   onSquareClick,
@@ -69,7 +70,9 @@ export default function GameBoard({
         position={fen}
         boardOrientation={boardOrientation}
         boardWidth={boardWidth}
+        animationDuration={750}
         arePiecesDraggable={canDragPieces}
+        customArrows={customArrows}
         customPieces={customPieces}
         customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
         customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}

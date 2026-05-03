@@ -42,6 +42,33 @@ function parseUciMove(move) {
   };
 }
 
+function parseMoveSequence(move) {
+  const parts = String(move || "")
+    .split(",")
+    .map((part) => parseUciMove(part))
+    .filter(Boolean);
+
+  return parts.length ? parts : null;
+}
+
+function listBoardSquares() {
+  const squares = [];
+
+  for (let rank = 1; rank <= 8; rank += 1) {
+    for (let file = 0; file < 8; file += 1) {
+      squares.push(`${String.fromCharCode(97 + file)}${rank}`);
+    }
+  }
+
+  return squares;
+}
+
+const BOARD_SQUARES = listBoardSquares();
+
+function isServerAuthoritativeMode(gameMode) {
+  return gameMode === "fischer" || gameMode === "evolution";
+}
+
 function loadGameFromFen(fen) {
   const nextGame = new Chess();
 
@@ -79,7 +106,14 @@ function cloneGameInstance(chessInstance) {
   return loadGameFromFen(chessInstance.fen());
 }
 
-function buildGameFromServerState(state, currentGame = null) {
+function buildGameFromServerState(state, currentGame = null, options = {}) {
+  const serverMode = String(options?.gameMode || state?.game_mode || "")
+    .trim()
+    .toLowerCase();
+  if (isServerAuthoritativeMode(serverMode)) {
+    return loadGameFromFen(state?.fen);
+  }
+
   const nextGame = new Chess();
   const moveList = Array.isArray(state?.moves) ? state.moves : [];
 
@@ -113,6 +147,20 @@ function buildGameFromServerState(state, currentGame = null) {
   }
 
   return nextGame;
+}
+
+function buildServerHistoryGame(historyCursor, serverMoves, initialFen, fallbackFen) {
+  if (historyCursor <= 0) {
+    return loadGameFromFen(initialFen) || loadGameFromFen(fallbackFen) || new Chess();
+  }
+
+  const moveEntry = serverMoves[historyCursor - 1];
+  return (
+    loadGameFromFen(moveEntry?.fen) ||
+    loadGameFromFen(fallbackFen) ||
+    loadGameFromFen(initialFen) ||
+    new Chess()
+  );
 }
 
 function buildGameToPly(history, plyCount) {
@@ -159,6 +207,143 @@ function mergeSquareStyles(baseStyles, overlayStyles) {
   });
 
   return mergedStyles;
+}
+
+function buildRecentMoveSquareStyles(sequence) {
+  if (!sequence?.length) {
+    return {};
+  }
+
+  const styles = {};
+
+  sequence.forEach((step, index) => {
+    const isLast = index === sequence.length - 1;
+    const targetSquare = step.to;
+
+    styles[step.from] = {
+      ...(styles[step.from] || {}),
+      boxShadow:
+        styles[step.from]?.boxShadow ||
+        "inset 0 0 0 2px rgba(255, 214, 102, 0.9)",
+    };
+
+    styles[targetSquare] = {
+      ...(styles[targetSquare] || {}),
+      background: isLast
+        ? "radial-gradient(circle, rgba(0, 234, 255, 0.34) 18%, transparent 22%)"
+        : "radial-gradient(circle, rgba(255, 159, 67, 0.34) 18%, transparent 22%)",
+      boxShadow: isLast
+        ? "inset 0 0 0 2px rgba(0, 234, 255, 0.88)"
+        : "inset 0 0 0 2px rgba(255, 159, 67, 0.88)",
+    };
+  });
+
+  return styles;
+}
+
+function findSameSquareCastleOverlay(previousFen, nextFen, kingSquare) {
+  const previousGame = loadGameFromFen(previousFen);
+  const nextGame = loadGameFromFen(nextFen);
+  if (!previousGame || !nextGame || !kingSquare) {
+    return { arrows: [], styles: {} };
+  }
+
+  const kingPiece = previousGame.get(kingSquare);
+  if (!kingPiece || kingPiece.type !== "k") {
+    return { arrows: [], styles: {} };
+  }
+
+  const disappearedRooks = [];
+  const appearedRooks = [];
+
+  for (const square of BOARD_SQUARES) {
+    const beforePiece = previousGame.get(square);
+    const afterPiece = nextGame.get(square);
+
+    const hadOwnRook =
+      beforePiece?.type === "r" && beforePiece.color === kingPiece.color;
+    const hasOwnRook =
+      afterPiece?.type === "r" && afterPiece.color === kingPiece.color;
+
+    if (hadOwnRook && !hasOwnRook) {
+      disappearedRooks.push(square);
+    }
+
+    if (hasOwnRook && !hadOwnRook) {
+      appearedRooks.push(square);
+    }
+  }
+
+  if (disappearedRooks.length !== 1 || appearedRooks.length !== 1) {
+    return {
+      arrows: [],
+      styles: {
+        [kingSquare]: {
+          boxShadow: "inset 0 0 0 3px rgba(255, 214, 102, 0.94)",
+        },
+      },
+    };
+  }
+
+  const rookFrom = disappearedRooks[0];
+  const rookTo = appearedRooks[0];
+
+  return {
+    arrows: [[rookFrom, rookTo, "rgba(255, 214, 102, 0.92)"]],
+    styles: {
+      [kingSquare]: {
+        boxShadow: "inset 0 0 0 3px rgba(255, 214, 102, 0.94)",
+      },
+      [rookTo]: {
+        background:
+          "radial-gradient(circle, rgba(255, 214, 102, 0.38) 18%, transparent 22%)",
+        boxShadow: "inset 0 0 0 2px rgba(255, 214, 102, 0.9)",
+      },
+    },
+  };
+}
+
+function buildServerMoveOverlay({ serverMoves, initialFen, activeHistoryPly, historyLength }) {
+  if (
+    !Array.isArray(serverMoves) ||
+    serverMoves.length === 0 ||
+    activeHistoryPly !== historyLength
+  ) {
+    return { arrows: [], styles: {} };
+  }
+
+  const lastMoveEntry = serverMoves[serverMoves.length - 1];
+  const sequence = parseMoveSequence(lastMoveEntry?.move);
+  if (!sequence?.length) {
+    return { arrows: [], styles: {} };
+  }
+
+  if (sequence.length > 1) {
+    return {
+      arrows: sequence.map((step, index) => [
+        step.from,
+        step.to,
+        index === 0
+          ? "rgba(255, 159, 67, 0.92)"
+          : "rgba(0, 234, 255, 0.92)",
+      ]),
+      styles: buildRecentMoveSquareStyles(sequence),
+    };
+  }
+
+  const [singleStep] = sequence;
+  if (singleStep.from !== singleStep.to) {
+    return {
+      arrows: [[singleStep.from, singleStep.to, "rgba(255, 214, 102, 0.92)"]],
+      styles: buildRecentMoveSquareStyles(sequence),
+    };
+  }
+
+  return findSameSquareCastleOverlay(
+    serverMoves.length > 1 ? serverMoves[serverMoves.length - 2]?.fen : initialFen,
+    lastMoveEntry?.fen,
+    singleStep.from
+  );
 }
 
 function buildKingThreatStyles(chessInstance) {
@@ -247,8 +432,18 @@ function buildMoveHistoryDtos(history) {
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
+  const gameMode = String(options.gameMode || "").trim().toLowerCase();
+  const usesServerAuthoritativeRules = isServerAuthoritativeMode(gameMode);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
+  const serverLegalMoves = Array.isArray(options.serverLegalMoves)
+    ? options.serverLegalMoves.filter((move) => typeof move === "string" && move.trim())
+    : [];
+  const serverMoves = Array.isArray(options.serverMoves) ? options.serverMoves : [];
+  const initialFen =
+    typeof options.initialFen === "string" && options.initialFen.trim()
+      ? options.initialFen
+      : new Chess().fen();
   const externalHighlightedSquares =
     options.extraHighlightedSquares &&
     typeof options.extraHighlightedSquares === "object"
@@ -270,6 +465,7 @@ export function useChessGame(options = {}) {
   const gameRef = useRef(game);
   const historyCursorRef = useRef(historyCursor);
   const memeModeEnabledRef = useRef(isMemeModeEnabled);
+  const serverMovesRef = useRef(serverMoves);
 
   useEffect(() => {
     gameRef.current = game;
@@ -282,6 +478,10 @@ export function useChessGame(options = {}) {
   useEffect(() => {
     memeModeEnabledRef.current = isMemeModeEnabled;
   }, [isMemeModeEnabled]);
+
+  useEffect(() => {
+    serverMovesRef.current = serverMoves;
+  }, [serverMoves]);
 
   useEffect(() => {
     if (typeof options.memeModeEnabled === "boolean") {
@@ -309,6 +509,14 @@ export function useChessGame(options = {}) {
 
       return Math.min(currentCursor, nextHistoryLength);
     });
+  }
+
+  function getCurrentHistoryLength() {
+    if (usesServerAuthoritativeRules) {
+      return serverMovesRef.current.length;
+    }
+
+    return gameRef.current.history().length;
   }
 
   function clearSelection() {
@@ -392,6 +600,27 @@ export function useChessGame(options = {}) {
   }
 
   function getLegalMoves(square, chessInstance = gameRef.current) {
+    if (usesServerAuthoritativeRules) {
+      return serverLegalMoves
+        .map((move) => parseMoveSequence(move))
+        .filter((sequence) => sequence?.[0]?.from === square)
+        .map((sequence) => {
+          const firstStep = sequence[0];
+          const finalStep = sequence[sequence.length - 1];
+
+          return {
+            from: firstStep.from,
+            to: finalStep.to,
+            promotion: finalStep.promotion,
+            raw: sequence
+              .map((step) => `${step.from}${step.to}${step.promotion || ""}`)
+              .join(","),
+            isSequence: sequence.length > 1,
+            isStationary: firstStep.from === finalStep.to,
+          };
+        });
+    }
+
     return chessInstance.moves({ square, verbose: true });
   }
 
@@ -403,6 +632,51 @@ export function useChessGame(options = {}) {
     { from, to, promotion },
     chessInstance = gameRef.current
   ) {
+    if (usesServerAuthoritativeRules) {
+      const moveCandidates = getMoveCandidates(from, to, chessInstance);
+
+      if (!moveCandidates.length) {
+        return { kind: "invalid" };
+      }
+
+      const promotionOptions = PROMOTION_PIECE_ORDER.filter((option) =>
+        moveCandidates.some((move) => move.promotion === option)
+      );
+
+      if (!promotionOptions.length) {
+        const preferredCandidate = [...moveCandidates].sort((left, right) => {
+          if (Boolean(left.isSequence) === Boolean(right.isSequence)) {
+            return 0;
+          }
+          return left.isSequence ? 1 : -1;
+        })[0];
+
+        return {
+          kind: "move",
+          raw: preferredCandidate.raw,
+        };
+      }
+
+      const normalizedPromotion = normalizePromotionPiece(promotion);
+
+      if (normalizedPromotion && promotionOptions.includes(normalizedPromotion)) {
+        const matchedCandidate = moveCandidates.find(
+          (move) => move.promotion === normalizedPromotion
+        );
+
+        return {
+          kind: "move",
+          promotion: normalizedPromotion,
+          raw: matchedCandidate?.raw,
+        };
+      }
+
+      return {
+        kind: "promotion",
+        options: promotionOptions,
+      };
+    }
+
     const moveCandidates = getMoveCandidates(from, to, chessInstance);
 
     if (!moveCandidates.length) {
@@ -447,25 +721,44 @@ export function useChessGame(options = {}) {
     };
 
     moves.forEach((move) => {
-      styles[move.to] = move.captured
-        ? {
-            background:
-              "radial-gradient(circle, transparent 58%, rgba(0,234,255,0.9) 60%, transparent 66%)",
-          }
-        : {
-            background:
-              "radial-gradient(circle, rgba(0,234,255,0.45) 20%, transparent 22%)",
-          };
+      const nextStyle =
+        !usesServerAuthoritativeRules && move.captured
+          ? {
+              background:
+                "radial-gradient(circle, transparent 58%, rgba(0,234,255,0.9) 60%, transparent 66%)",
+            }
+          : {
+              background: move.isStationary
+                ? "radial-gradient(circle, rgba(255, 214, 102, 0.34) 18%, transparent 22%)"
+                : "radial-gradient(circle, rgba(0,234,255,0.45) 20%, transparent 22%)",
+              boxShadow:
+                move.isSequence || move.isStationary
+                  ? "inset 0 0 0 2px rgba(255, 159, 67, 0.88)"
+                  : undefined,
+            };
+
+      styles[move.to] = {
+        ...(styles[move.to] || {}),
+        ...nextStyle,
+      };
     });
 
     setHighlightedSquares(styles);
   }
 
   function cloneGameFromHistory() {
+    if (usesServerAuthoritativeRules) {
+      return loadGameFromFen(gameRef.current.fen()) || new Chess();
+    }
+
     return cloneGameInstance(gameRef.current);
   }
 
   function applyMove({ from, to, promotion }) {
+    if (usesServerAuthoritativeRules) {
+      return null;
+    }
+
     const historyBeforeMove = gameRef.current.history({ verbose: true });
     const previousHistoryLength = gameRef.current.history().length;
     const gameCopy = cloneGameFromHistory();
@@ -493,6 +786,23 @@ export function useChessGame(options = {}) {
   }
 
   function sendValidatedMove(move, sendMove) {
+    if (usesServerAuthoritativeRules) {
+      if (move?.raw) {
+        return sendMove?.(move.raw);
+      }
+
+      const payload = {
+        from: move.from,
+        to: move.to,
+      };
+
+      if (move.promotion) {
+        payload.promotion = move.promotion;
+      }
+
+      return sendMove?.(payload);
+    }
+
     const payload = {
       from: move.from,
       to: move.to,
@@ -502,10 +812,30 @@ export function useChessGame(options = {}) {
       payload.promotion = move.promotion;
     }
 
-    sendMove?.(payload);
+    return sendMove?.(payload);
   }
 
   function completeMove(moveRequest, sendMove) {
+    if (usesServerAuthoritativeRules) {
+      const sent = Boolean(
+        sendValidatedMove(
+          {
+            from: moveRequest.from,
+            to: moveRequest.to,
+            promotion: moveRequest.promotion,
+            raw: moveRequest.raw,
+          },
+          sendMove
+        )
+      );
+
+      if (sent) {
+        clearSelection();
+      }
+
+      return sent;
+    }
+
     const move = applyMove(moveRequest);
 
     if (!move) {
@@ -516,7 +846,7 @@ export function useChessGame(options = {}) {
     return true;
   }
 
-  function openPromotionMenu({ from, to, piece, options }) {
+  function openPromotionMenu({ from, to, piece, options, raw }) {
     setSelectedSquare(from);
     buildHighlights(from);
     setPromotionState({
@@ -524,6 +854,7 @@ export function useChessGame(options = {}) {
       to,
       color: piece?.color || playerColor,
       options,
+      raw,
     });
   }
 
@@ -533,7 +864,7 @@ export function useChessGame(options = {}) {
 
   function onSquareClick(square, sendMove) {
     const currentGame = gameRef.current;
-    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+    const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
     const clickedPiece = currentGame.get(square);
 
     if (promotionState || interactionLocked) {
@@ -551,6 +882,27 @@ export function useChessGame(options = {}) {
     }
 
     if (selectedSquare === square) {
+      const moveSelection = resolveMoveSelection(
+        {
+          from: selectedSquare,
+          to: square,
+        },
+        currentGame
+      );
+
+      if (moveSelection.kind === "move") {
+        completeMove(
+          {
+            from: selectedSquare,
+            to: square,
+            promotion: moveSelection.promotion,
+            raw: moveSelection.raw,
+          },
+          sendMove
+        );
+        return;
+      }
+
       clearSelection();
       return;
     }
@@ -576,6 +928,7 @@ export function useChessGame(options = {}) {
           to: square,
           piece: currentGame.get(selectedSquare),
           options: moveSelection.options,
+          raw: moveSelection.raw,
         });
         return;
       }
@@ -589,6 +942,7 @@ export function useChessGame(options = {}) {
           from: selectedSquare,
           to: square,
           promotion: moveSelection.promotion,
+          raw: moveSelection.raw,
         },
         sendMove
       );
@@ -600,7 +954,7 @@ export function useChessGame(options = {}) {
 
   function onPieceDrop(sourceSquare, targetSquare, sendMove) {
     const currentGame = gameRef.current;
-    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+    const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
     const piece = currentGame.get(sourceSquare);
 
     if (promotionState || interactionLocked) {
@@ -629,6 +983,7 @@ export function useChessGame(options = {}) {
         to: targetSquare,
         piece,
         options: moveSelection.options,
+        raw: moveSelection.raw,
       });
       return false;
     }
@@ -642,6 +997,7 @@ export function useChessGame(options = {}) {
         from: sourceSquare,
         to: targetSquare,
         promotion: moveSelection.promotion,
+        raw: moveSelection.raw,
       },
       sendMove
     );
@@ -664,6 +1020,7 @@ export function useChessGame(options = {}) {
         from: currentPromotion.from,
         to: currentPromotion.to,
         promotion: normalizedPromotion,
+        raw: currentPromotion.raw,
       },
       sendMove
     );
@@ -671,7 +1028,7 @@ export function useChessGame(options = {}) {
 
   function isPieceDraggable({ sourceSquare }) {
     const currentGame = gameRef.current;
-    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+    const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
 
     if (promotionState || isViewingHistory || interactionLocked) {
       return false;
@@ -682,7 +1039,7 @@ export function useChessGame(options = {}) {
 
   function allowPieceDrag() {
     const currentGame = gameRef.current;
-    const isViewingHistory = historyCursorRef.current !== currentGame.history().length;
+    const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
 
     if (promotionState || isViewingHistory || interactionLocked) {
       return false;
@@ -692,6 +1049,10 @@ export function useChessGame(options = {}) {
   }
 
   function applyRemoteMove(move) {
+    if (usesServerAuthoritativeRules) {
+      return false;
+    }
+
     const appliedMove = applyMove({
       from: move.from,
       to: move.to,
@@ -702,23 +1063,48 @@ export function useChessGame(options = {}) {
   }
 
   function syncFromServerState(state) {
-    const previousHistoryLength = gameRef.current.history().length;
-    const nextGame = buildGameFromServerState(state, gameRef.current);
+    const previousHistoryLength = getCurrentHistoryLength();
+    const nextGame = buildGameFromServerState(state, gameRef.current, {
+      gameMode,
+    });
     if (!nextGame) {
       return false;
     }
 
     setGame(nextGame);
-    syncHistoryCursor(nextGame.history().length, previousHistoryLength);
+    syncHistoryCursor(
+      Array.isArray(state?.moves) ? state.moves.length : nextGame.history().length,
+      previousHistoryLength
+    );
     clearSelection();
     return true;
   }
 
-  const history = game.history({ verbose: true });
-  const displayedGame = buildGameToPly(history, historyCursor);
+  const verboseHistory = usesServerAuthoritativeRules
+    ? []
+    : game.history({ verbose: true });
+  const history = usesServerAuthoritativeRules
+    ? serverMoves.map((move) => move?.move || "")
+    : verboseHistory.map((move) =>
+        `${move.from}${move.to}${move.promotion || ""}`.toLowerCase()
+      );
+  const displayedGame = usesServerAuthoritativeRules
+    ? buildServerHistoryGame(historyCursor, serverMoves, initialFen, game.fen())
+    : buildGameToPly(verboseHistory, historyCursor);
   const activeHistoryPly = Math.min(historyCursor, history.length);
+  const recentMoveOverlay = usesServerAuthoritativeRules
+    ? buildServerMoveOverlay({
+        serverMoves,
+        initialFen,
+        activeHistoryPly,
+        historyLength: history.length,
+      })
+    : { arrows: [], styles: {} };
   const effectiveHighlightedSquares = mergeSquareStyles(
-    mergeSquareStyles(highlightedSquares, buildKingThreatStyles(displayedGame)),
+    mergeSquareStyles(
+      mergeSquareStyles(highlightedSquares, recentMoveOverlay.styles),
+      buildKingThreatStyles(displayedGame)
+    ),
     externalHighlightedSquares
   );
 
@@ -743,10 +1129,12 @@ export function useChessGame(options = {}) {
 
   return {
     game,
+    history,
     displayedGame,
     activeHistoryPly,
-    moveCount: game.history().length,
+    moveCount: history.length,
     highlightedSquares: effectiveHighlightedSquares,
+    customArrows: recentMoveOverlay.arrows,
     boardOrientation,
     activeEffects,
     promotionState,

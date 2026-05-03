@@ -46,15 +46,18 @@ function normalizeMatch(match) {
 }
 
 function resolveMatchGameModeLabel(gameMode) {
-  if (gameMode === "meme") {
-    return "Мемы";
+  switch (gameMode) {
+    case "classic":
+      return "Классика";
+    case "fischer":
+      return "Фишер";
+    case "evolution":
+      return "Эволюция";
+    case "meme":
+      return "Мемы";
+    default:
+      return "";
   }
-
-  if (gameMode === "classic") {
-    return "Классика";
-  }
-
-  return "";
 }
 
 function resolveMatchCurrencyLabel(gameCurrency) {
@@ -165,6 +168,8 @@ export function useOnlineGameRoom(gameId) {
   const currentUserId = String(
     currentUserProfile?.id || onlineIdentity.user?.id || ""
   ).trim();
+  const resolvedGameMode =
+    match?.gameMode || String(roomState?.game_mode || "").trim().toLowerCase();
   const opponentUserId =
     String(opponentProfile?.id || "").trim() ||
     (currentUserId && roomState?.player1_id === currentUserId
@@ -239,9 +244,10 @@ export function useOnlineGameRoom(gameId) {
     currentUserName,
     opponentName,
     matchStake: match?.agreedStake ?? 0,
-    matchGameMode: match?.gameMode || "",
-    matchGameModeLabel: resolveMatchGameModeLabel(match?.gameMode || ""),
+    matchGameMode: resolvedGameMode,
+    matchGameModeLabel: resolveMatchGameModeLabel(resolvedGameMode),
     matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
+    isBotGame: Boolean(roomState?.bot_game),
     buildSocketOptions,
   };
 }

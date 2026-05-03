@@ -21,6 +21,32 @@ import { useNotifications } from "../features/notifications/useNotifications.js"
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
 const reactionDurationCache = new Map();
+const EVOLUTION_STAGE_NOTICES = [
+  {
+    threshold: 10,
+    title: "Эволюция: пешки",
+    message:
+      "После 10-го хода пешки получили контратаку: при взятии пешкой атакующая пешка может быть съедена в ответ.",
+  },
+  {
+    threshold: 14,
+    title: "Эволюция: король",
+    message:
+      "После 14-го хода король получает одноразовую защиту от одиночного мата и удаляет фигуру, поставившую мат.",
+  },
+  {
+    threshold: 20,
+    title: "Эволюция: кони",
+    message:
+      "После 20-го хода кони могут ходить дважды за один ход. Двойной маршрут теперь подсвечивается прямо на доске.",
+  },
+  {
+    threshold: 30,
+    title: "Эволюция: прорыв коня",
+    message:
+      "После 30-го хода конь пробивает пешки насквозь и может поражать фигуры за ними.",
+  },
+];
 
 function resolveReactionDurationMs(reaction) {
   const mediaSrc = reaction?.videoSrc || reaction?.soundSrc || "";
@@ -234,6 +260,7 @@ export default function PlayPage() {
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
   const finishedCurrencyRefreshKeyRef = useRef("");
+  const lastEvolutionMoveCountRef = useRef(null);
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
 
@@ -248,6 +275,10 @@ export default function PlayPage() {
 
   const chessGameState = useChessGame({
     playerColor: onlineRoom.playerColor,
+    gameMode: onlineRoom.matchGameMode || roomState?.game_mode || "",
+    serverLegalMoves: roomState?.legal_moves || [],
+    serverMoves: roomState?.moves || [],
+    initialFen: roomState?.initial_fen || "",
     interactionLocked: isGameFinished,
     extraHighlightedSquares,
   });
@@ -442,6 +473,7 @@ export default function PlayPage() {
     setActionNotice("");
     setIsResignConfirmMode(false);
     setExtraHighlightedSquares({});
+    lastEvolutionMoveCountRef.current = null;
   }, [gameId]);
 
   useEffect(() => {
@@ -516,6 +548,49 @@ export default function PlayPage() {
     drawControls,
     drawOfferedBy,
     isGameFinished,
+    showNotification,
+  ]);
+
+  useEffect(() => {
+    const activeGameMode = String(
+      onlineRoom.matchGameMode || roomState?.game_mode || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (activeGameMode !== "evolution") {
+      lastEvolutionMoveCountRef.current = null;
+      return;
+    }
+
+    const currentMoveCount = Array.isArray(roomState?.moves) ? roomState.moves.length : 0;
+    if (lastEvolutionMoveCountRef.current === null) {
+      lastEvolutionMoveCountRef.current = currentMoveCount;
+      return;
+    }
+
+    const previousMoveCount = lastEvolutionMoveCountRef.current;
+    lastEvolutionMoveCountRef.current = currentMoveCount;
+
+    if (currentMoveCount <= previousMoveCount) {
+      return;
+    }
+
+    EVOLUTION_STAGE_NOTICES.forEach((stage) => {
+      if (previousMoveCount < stage.threshold && currentMoveCount >= stage.threshold) {
+        showNotification({
+          id: `evolution-stage-${stage.threshold}`,
+          title: stage.title,
+          message: stage.message,
+          tone: "info",
+          duration: 7000,
+        });
+      }
+    });
+  }, [
+    onlineRoom.matchGameMode,
+    roomState?.game_mode,
+    roomState?.moves,
     showNotification,
   ]);
 
@@ -703,7 +778,7 @@ export default function PlayPage() {
                 emojiQuickAccessItems={emojiQuickAccessItems}
                 onEmojiSelect={handleEmojiSelect}
                 emojiCooldownActive={emojiCooldownActive}
-                history={chessGameState.game.history()}
+                history={chessGameState.history}
                 activeHistoryPly={chessGameState.activeHistoryPly}
                 canViewPrevious={chessGameState.canViewPrevious}
                 canViewNext={chessGameState.canViewNext}
@@ -726,7 +801,9 @@ export default function PlayPage() {
                   !roomState
                 }
                 resignDisabled={isGameFinished}
-                drawDisabled={isGameFinished || Boolean(drawOfferedBy)}
+                drawDisabled={
+                  isGameFinished || Boolean(drawOfferedBy) || onlineRoom.isBotGame
+                }
               />
             </div>
           </div>

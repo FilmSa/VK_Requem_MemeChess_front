@@ -4,6 +4,7 @@ import InviteLobbyModal from "../../../components/organisms/InviteLobbyModal.jsx
 import MainMenuPanelView from "../../../components/organisms/MainMenuPanel.jsx";
 import { useAuth } from "../../auth/useAuth.js";
 import {
+  BOT_DIFFICULTY_OPTIONS,
   CUSTOMIZE_SECTIONS,
   MENU_ACTIONS,
   MENU_FIELD_LABELS,
@@ -14,6 +15,7 @@ import {
 import { useMainMenuPanelState } from "../model/useMainMenuPanelState.js";
 import { useInviteLobby } from "../../game/model/useInviteLobby.js";
 import { useMatchmaking } from "../../game/model/useMatchmaking.js";
+import { createRobotGame } from "../../game/gameApi.js";
 import { savePlaySession } from "../../game/playSession.js";
 import { useNotifications } from "../../notifications/useNotifications.js";
 
@@ -26,6 +28,7 @@ export default function MainMenuPanel({ style }) {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationFallbackTimeoutRef = useRef(null);
+  const inviteGameModeRef = useRef("classic");
   const {
     token,
     user,
@@ -35,6 +38,13 @@ export default function MainMenuPanel({ style }) {
   } = useAuth();
   const { showNotification, dismissNotification } = useNotifications();
   const [panelError, setPanelError] = useState("");
+  const [isPlayModalOpen, setIsPlayModalOpen] = useState(false);
+  const [playModalPanel, setPlayModalPanel] = useState("friend");
+  const [robotDifficulty, setRobotDifficulty] = useState(
+    BOT_DIFFICULTY_OPTIONS[0]?.id || "easy"
+  );
+  const [robotError, setRobotError] = useState("");
+  const [isCreatingRobot, setIsCreatingRobot] = useState(false);
 
   const clearNavigationFallback = useCallback(() => {
     if (navigationFallbackTimeoutRef.current) {
@@ -105,6 +115,8 @@ export default function MainMenuPanel({ style }) {
     setDepositTo,
   } = useMainMenuPanelState({ userId: user?.id });
 
+  const selectedGameMode = resolveMatchmakingGameMode(selectedMode);
+
   const handleAuthRequired = () =>
     navigate("/login", { state: { from: location } });
 
@@ -115,18 +127,31 @@ export default function MainMenuPanel({ style }) {
     isInitializing,
     onAuthRequired: handleAuthRequired,
     onGameReady: (gameId) => {
+      const match = {
+        gameMode: inviteGameModeRef.current || selectedGameMode,
+      };
+
       savePlaySession({
         gameId,
+        match,
         sessionToken: token,
         player: user,
       });
 
+      setIsPlayModalOpen(false);
       navigateToPlay(gameId, {
+        match,
         sessionToken: token,
         player: user,
       });
     },
   });
+
+  useEffect(() => {
+    if (inviteLobby.inviteLobby?.gameMode) {
+      inviteGameModeRef.current = inviteLobby.inviteLobby.gameMode;
+    }
+  }, [inviteLobby.inviteLobby?.gameMode]);
 
   const matchmaking = useMatchmaking({
     token,
@@ -160,15 +185,6 @@ export default function MainMenuPanel({ style }) {
     setPanelError("");
     setSelectedMode(option);
     setIsModeOpen(false);
-
-    if (option === MODE_OPTIONS[1]) {
-      setMemeMode(true);
-      return;
-    }
-
-    if (option === MODE_OPTIONS[0]) {
-      setMemeMode(false);
-    }
   }
 
   function handleDepositFromChange(value) {
@@ -207,10 +223,78 @@ export default function MainMenuPanel({ style }) {
 
     setPanelError("");
     void matchmaking.startSearch({
-      gameMode: resolveMatchmakingGameMode(selectedMode),
+      gameMode: selectedGameMode,
       minStake,
       maxStake,
     });
+  }
+
+  function handleOpenPlayModal() {
+    setPanelError("");
+    setRobotError("");
+    setPlayModalPanel("friend");
+    setIsPlayModalOpen(true);
+  }
+
+  function handleClosePlayModal() {
+    setIsPlayModalOpen(false);
+    setRobotError("");
+    inviteLobby.clearInviteLobby();
+  }
+
+  function handleCreateInvite() {
+    setRobotError("");
+    setPlayModalPanel("friend");
+    inviteGameModeRef.current = selectedGameMode;
+    void inviteLobby.createInvite({ gameMode: selectedGameMode });
+  }
+
+  async function handleCreateRobot() {
+    if (isInitializing) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      handleAuthRequired();
+      return;
+    }
+
+    setRobotError("");
+    setIsCreatingRobot(true);
+
+    try {
+      const response = await createRobotGame(
+        {
+          gameMode: selectedGameMode,
+          difficulty: robotDifficulty,
+        },
+        token
+      );
+
+      const match = {
+        gameMode: response.gameMode,
+      };
+
+      savePlaySession({
+        gameId: response.gameId,
+        match,
+        sessionToken: token,
+        player: user,
+      });
+
+      setIsPlayModalOpen(false);
+      navigateToPlay(response.gameId, {
+        match,
+        sessionToken: token,
+        player: user,
+      });
+    } catch (error) {
+      setRobotError(
+        error?.message || "Не удалось создать игру с роботом."
+      );
+    } finally {
+      setIsCreatingRobot(false);
+    }
   }
 
   const modeField = {
@@ -289,21 +373,22 @@ export default function MainMenuPanel({ style }) {
       : MENU_ACTIONS.startGameLabel,
     startIcon: MENU_ACTIONS.startGameIcon,
     startDisabled:
-      matchmaking.isSearching || inviteLobby.isCreatingInvite || isInitializing,
+      matchmaking.isSearching ||
+      inviteLobby.isCreatingInvite ||
+      isCreatingRobot ||
+      isInitializing,
     onStart: handleStartMatchmaking,
     friendLabel: matchmaking.isSearching
       ? MENU_ACTIONS.leaveSearchLabel
-      : inviteLobby.isCreatingInvite
-      ? MENU_ACTIONS.creatingInviteLabel
       : MENU_ACTIONS.friendGameLabel,
     friendIcon: MENU_ACTIONS.friendGameIcon,
-    friendDisabled: isInitializing || (!matchmaking.isSearching && inviteLobby.isCreatingInvite),
+    friendDisabled: isInitializing || isCreatingRobot,
     onFriendPlay: matchmaking.isSearching
       ? () => {
           setPanelError("");
           void matchmaking.cancelSearch();
         }
-      : inviteLobby.createInvite,
+      : handleOpenPlayModal,
   };
 
   const customizeSections = CUSTOMIZE_SECTIONS.map((section) => {
@@ -352,11 +437,23 @@ export default function MainMenuPanel({ style }) {
       />
 
       <InviteLobbyModal
-        isOpen={inviteLobby.isInviteModalOpen}
+        isOpen={isPlayModalOpen}
+        activePanel={playModalPanel}
+        onPanelChange={setPlayModalPanel}
+        selectedGameModeLabel={selectedMode}
         inviteLobby={inviteLobby.inviteLobby}
+        inviteError={inviteLobby.inviteError}
+        isCreatingInvite={inviteLobby.isCreatingInvite}
+        onCreateInvite={handleCreateInvite}
         onCopy={inviteLobby.copyInvite}
-        onClose={inviteLobby.hideInviteModal}
+        onClose={handleClosePlayModal}
         onEnterLobby={inviteLobby.enterLobby}
+        robotDifficulty={robotDifficulty}
+        robotDifficultyOptions={BOT_DIFFICULTY_OPTIONS}
+        onRobotDifficultyChange={setRobotDifficulty}
+        onCreateRobot={handleCreateRobot}
+        isCreatingRobot={isCreatingRobot}
+        robotError={robotError}
       />
     </>
   );

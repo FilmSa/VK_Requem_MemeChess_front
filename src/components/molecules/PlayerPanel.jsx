@@ -7,6 +7,7 @@ export default function PlayerPanel({
   avatar,
   time = "15:00",
   reaction,
+  showTimer = true,
   timerIsActive = false,
   timerTone = "idle",
 }) {
@@ -16,7 +17,9 @@ export default function PlayerPanel({
         <UserInfo name={name} level={level} avatar={avatar} reaction={reaction} />
       </div>
 
-      <Timer time={time} isActive={timerIsActive} tone={timerTone} />
+      {showTimer ? (
+        <Timer time={time} isActive={timerIsActive} tone={timerTone} />
+      ) : null}
     </div>
   );
 }

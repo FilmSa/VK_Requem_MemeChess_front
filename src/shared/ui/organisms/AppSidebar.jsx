@@ -90,7 +90,7 @@ export default function AppSidebar() {
 
   return (
     <aside
-      className="flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden px-[20px] py-[20px]"
+      className="relative z-[200] flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden px-[20px] py-[20px]"
       style={{ background: "var(--sidebar-background)" }}
     >
       <Logo />

@@ -37,7 +37,7 @@ export default function InviteLobbyModal({
   activePanel = "friend",
   onPanelChange,
   selectedGameModeLabel,
-  selectedTimeControlLabel = "Без лимита",
+  selectedTimeControlLabel = "Бесконечное",
   isTimeControlEnabled = true,
   onTimeControlEnabledChange,
   inviteLobby,
@@ -133,7 +133,7 @@ export default function InviteLobbyModal({
           >
             Время:{" "}
             <span style={{ color: "var(--color-accent-pink)" }}>
-              {isTimeControlEnabled ? selectedTimeControlLabel : "Без лимита"}
+              {isTimeControlEnabled ? selectedTimeControlLabel : "Без лимит"}
             </span>
           </div>
         </div>
@@ -199,15 +199,16 @@ export default function InviteLobbyModal({
               style={{
                 borderColor: "var(--modal-chip-border)",
                 background: "var(--modal-chip-bg)",
+                padding: 8,
               }}
             >
               <label className="flex cursor-pointer items-center justify-between gap-[16px]">
                 <div>
-                  <div className="text-[16px] font-semibold">
+                  <div className="text-[18px] font-semibold">
                     Ограничение по времени
                   </div>
                   <div
-                    className="mt-1 text-[13px] leading-5"
+                    className="mt-1 text-[16px] leading-5"
                     style={{ color: "var(--color-text-muted)" }}
                   >
                     {isTimeControlEnabled
@@ -232,7 +233,7 @@ export default function InviteLobbyModal({
               style={{
                 borderColor: "var(--modal-chip-border)",
                 background: "var(--modal-chip-bg)",
-                padding: 10,
+                padding: 8,
               }}
             >
               <div
@@ -306,7 +307,8 @@ export default function InviteLobbyModal({
                   disabled={inviteLobby.expired}
                   className={actionButtonClassName}
                   style={{
-                    background: "rgba(255,255,255,0.08)",
+                    padding: 8,
+                    background: " #ff00c8 0%",
                     color: "var(--color-text)",
                   }}
                 >

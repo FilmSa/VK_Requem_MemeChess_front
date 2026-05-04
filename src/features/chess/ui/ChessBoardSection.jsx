@@ -23,6 +23,7 @@ export default function ChessBoardSection({
   bottomReaction = null,
   topPlayerTime = "15:00",
   bottomPlayerTime = "15:00",
+  showPlayerTimers = true,
   topPlayerTimerTone = "idle",
   bottomPlayerTimerTone = "idle",
   topPlayerTimerActive = false,
@@ -95,6 +96,7 @@ export default function ChessBoardSection({
             avatar={topPlayerAvatar || DEFAULT_AVATAR}
             time={topPlayerTime}
             reaction={topReaction}
+            showTimer={showPlayerTimers}
             timerTone={topPlayerTimerTone}
             timerIsActive={topPlayerTimerActive}
           />
@@ -127,6 +129,7 @@ export default function ChessBoardSection({
             avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
             time={bottomPlayerTime}
             reaction={bottomReaction}
+            showTimer={showPlayerTimers}
             timerTone={bottomPlayerTimerTone}
             timerIsActive={bottomPlayerTimerActive}
           />

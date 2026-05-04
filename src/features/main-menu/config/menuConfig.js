@@ -238,10 +238,10 @@ export function resolveTimeControlLabel(timeControlId) {
     !timeControlId ||
     String(timeControlId).trim().toLowerCase() === TIME_CONTROL_UNLIMITED
   ) {
-    return "Без лимита";
+    return "Бесконечное";
   }
 
-  return TIME_CONTROL_PRESETS[timeControlId]?.label || "Без лимита";
+  return TIME_CONTROL_PRESETS[timeControlId]?.label || "Бесконечное";
 }
 
 export const BOT_DIFFICULTY_OPTIONS = [
@@ -284,3 +284,4 @@ export const DEFAULT_CARD_IDS = {
   new: "rapid",
   customize: emojiItems[0].id,
 };
+

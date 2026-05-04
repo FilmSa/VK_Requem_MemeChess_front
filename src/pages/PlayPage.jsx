@@ -913,6 +913,7 @@ export default function PlayPage() {
                 }
                 topReaction={topReaction}
                 bottomReaction={bottomReaction}
+                showPlayerTimers={Boolean(gameClock.timed)}
                 topPlayerTime={gameClock.top?.time || "∞"}
                 bottomPlayerTime={gameClock.bottom?.time || "∞"}
                 topPlayerTimerTone={gameClock.top?.tone || "idle"}

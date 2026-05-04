@@ -12,9 +12,9 @@ const MOBILITY_WEIGHTS = {
   q: 2,
 };
 const DIFFICULTY_DEPTH = {
-  easy: 5,
-  medium: 10,
-  hard: 15,
+  easy: 2,
+  medium: 3,
+  hard: 4,
 };
 const PIECE_VALUES = {
   p: 100,

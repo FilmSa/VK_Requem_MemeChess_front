@@ -361,7 +361,7 @@ export default function InviteLobbyModal({
               >
                 <div>
                   <div className="text-[16px] font-semibold">
-                    Считать ходы на офлайн
+                    Считать ходы офлайн
                   </div>
                   <div
                     className="mt-1 text-[13px] leading-5"

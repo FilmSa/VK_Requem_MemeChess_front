@@ -97,6 +97,7 @@ export default function AuthInput({
   icon = "user",
 }) {
   const Icon = iconMap[icon] || UserGlyph;
+  const errorId = error ? `${id}-error` : undefined;
 
   return (
     <label className="block">
@@ -122,14 +123,29 @@ export default function AuthInput({
           value={value}
           onChange={onChange}
           aria-invalid={Boolean(error)}
+          aria-describedby={errorId}
           placeholder={placeholder}
-          className="h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)] focus:shadow-[inset_0_4px_4px_rgba(0,0,0,0.14),0_0_0_1px_var(--color-accent),0_0_18px_rgba(47,200,227,0.22)]"
+          className="h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)]"
           style={{
             background: "var(--auth-input-background)",
             color: "var(--color-text)",
+            boxShadow: error
+              ? "inset 0 4px 4px rgba(0,0,0,0.14), 0 0 0 1px var(--notification-error-accent), 0 0 18px rgba(255,124,147,0.18)"
+              : undefined,
           }}
         />
       </div>
+
+      {error ? (
+        <span
+          id={errorId}
+          role="alert"
+          className="mt-[8px] block text-[13px] leading-[1.4]"
+          style={{ color: "var(--notification-error-accent)" }}
+        >
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }

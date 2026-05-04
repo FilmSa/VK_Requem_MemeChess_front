@@ -8,6 +8,7 @@ import { useChessGame } from "../features/chess/hooks/useChessGame.js";
 import { useGameSocket } from "../features/chess/hooks/useGameSocket.js";
 import { DEFAULT_AVATAR } from "../features/chess/lib/boardConfig.js";
 import { useOnlineGameRoom } from "../features/game/model/useOnlineGameRoom.js";
+import { useLocalBotGameRoom } from "../features/game/model/useLocalBotGameRoom.js";
 import { useAuth } from "../features/auth/useAuth.js";
 import {
   readStoredEmojiQuickAccess,
@@ -23,30 +24,65 @@ const EMOJI_POPUP_DURATION_MS = 2_400;
 const reactionDurationCache = new Map();
 const EVOLUTION_STAGE_NOTICES = [
   {
-    threshold: 10,
+    threshold: 5,
     title: "Эволюция: пешки",
     message:
       "После 10-го хода пешки получили контратаку: при взятии пешкой атакующая пешка может быть съедена в ответ.",
   },
   {
-    threshold: 14,
+    threshold: 7,
     title: "Эволюция: король",
     message:
       "После 14-го хода король получает одноразовую защиту от одиночного мата и удаляет фигуру, поставившую мат.",
   },
   {
-    threshold: 20,
+    threshold: 10,
     title: "Эволюция: кони",
     message:
       "После 20-го хода кони могут ходить дважды за один ход. Двойной маршрут теперь подсвечивается прямо на доске.",
   },
   {
-    threshold: 30,
+    threshold: 15,
     title: "Эволюция: прорыв коня",
     message:
       "После 30-го хода конь пробивает пешки насквозь и может поражать фигуры за ними.",
   },
 ];
+
+EVOLUTION_STAGE_NOTICES[0] = {
+  threshold: 5,
+  title: "Эволюция: пешки",
+  message:
+    "После 5-го хода пешки получают контратаку: при взятии атакующая пешка может быть съедена в ответ с вероятностью 50%.",
+};
+
+EVOLUTION_STAGE_NOTICES[1] = {
+  threshold: 7,
+  title: "Эволюция: король",
+  message:
+    "После 7-го хода король переживает одиночный мат и удаляет фигуру, которая его поставила. Против двойного шаха это не работает.",
+};
+
+EVOLUTION_STAGE_NOTICES[2] = {
+  threshold: 10,
+  title: "Эволюция: кони",
+  message:
+    "После 10-го хода кони могут ходить дважды за один ход. Двойной маршрут теперь показывается на доске по шагам.",
+};
+
+EVOLUTION_STAGE_NOTICES[3] = {
+  threshold: 15,
+  title: "Эволюция: слоны",
+  message:
+    "После 15-го хода слоны пробивают пешки насквозь и могут поражать фигуры за ними.",
+};
+
+EVOLUTION_STAGE_NOTICES.push({
+  threshold: 20,
+  title: "Эволюция: ладьи",
+  message:
+    "После 20-го хода ладья сносит все фигуры на своем пути и превращает линии в зону тотального урона.",
+});
 
 function resolveReactionDurationMs(reaction) {
   const mediaSrc = reaction?.videoSrc || reaction?.soundSrc || "";
@@ -221,6 +257,20 @@ function buildResignHighlight(square) {
   };
 }
 
+function isEditableTarget(target) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    target.isContentEditable ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select"
+  );
+}
+
 function StatusCard({ title, description, action }) {
   return (
     <div className="app-page flex min-h-screen items-center justify-center px-4 py-8">
@@ -265,25 +315,29 @@ export default function PlayPage() {
     useResponsiveWorkspaceLayout();
 
   const onlineRoom = useOnlineGameRoom(gameId);
-  const currentUserId = String(onlineRoom.currentUserId || user?.id || "").trim();
-  const opponentColor = getOpponentColor(onlineRoom.playerColor);
-  const roomState = onlineRoom.roomState;
+  const localBotRoom = useLocalBotGameRoom(gameId);
+  const activeRoom = localBotRoom.isLocalBotGame ? localBotRoom : onlineRoom;
+  const currentUserId = String(activeRoom.currentUserId || user?.id || "").trim();
+  const opponentColor = getOpponentColor(activeRoom.playerColor);
+  const roomState = activeRoom.roomState;
   const isGameFinished = roomState?.status === "finished";
   const finishedReason = String(roomState?.finished_reason || "").trim();
   const winnerId = String(roomState?.winner_id || "").trim();
   const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
 
   const chessGameState = useChessGame({
-    playerColor: onlineRoom.playerColor,
-    gameMode: onlineRoom.matchGameMode || roomState?.game_mode || "",
+    playerColor: activeRoom.playerColor,
+    gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
     serverLegalMoves: roomState?.legal_moves || [],
     serverMoves: roomState?.moves || [],
     initialFen: roomState?.initial_fen || "",
     interactionLocked: isGameFinished,
     extraHighlightedSquares,
+    forceServerAuthoritative: activeRoom.isLocalBotGame,
   });
 
-  const emojiOwnerId = onlineRoom.currentUserProfile?.id || user?.id;
+  const emojiOwnerId =
+    activeRoom.currentUserProfile?.id || activeRoom.currentUserId || user?.id;
   const emojiQuickAccessItems = useMemo(() => {
     const quickAccessIds = readStoredEmojiQuickAccess(emojiOwnerId);
     return resolveEmojiQuickAccessItems(quickAccessIds);
@@ -324,7 +378,7 @@ export default function PlayPage() {
           }
         : {
             mode: "incoming",
-            message: `${onlineRoom.opponentName} предлагает ничью.`,
+            message: `${activeRoom.opponentName} предлагает ничью.`,
           };
     }
 
@@ -343,7 +397,7 @@ export default function PlayPage() {
     finishedReason,
     isResignConfirmMode,
     isGameFinished,
-    onlineRoom.opponentName,
+    activeRoom.opponentName,
     winnerId,
   ]);
 
@@ -462,12 +516,17 @@ export default function PlayPage() {
     },
     onEmoji: handleIncomingEmoji,
     onGameEvent: handleIncomingGameEvent,
-    enabled: Boolean(onlineRoom.isOnlineGame && onlineRoom.hasOnlineAccess),
+    enabled: Boolean(
+      !activeRoom.isLocalBotGame &&
+        onlineRoom.isOnlineGame &&
+        onlineRoom.hasOnlineAccess
+    ),
     gameId: socketOptions?.gameId,
     userId: socketOptions?.userId,
     token: socketOptions?.token,
     allowDebugToken: socketOptions?.allowDebugToken,
   });
+  const roomControls = activeRoom.isLocalBotGame ? activeRoom : socketClient;
 
   useEffect(() => {
     setActionNotice("");
@@ -475,6 +534,76 @@ export default function PlayPage() {
     setExtraHighlightedSquares({});
     lastEvolutionMoveCountRef.current = null;
   }, [gameId]);
+
+  useEffect(() => {
+    if (!activeRoom.isLocalBotGame || !roomState) {
+      return;
+    }
+
+    chessGameState.syncFromServerState(roomState);
+  }, [
+    activeRoom.isLocalBotGame,
+    roomState,
+  ]);
+
+  useEffect(() => {
+    if (!activeRoom.socketError) {
+      return;
+    }
+
+    if (
+      activeRoom.isBotGame &&
+      activeRoom.socketError === "Не удалось подключиться к игровой комнате."
+    ) {
+      return;
+    }
+
+    setActionNotice(activeRoom.socketError);
+  }, [activeRoom.isBotGame, activeRoom.socketError]);
+
+  useEffect(() => {
+    function handleHistoryKeyDown(event) {
+      if (
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        isEditableTarget(event.target)
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        if (!chessGameState.canViewPrevious) {
+          return;
+        }
+
+        event.preventDefault();
+        chessGameState.viewPreviousMove();
+        return;
+      }
+
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        if (!chessGameState.canViewNext) {
+          return;
+        }
+
+        event.preventDefault();
+        chessGameState.viewNextMove();
+      }
+    }
+
+    window.addEventListener("keydown", handleHistoryKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleHistoryKeyDown);
+    };
+  }, [
+    chessGameState.canViewNext,
+    chessGameState.canViewPrevious,
+    chessGameState.viewNextMove,
+    chessGameState.viewPreviousMove,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -489,15 +618,20 @@ export default function PlayPage() {
   }, [dismissNotification]);
 
   useEffect(() => {
-    if (!onlineRoom.isOnlineGame) {
+    if (activeRoom.isLocalBotGame || !onlineRoom.isOnlineGame) {
       return;
     }
 
     void refreshCurrency().catch(() => {});
-  }, [onlineRoom.isOnlineGame, refreshCurrency]);
+  }, [activeRoom.isLocalBotGame, onlineRoom.isOnlineGame, refreshCurrency]);
 
   useEffect(() => {
-    if (roomState?.status !== "finished" || !gameId) {
+    if (
+      activeRoom.isLocalBotGame ||
+      !onlineRoom.isOnlineGame ||
+      roomState?.status !== "finished" ||
+      !gameId
+    ) {
       return;
     }
 
@@ -508,7 +642,14 @@ export default function PlayPage() {
 
     finishedCurrencyRefreshKeyRef.current = refreshKey;
     void refreshCurrency().catch(() => {});
-  }, [gameId, refreshCurrency, roomState?.status, winnerId]);
+  }, [
+    activeRoom.isLocalBotGame,
+    gameId,
+    onlineRoom.isOnlineGame,
+    refreshCurrency,
+    roomState?.status,
+    winnerId,
+  ]);
 
   useEffect(() => {
     if (drawOfferedBy || isGameFinished) {
@@ -553,7 +694,7 @@ export default function PlayPage() {
 
   useEffect(() => {
     const activeGameMode = String(
-      onlineRoom.matchGameMode || roomState?.game_mode || ""
+      activeRoom.matchGameMode || roomState?.game_mode || ""
     )
       .trim()
       .toLowerCase();
@@ -588,7 +729,7 @@ export default function PlayPage() {
       }
     });
   }, [
-    onlineRoom.matchGameMode,
+    activeRoom.matchGameMode,
     roomState?.game_mode,
     roomState?.moves,
     showNotification,
@@ -603,7 +744,7 @@ export default function PlayPage() {
     const loserColor =
       winnerId && winnerId === currentUserId
         ? opponentColor
-        : onlineRoom.playerColor;
+        : activeRoom.playerColor;
     const kingSquare =
       findKingSquareByColor(chessGameState.game, loserColor) ||
       findKingSquareByColor(chessGameState.displayedGame, loserColor);
@@ -615,7 +756,7 @@ export default function PlayPage() {
     currentUserId,
     finishedReason,
     isGameFinished,
-    onlineRoom.playerColor,
+    activeRoom.playerColor,
     opponentColor,
     winnerId,
   ]);
@@ -640,7 +781,7 @@ export default function PlayPage() {
 
     startEmojiCooldown();
     showReaction("bottom", reaction);
-    socketClient.sendEmoji(reaction);
+    roomControls.sendEmoji(reaction);
   }
 
   async function handleResign() {
@@ -663,7 +804,7 @@ export default function PlayPage() {
 
     chessGameState.jumpToLatestMove();
 
-    if (!socketClient.sendResign()) {
+    if (!roomControls.sendResign()) {
       setActionNotice("Не удалось отправить сдачу. Попробуйте еще раз.");
       setIsResignConfirmMode(false);
       return;
@@ -679,7 +820,7 @@ export default function PlayPage() {
 
     chessGameState.jumpToLatestMove();
 
-    if (!socketClient.sendDrawOffer()) {
+    if (!roomControls.sendDrawOffer()) {
       setActionNotice("Не удалось предложить ничью. Попробуйте еще раз.");
     }
   }
@@ -693,7 +834,7 @@ export default function PlayPage() {
       return;
     }
 
-    if (!socketClient.sendDrawAccept()) {
+    if (!roomControls.sendDrawAccept()) {
       setActionNotice("Не удалось принять ничью. Попробуйте еще раз.");
     }
   }
@@ -707,12 +848,12 @@ export default function PlayPage() {
       return;
     }
 
-    if (!socketClient.sendDrawDecline()) {
+    if (!roomControls.sendDrawDecline()) {
       setActionNotice("Не удалось отклонить ничью. Попробуйте еще раз.");
     }
   }
 
-  if (onlineRoom.isWaitingForAuthBootstrap) {
+  if (!activeRoom.isLocalBotGame && onlineRoom.isWaitingForAuthBootstrap) {
     return (
       <StatusCard
         title="Подключаем к игре"
@@ -721,7 +862,7 @@ export default function PlayPage() {
     );
   }
 
-  if (onlineRoom.isOnlineGame && !onlineRoom.hasOnlineAccess) {
+  if (!activeRoom.isLocalBotGame && onlineRoom.isOnlineGame && !onlineRoom.hasOnlineAccess) {
     return (
       <StatusCard
         title="Сессия игры не найдена"
@@ -748,16 +889,16 @@ export default function PlayPage() {
             <div className="flex h-full min-w-0 flex-1 justify-center overflow-hidden">
               <ChessBoardSection
                 gameState={chessGameState}
-                sendMove={socketClient.sendMove}
+                sendMove={roomControls.sendMove}
                 boardWidth={layout.boardSize}
                 onLayoutMetricsChange={handleBoardMetricsChange}
-                topPlayerName={onlineRoom.opponentName}
+                topPlayerName={activeRoom.opponentName}
                 topPlayerAvatar={
-                  onlineRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
+                  activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
                 }
-                bottomPlayerName={onlineRoom.currentUserName}
+                bottomPlayerName={activeRoom.currentUserName}
                 bottomPlayerAvatar={
-                  onlineRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
+                  activeRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
                 }
                 topReaction={topReaction}
                 bottomReaction={bottomReaction}
@@ -792,17 +933,17 @@ export default function PlayPage() {
                 onDrawDecline={handleDrawDecline}
                 drawOfferState={drawControls}
                 isResignConfirmMode={isResignConfirmMode}
-                stakeAmount={onlineRoom.matchStake}
-                gameCurrencyLabel={onlineRoom.matchGameCurrencyLabel}
-                gameModeLabel={onlineRoom.matchGameModeLabel}
+                stakeAmount={activeRoom.matchStake}
+                gameCurrencyLabel={activeRoom.matchGameCurrencyLabel}
+                gameModeLabel={activeRoom.matchGameModeLabel}
                 actionsDisabled={
-                  !onlineRoom.isOnlineGame ||
-                  !onlineRoom.hasOnlineAccess ||
+                  (!activeRoom.isLocalBotGame &&
+                    (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess)) ||
                   !roomState
                 }
                 resignDisabled={isGameFinished}
                 drawDisabled={
-                  isGameFinished || Boolean(drawOfferedBy) || onlineRoom.isBotGame
+                  isGameFinished || Boolean(drawOfferedBy) || activeRoom.isBotGame
                 }
               />
             </div>

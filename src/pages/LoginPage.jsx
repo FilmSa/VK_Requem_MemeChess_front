@@ -6,6 +6,7 @@ import AuthCard from "../components/auth/AuthCard.jsx";
 import AuthInput from "../components/auth/AuthInput.jsx";
 import AuthToggleField from "../components/auth/AuthToggleField.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
+import { useNotifications } from "../features/notifications/useNotifications.js";
 
 import startGameIcon from "../../icons/startgame.svg";
 
@@ -13,6 +14,8 @@ const defaultValues = {
   login: "",
   password: "",
 };
+
+const loginErrorNotificationId = "auth-login-error";
 
 function validateLoginForm(form) {
   const nextErrors = {};
@@ -32,10 +35,11 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, isInitializing } = useAuth();
+  const { showNotification, dismissNotification } = useNotifications();
 
   const [form, setForm] = useState(defaultValues);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [, setSubmitError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
 
@@ -49,11 +53,16 @@ export default function LoginPage() {
     return <Navigate to={redirectTo} replace />;
   }
 
+  function clearSubmitError() {
+    setSubmitError("");
+    dismissNotification(loginErrorNotificationId);
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
 
     setForm((current) => ({ ...current, [name]: value }));
-    setSubmitError("");
+    clearSubmitError();
     setFieldErrors((current) => {
       if (!current[name]) {
         return current;
@@ -71,23 +80,35 @@ export default function LoginPage() {
     const nextFieldErrors = validateLoginForm(form);
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
-      setSubmitError("");
+      clearSubmitError();
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitError("");
+    clearSubmitError();
     setFieldErrors({});
 
     try {
-      await login({
-        login: form.login.trim(),
-        password: form.password,
-      }, { remember: rememberSession });
+      await login(
+        {
+          login: form.login.trim(),
+          password: form.password,
+        },
+        { remember: rememberSession }
+      );
+      dismissNotification(loginErrorNotificationId);
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setSubmitError(error.message || "Не удалось выполнить вход.");
+      const message = error.message || "Не удалось выполнить вход.";
+
+      setSubmitError(message);
       setFieldErrors(error.fields || {});
+      showNotification({
+        id: loginErrorNotificationId,
+        title: "Ошибка входа",
+        message,
+        tone: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +152,20 @@ export default function LoginPage() {
               disabled={isDisabled}
               onChange={setRememberSession}
             />
+
+            {submitError ? (
+              <div
+                role="alert"
+                className="rounded-[14px] border px-[14px] py-[12px] text-[14px] leading-[1.45]"
+                style={{
+                  borderColor: "rgba(255, 124, 147, 0.45)",
+                  background: "rgba(255, 124, 147, 0.08)",
+                  color: "var(--color-text)",
+                }}
+              >
+                {submitError}
+              </div>
+            ) : null}
 
             <div>
               <AuthButton type="submit" icon={startGameIcon} disabled={isDisabled}>

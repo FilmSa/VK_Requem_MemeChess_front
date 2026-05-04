@@ -53,11 +53,23 @@ export default function MoveHistoryMolecule({
       return;
     }
 
-    listRef.current.scrollTo({
-      top: listRef.current.scrollHeight,
+    if (activePly >= history.length) {
+      listRef.current.scrollTo({
+        top: listRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const activeRow = listRef.current.querySelector(
+      `[data-history-row-index="${Math.max(0, Math.ceil(activePly / 2) - 1)}"]`
+    );
+
+    activeRow?.scrollIntoView({
+      block: "nearest",
       behavior: "smooth",
     });
-  }, [history]);
+  }, [activePly, history.length]);
 
   const pairs = groupMoves(history);
   const activePairIndex = activePly > 0 ? Math.ceil(activePly / 2) - 1 : -1;
@@ -126,6 +138,7 @@ export default function MoveHistoryMolecule({
             return (
               <div
                 key={pair.num}
+                data-history-row-index={index}
                 className="flex h-[34px] items-center gap-[2px] rounded-[8px] px-[6px] py-[4px]"
                 style={{
                   background: isActiveRow

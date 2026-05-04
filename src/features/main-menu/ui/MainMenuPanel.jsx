@@ -24,6 +24,18 @@ function parseStakeValue(value) {
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
+function buildLocalBotPlayerProfile(user) {
+  if (user?.id) {
+    return user;
+  }
+
+  return {
+    id: "local-player",
+    username: "Игрок",
+    avatar_url: "",
+  };
+}
+
 export default function MainMenuPanel({ style }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,6 +55,7 @@ export default function MainMenuPanel({ style }) {
   const [robotDifficulty, setRobotDifficulty] = useState(
     BOT_DIFFICULTY_OPTIONS[0]?.id || "easy"
   );
+  const [isClientBotEnabled, setIsClientBotEnabled] = useState(false);
   const [robotError, setRobotError] = useState("");
   const [isCreatingRobot, setIsCreatingRobot] = useState(false);
 
@@ -116,6 +129,27 @@ export default function MainMenuPanel({ style }) {
   } = useMainMenuPanelState({ userId: user?.id });
 
   const selectedGameMode = resolveMatchmakingGameMode(selectedMode);
+  const canUseClientBot = selectedGameMode === "classic";
+  const clientBotHint = canUseClientBot
+    ? "Партия и расчеты бота пойдут локально и будут доступны офлайн после первой загрузки приложения."
+    : 'Клиентский бот сейчас доступен только для режима "Классика", чтобы не ломать правила других режимов.';
+
+  const notifyUnsupportedOfflineBotMode = useCallback(() => {
+    const message =
+      selectedGameMode === "evolution"
+        ? 'Офлайн-бот для режима "Эволюция" пока недоступен.'
+        : selectedGameMode === "fischer"
+        ? 'Офлайн-бот для режима "Фишер" пока недоступен.'
+        : 'Этот режим пока нельзя запустить с офлайн-ботом.';
+
+    setRobotError(message);
+    showNotification({
+      id: "offline-bot-mode-error",
+      message,
+      tone: "error",
+      duration: 4500,
+    });
+  }, [selectedGameMode, showNotification]);
 
   const handleAuthRequired = () =>
     navigate("/login", { state: { from: location } });
@@ -239,7 +273,18 @@ export default function MainMenuPanel({ style }) {
   function handleClosePlayModal() {
     setIsPlayModalOpen(false);
     setRobotError("");
+    setIsClientBotEnabled(false);
     inviteLobby.clearInviteLobby();
+  }
+
+  function handleClientBotModeChange(nextValue) {
+    if (nextValue && !canUseClientBot) {
+      notifyUnsupportedOfflineBotMode();
+      return;
+    }
+
+    setRobotError("");
+    setIsClientBotEnabled(nextValue);
   }
 
   function handleCreateInvite() {
@@ -250,6 +295,44 @@ export default function MainMenuPanel({ style }) {
   }
 
   async function handleCreateRobot() {
+    if (isClientBotEnabled) {
+      if (!canUseClientBot) {
+        notifyUnsupportedOfflineBotMode();
+        return;
+      }
+
+      const gameId = `local-bot-${crypto.randomUUID()}`;
+      const player = buildLocalBotPlayerProfile(user);
+      const match = {
+        gameMode: selectedGameMode,
+      };
+
+      savePlaySession({
+        gameId,
+        match,
+        player,
+        localBotConfig: {
+          enabled: true,
+          computeMode: "client",
+          gameMode: selectedGameMode,
+          difficulty: robotDifficulty,
+        },
+      });
+
+      setIsPlayModalOpen(false);
+      navigateToPlay(gameId, {
+        match,
+        player,
+        localBotConfig: {
+          enabled: true,
+          computeMode: "client",
+          gameMode: selectedGameMode,
+          difficulty: robotDifficulty,
+        },
+      });
+      return;
+    }
+
     if (isInitializing) {
       return;
     }
@@ -367,6 +450,14 @@ export default function MainMenuPanel({ style }) {
     };
   }, [dismissNotification]);
 
+  useEffect(() => {
+    if (canUseClientBot) {
+      return;
+    }
+
+    setIsClientBotEnabled(false);
+  }, [canUseClientBot]);
+
   const actions = {
     startLabel: matchmaking.isSearching
       ? MENU_ACTIONS.searchingLabel
@@ -451,6 +542,11 @@ export default function MainMenuPanel({ style }) {
         robotDifficulty={robotDifficulty}
         robotDifficultyOptions={BOT_DIFFICULTY_OPTIONS}
         onRobotDifficultyChange={setRobotDifficulty}
+        isClientBotEnabled={isClientBotEnabled}
+        onClientBotModeChange={handleClientBotModeChange}
+        clientBotModeDisabled={!canUseClientBot}
+        clientBotModeHint={clientBotHint}
+        onClientBotModeDisabledClick={notifyUnsupportedOfflineBotMode}
         onCreateRobot={handleCreateRobot}
         isCreatingRobot={isCreatingRobot}
         robotError={robotError}

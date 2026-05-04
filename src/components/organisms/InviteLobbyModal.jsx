@@ -1,10 +1,12 @@
 import { createPortal } from "react-dom";
+import SwitchBase from "../atoms/SwitchBase.jsx";
 
 const modalButtonClassName =
   "rounded-tl-[18px] rounded-br-[18px] rounded-tr-none rounded-bl-none transition p-2";
 
 const actionButtonClassName =
   `${modalButtonClassName} border-none text-[14px] font-medium disabled:cursor-not-allowed disabled:opacity-60`;
+
 function formatInviteDeadline(expiresAt) {
   if (!expiresAt) {
     return "неизвестно";
@@ -45,6 +47,11 @@ export default function InviteLobbyModal({
   robotDifficulty,
   robotDifficultyOptions = [],
   onRobotDifficultyChange,
+  isClientBotEnabled = false,
+  onClientBotModeChange,
+  clientBotModeDisabled = false,
+  clientBotModeHint = "",
+  onClientBotModeDisabledClick,
   onCreateRobot,
   isCreatingRobot,
   robotError,
@@ -106,7 +113,7 @@ export default function InviteLobbyModal({
           {"\u2715"}
         </button>
 
-        <div className="pr-[48px] flex flex-col gap-[0px]" style={{paddingBottom: 10}}>
+        <div className="pr-[48px] flex flex-col gap-[0px]">
           <div className="text-[30px] font-semibold">Играть</div>
           <div
             className="mt-2 text-[20px] leading-6"
@@ -119,7 +126,7 @@ export default function InviteLobbyModal({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-[0px]">
+        <div className="mt-[12px] grid grid-cols-2 gap-[0px]">
           <button
             type="button"
             onClick={() => onPanelChange?.("friend")}
@@ -134,7 +141,7 @@ export default function InviteLobbyModal({
                   ? "rgba(0, 234, 255, 0.12)"
                   : "var(--modal-chip-bg)",
               color: "var(--color-text)",
-              padding: 10
+              padding: 10,
             }}
           >
             <div className="text-[18px] font-semibold">С другом</div>
@@ -160,13 +167,13 @@ export default function InviteLobbyModal({
                   ? "rgba(255, 0, 168, 0.12)"
                   : "var(--modal-chip-bg)",
               color: "var(--color-text)",
-              padding: 15
+              padding: 15,
             }}
           >
-            <div className="text-[18px] font-semibold">С роботом</div>
+            <div className="text-[18px] font-semibold">С ботом</div>
             <div
               className="mt-1 text-[12px] leading-5"
-              style={{ color: "var(--color-text-muted)"}}
+              style={{ color: "var(--color-text-muted)" }}
             >
               Быстрый старт против движка
             </div>
@@ -174,13 +181,13 @@ export default function InviteLobbyModal({
         </div>
 
         {activePanel === "friend" ? (
-          <div className="mt-4">
+          <div className="mt-[12px]">
             <div
               className="rounded-tl-[18px] rounded-br-[18px] border p-4"
               style={{
                 borderColor: "var(--modal-chip-border)",
                 background: "var(--modal-chip-bg)",
-                padding: 10
+                padding: 10,
               }}
             >
               <div
@@ -201,7 +208,6 @@ export default function InviteLobbyModal({
               <div
                 className="mt-4 rounded-tl-[18px] rounded-br-[18px] border p-4"
                 style={{
-                  
                   borderColor: "var(--modal-chip-border)",
                   background: "var(--modal-chip-bg)",
                 }}
@@ -233,7 +239,7 @@ export default function InviteLobbyModal({
               </div>
             ) : null}
 
-            <div className="mt-4 flex flex-wrap items-center gap-[12px]">
+            <div className="mt-[12px] flex flex-wrap items-center gap-[12px]">
               <button
                 type="button"
                 onClick={onCreateInvite}
@@ -276,17 +282,23 @@ export default function InviteLobbyModal({
             </div>
           </div>
         ) : (
-          <div className="mt-4">
+          <div className="mt-[12px] flex flex-col" style={{gap: 8,}}>
             <div
               className="rounded-tl-[18px] rounded-br-[18px] border p-4"
               style={{
                 borderColor: "var(--modal-chip-border)",
                 background: "var(--modal-chip-bg)",
+
               }}
             >
               <div
                 className="text-[20px] uppercase tracking-[0.2em]"
-                style={{ color: "var(--color-accent-pink)" ,paddingTop: "12px", paddingLeft: "8px", paddingBottom: "12px"}}
+                style={{
+                  color: "var(--color-accent-pink)",
+                  paddingTop: "12px",
+                  paddingLeft: "8px",
+                  paddingBottom: "12px",
+                }}
               >
                 Сложность
               </div>
@@ -314,7 +326,7 @@ export default function InviteLobbyModal({
                       <div className="text-[16px] font-semibold">{option.label}</div>
                       <div
                         className="mt-1 text-[16px] leading-5"
-                        style={{ color: "var(--color-text-muted)", gap: "20px"}}
+                        style={{ color: "var(--color-text-muted)", gap: "20px" }}
                       >
                         {option.description}
                       </div>
@@ -324,13 +336,67 @@ export default function InviteLobbyModal({
               </div>
             </div>
 
+            <div
+              className="mt-4 rounded-tl-[18px] rounded-br-[18px] border p-4"
+              style={{
+                borderColor: "var(--modal-chip-border)",
+                background: "var(--modal-chip-bg)",
+                padding: 15,
+              }}
+            >
+              <label
+                className="flex cursor-pointer items-center justify-between gap-[16px]"
+                style={{
+                  opacity: clientBotModeDisabled ? 0.65 : 1,
+                  cursor: clientBotModeDisabled ? "not-allowed" : "pointer",
+                }}
+                onClick={(event) => {
+                  if (!clientBotModeDisabled) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  onClientBotModeDisabledClick?.();
+                }}
+              >
+                <div>
+                  <div className="text-[16px] font-semibold">
+                    Считать ходы на офлайн
+                  </div>
+                  <div
+                    className="mt-1 text-[13px] leading-5"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {clientBotModeHint ||
+                      ""}
+                  </div>
+                </div>
+                <span
+                  className="shrink-0"
+                  onClick={(event) => event.preventDefault()}
+                >
+                  <SwitchBase
+                    checked={isClientBotEnabled}
+                    disabled={clientBotModeDisabled}
+                    aria-label="Переключить локальный расчет ходов"
+                    className={clientBotModeDisabled ? "cursor-not-allowed opacity-70" : ""}
+                    onClick={() => {
+                      if (!clientBotModeDisabled) {
+                        onClientBotModeChange?.(!isClientBotEnabled);
+                      }
+                    }}
+                  />
+                </span>
+              </label>
+            </div>
+
             {robotError ? (
               <div className="mt-4 text-[14px]" style={{ color: "#ff8a8a" }}>
                 {robotError}
               </div>
             ) : null}
 
-            <div className="mt-4 flex flex-wrap items-center gap-[12px]">
+            <div className="mt-[12px] flex flex-wrap items-center gap-[12px]">
               <button
                 type="button"
                 onClick={onCreateRobot}
@@ -342,7 +408,7 @@ export default function InviteLobbyModal({
                   padding: 8,
                 }}
               >
-                {isCreatingRobot ? "Запускаем партию..." : "Начать с роботом"}
+                {isCreatingRobot ? "Запускаем партию..." : "Начать с ботом"}
               </button>
             </div>
           </div>

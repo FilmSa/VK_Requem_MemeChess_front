@@ -5,6 +5,7 @@ import AuthButton from "../components/auth/AuthButton.jsx";
 import AuthCard from "../components/auth/AuthCard.jsx";
 import AuthInput from "../components/auth/AuthInput.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
+import { useNotifications } from "../features/notifications/useNotifications.js";
 
 import friendGameIcon from "../../icons/friendgame.svg";
 
@@ -14,6 +15,8 @@ const defaultValues = {
   password: "",
   confirmPassword: "",
 };
+
+const registerErrorNotificationId = "auth-register-error";
 
 function validateForm(form) {
   const errors = {};
@@ -42,10 +45,11 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { register, isAuthenticated, isInitializing } = useAuth();
+  const { showNotification, dismissNotification } = useNotifications();
 
   const [form, setForm] = useState(defaultValues);
   const [serverErrors, setServerErrors] = useState({});
-  const [, setSubmitError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clientErrors = useMemo(() => validateForm(form), [form]);
@@ -66,11 +70,16 @@ export default function RegisterPage() {
     return <Navigate to={redirectTo} replace />;
   }
 
+  function clearSubmitError() {
+    setSubmitError("");
+    dismissNotification(registerErrorNotificationId);
+  }
+
   function handleChange(event) {
     const { name, value } = event.target;
 
     setForm((current) => ({ ...current, [name]: value }));
-    setSubmitError("");
+    clearSubmitError();
     setServerErrors((current) => {
       const backendFieldName = name === "nickname" ? "username" : name;
       if (!current[backendFieldName]) {
@@ -91,7 +100,7 @@ export default function RegisterPage() {
     }
 
     setIsSubmitting(true);
-    setSubmitError("");
+    clearSubmitError();
     setServerErrors({});
 
     try {
@@ -100,10 +109,19 @@ export default function RegisterPage() {
         email: form.email.trim(),
         password: form.password,
       });
+      dismissNotification(registerErrorNotificationId);
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setSubmitError(error.message || "Не удалось создать аккаунт.");
+      const message = error.message || "Не удалось создать аккаунт.";
+
+      setSubmitError(message);
       setServerErrors(error.fields || {});
+      showNotification({
+        id: registerErrorNotificationId,
+        title: "Ошибка регистрации",
+        message,
+        tone: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -164,8 +182,26 @@ export default function RegisterPage() {
               />
             </div>
 
+            {submitError ? (
+              <div
+                role="alert"
+                className="rounded-[14px] border px-[14px] py-[12px] text-[14px] leading-[1.45]"
+                style={{
+                  borderColor: "rgba(255, 124, 147, 0.45)",
+                  background: "rgba(255, 124, 147, 0.08)",
+                  color: "var(--color-text)",
+                }}
+              >
+                {submitError}
+              </div>
+            ) : null}
+
             <div>
-              <AuthButton type="submit" icon={friendGameIcon} disabled={isDisabled}>
+              <AuthButton
+                type="submit"
+                icon={friendGameIcon}
+                disabled={isDisabled}
+              >
                 {isSubmitting ? "Создаем аккаунт..." : "Создать аккаунт"}
               </AuthButton>
             </div>

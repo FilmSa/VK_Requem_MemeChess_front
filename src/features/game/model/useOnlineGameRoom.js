@@ -68,11 +68,19 @@ function resolveMatchCurrencyLabel(gameCurrency) {
   return gameCurrency;
 }
 
+function isAlwaysSyncedMode(gameMode) {
+  return gameMode === "fischer" || gameMode === "evolution";
+}
+
 export function useOnlineGameRoom(gameId) {
   const location = useLocation();
   const { token, user, isInitializing } = useAuth();
 
   const storedSession = useMemo(() => readPlaySession(gameId), [gameId]);
+  const isLocalBotSession = Boolean(
+    storedSession?.localBotConfig?.enabled &&
+      storedSession?.localBotConfig?.computeMode === "client"
+  );
   const onlineIdentity = useMemo(
     () =>
       buildOnlineIdentity({
@@ -92,7 +100,7 @@ export function useOnlineGameRoom(gameId) {
   const [socketError, setSocketError] = useState("");
   const [participants, setParticipants] = useState(null);
 
-  const isOnlineGame = Boolean(gameId);
+  const isOnlineGame = Boolean(gameId) && !isLocalBotSession;
   const isWaitingForAuthBootstrap =
     isOnlineGame && Boolean(token) && isInitializing && !user;
   const hasOnlineAccess = Boolean(onlineIdentity.token && onlineIdentity.user?.id);
@@ -202,6 +210,11 @@ export function useOnlineGameRoom(gameId) {
           setRoomState(state);
 
           const localFen = chessGameState.getCurrentFen?.() || "";
+          const stateGameMode = String(state?.game_mode || match?.gameMode || "")
+            .trim()
+            .toLowerCase();
+          const shouldForceSync =
+            Boolean(state?.bot_game) || isAlwaysSyncedMode(stateGameMode);
           const shouldSyncByFen =
             Boolean(state?.fen) && Boolean(localFen) && state.fen !== localFen;
           const shouldSyncByMoveCount =
@@ -209,7 +222,7 @@ export function useOnlineGameRoom(gameId) {
             Array.isArray(state?.moves) &&
             state.moves.length !== chessGameState.moveCount;
 
-          if (shouldSyncByFen || shouldSyncByMoveCount) {
+          if (shouldForceSync || shouldSyncByFen || shouldSyncByMoveCount) {
             chessGameState.syncFromServerState(state);
           }
         },
@@ -224,6 +237,7 @@ export function useOnlineGameRoom(gameId) {
       gameId,
       hasOnlineAccess,
       isOnlineGame,
+      match?.gameMode,
       onlineIdentity.token,
       onlineIdentity.user?.id,
     ]

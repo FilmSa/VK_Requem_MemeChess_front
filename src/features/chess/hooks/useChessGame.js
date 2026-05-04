@@ -21,6 +21,7 @@ const RANDOM_MEME_FALLBACK_TAGS = [
   "SMART",
   "DEFOLT",
 ];
+const SEQUENCE_ANIMATION_DURATION_MS = 680;
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -433,7 +434,8 @@ export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
   const gameMode = String(options.gameMode || "").trim().toLowerCase();
-  const usesServerAuthoritativeRules = isServerAuthoritativeMode(gameMode);
+  const usesServerAuthoritativeRules =
+    Boolean(options.forceServerAuthoritative) || isServerAuthoritativeMode(gameMode);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
   const serverLegalMoves = Array.isArray(options.serverLegalMoves)
@@ -455,6 +457,7 @@ export function useChessGame(options = {}) {
   const [highlightedSquares, setHighlightedSquares] = useState({});
   const [historyCursor, setHistoryCursor] = useState(0);
   const [promotionState, setPromotionState] = useState(null);
+  const [sequenceAnimationFen, setSequenceAnimationFen] = useState("");
   const [isMemeModeEnabled, setIsMemeModeEnabled] = useState(() =>
     typeof options.memeModeEnabled === "boolean"
       ? options.memeModeEnabled
@@ -466,6 +469,8 @@ export function useChessGame(options = {}) {
   const historyCursorRef = useRef(historyCursor);
   const memeModeEnabledRef = useRef(isMemeModeEnabled);
   const serverMovesRef = useRef(serverMoves);
+  const lastSyncedMoveCountRef = useRef(serverMoves.length);
+  const sequenceAnimationTimerRef = useRef(null);
 
   useEffect(() => {
     gameRef.current = game;
@@ -482,6 +487,14 @@ export function useChessGame(options = {}) {
   useEffect(() => {
     serverMovesRef.current = serverMoves;
   }, [serverMoves]);
+
+  useEffect(() => {
+    return () => {
+      if (sequenceAnimationTimerRef.current) {
+        window.clearTimeout(sequenceAnimationTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof options.memeModeEnabled === "boolean") {
@@ -523,6 +536,27 @@ export function useChessGame(options = {}) {
     setSelectedSquare(null);
     setHighlightedSquares({});
     setPromotionState(null);
+  }
+
+  function clearSequenceAnimation() {
+    if (sequenceAnimationTimerRef.current) {
+      window.clearTimeout(sequenceAnimationTimerRef.current);
+      sequenceAnimationTimerRef.current = null;
+    }
+    setSequenceAnimationFen("");
+  }
+
+  function buildSequenceIntermediateFen(baseFen, sequence) {
+    if (!sequence?.length || sequence.length < 2) {
+      return "";
+    }
+
+    const previewGame = loadGameFromFen(baseFen);
+    if (!previewGame?.move(sequence[0])) {
+      return "";
+    }
+
+    return previewGame.fen();
   }
 
   async function triggerMoveEffect(move, chessAfterMove, historyBeforeMove = []) {
@@ -1063,7 +1097,7 @@ export function useChessGame(options = {}) {
   }
 
   function syncFromServerState(state) {
-    const previousHistoryLength = getCurrentHistoryLength();
+    const previousHistoryLength = lastSyncedMoveCountRef.current;
     const nextGame = buildGameFromServerState(state, gameRef.current, {
       gameMode,
     });
@@ -1071,11 +1105,46 @@ export function useChessGame(options = {}) {
       return false;
     }
 
+    const nextHistoryLength = Array.isArray(state?.moves)
+      ? state.moves.length
+      : nextGame.history().length;
+    const isLatestView = historyCursorRef.current >= previousHistoryLength;
+    const lastMoveEntry =
+      nextHistoryLength > 0 && Array.isArray(state?.moves)
+        ? state.moves[nextHistoryLength - 1]
+        : null;
+    const lastSequence = parseMoveSequence(lastMoveEntry?.move);
+
+    lastSyncedMoveCountRef.current = nextHistoryLength;
     setGame(nextGame);
-    syncHistoryCursor(
-      Array.isArray(state?.moves) ? state.moves.length : nextGame.history().length,
-      previousHistoryLength
-    );
+    syncHistoryCursor(nextHistoryLength, previousHistoryLength);
+
+    if (
+      usesServerAuthoritativeRules &&
+      isLatestView &&
+      nextHistoryLength === previousHistoryLength + 1 &&
+      lastSequence?.length > 1
+    ) {
+      const previousFen =
+        nextHistoryLength > 1
+          ? state.moves[nextHistoryLength - 2]?.fen
+          : state?.initial_fen || initialFen;
+      const intermediateFen = buildSequenceIntermediateFen(previousFen, lastSequence);
+
+      if (intermediateFen && intermediateFen !== nextGame.fen()) {
+        clearSequenceAnimation();
+        setSequenceAnimationFen(intermediateFen);
+        sequenceAnimationTimerRef.current = window.setTimeout(() => {
+          sequenceAnimationTimerRef.current = null;
+          setSequenceAnimationFen("");
+        }, SEQUENCE_ANIMATION_DURATION_MS);
+      } else {
+        clearSequenceAnimation();
+      }
+    } else {
+      clearSequenceAnimation();
+    }
+
     clearSelection();
     return true;
   }
@@ -1088,10 +1157,16 @@ export function useChessGame(options = {}) {
     : verboseHistory.map((move) =>
         `${move.from}${move.to}${move.promotion || ""}`.toLowerCase()
       );
-  const displayedGame = usesServerAuthoritativeRules
+  const activeHistoryPly = Math.min(historyCursor, history.length);
+  const baseDisplayedGame = usesServerAuthoritativeRules
     ? buildServerHistoryGame(historyCursor, serverMoves, initialFen, game.fen())
     : buildGameToPly(verboseHistory, historyCursor);
-  const activeHistoryPly = Math.min(historyCursor, history.length);
+  const displayedGame =
+    usesServerAuthoritativeRules &&
+    sequenceAnimationFen &&
+    activeHistoryPly === history.length
+      ? loadGameFromFen(sequenceAnimationFen) || baseDisplayedGame
+      : baseDisplayedGame;
   const recentMoveOverlay = usesServerAuthoritativeRules
     ? buildServerMoveOverlay({
         serverMoves,
@@ -1109,16 +1184,19 @@ export function useChessGame(options = {}) {
   );
 
   function viewPreviousMove() {
+    clearSequenceAnimation();
     setHistoryCursor((currentCursor) => Math.max(currentCursor - 1, 0));
     clearSelection();
   }
 
   function viewNextMove() {
+    clearSequenceAnimation();
     setHistoryCursor((currentCursor) => Math.min(currentCursor + 1, history.length));
     clearSelection();
   }
 
   function jumpToLatestMove() {
+    clearSequenceAnimation();
     setHistoryCursor(history.length);
     clearSelection();
   }

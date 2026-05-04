@@ -267,6 +267,7 @@ export function useOnlineGameRoom(gameId) {
     matchGameMode: resolvedGameMode,
     matchGameModeLabel: resolveMatchGameModeLabel(resolvedGameMode),
     matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
+    matchTimeControlId: match?.timeControlId || "",
     isBotGame: Boolean(roomState?.bot_game),
     applyRoomState: setRoomState,
     buildSocketOptions,

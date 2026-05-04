@@ -328,6 +328,7 @@ export default function PlayPage() {
   const gameClock = useGameClock({
     gameId,
     roomState,
+    fallbackTimeControlId: activeRoom.matchTimeControlId,
     currentUserId: activeRoom.currentUserId,
     opponentUserId: activeRoom.opponentUserId,
     sessionToken: activeRoom.sessionToken,

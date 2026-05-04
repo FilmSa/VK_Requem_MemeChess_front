@@ -5,21 +5,25 @@ const CLOCK_TICK_MS = 250;
 const WARNING_THRESHOLD_MS = 3 * 60 * 1000;
 const DANGER_THRESHOLD_MS = 60 * 1000;
 
-function isTimedRoom(roomState) {
-  const timeControlId = String(roomState?.time_control_id || "")
+function resolveTimeControlId(roomState, fallbackTimeControlId = "") {
+  return String(roomState?.time_control_id || fallbackTimeControlId || "")
     .trim()
     .toLowerCase();
+}
+
+function isTimedRoom(roomState, fallbackTimeControlId = "") {
+  const timeControlId = resolveTimeControlId(roomState, fallbackTimeControlId);
 
   return Boolean(timeControlId && timeControlId !== "unlimited");
 }
 
-function getBaseRemainingMs(roomState) {
+function getBaseRemainingMs(roomState, fallbackTimeControlId = "") {
   const configuredBaseMs = Number(roomState?.time_control_base_ms);
   if (Number.isFinite(configuredBaseMs) && configuredBaseMs > 0) {
     return configuredBaseMs;
   }
 
-  switch (String(roomState?.time_control_id || "").trim().toLowerCase()) {
+  switch (resolveTimeControlId(roomState, fallbackTimeControlId)) {
     case "classic":
       return 30 * 60 * 1000;
     case "rapid":
@@ -33,12 +37,12 @@ function getBaseRemainingMs(roomState) {
   }
 }
 
-function getStoredRemainingMs(roomState, playerId) {
+function getStoredRemainingMs(roomState, playerId, fallbackTimeControlId = "") {
   if (!roomState) {
     return 0;
   }
 
-  const baseRemainingMs = getBaseRemainingMs(roomState);
+  const baseRemainingMs = getBaseRemainingMs(roomState, fallbackTimeControlId);
   const resolveRemaining = (value) => {
     if (value === null || value === undefined || value === "") {
       return baseRemainingMs;
@@ -63,11 +67,19 @@ function getStoredRemainingMs(roomState, playerId) {
   return baseRemainingMs;
 }
 
-function getEffectiveRemainingMs(roomState, playerId, nowMs) {
-  const storedRemainingMs = Math.max(0, getStoredRemainingMs(roomState, playerId));
+function getEffectiveRemainingMs(
+  roomState,
+  playerId,
+  nowMs,
+  fallbackTimeControlId = ""
+) {
+  const storedRemainingMs = Math.max(
+    0,
+    getStoredRemainingMs(roomState, playerId, fallbackTimeControlId)
+  );
 
   if (
-    !isTimedRoom(roomState) ||
+    !isTimedRoom(roomState, fallbackTimeControlId) ||
     roomState?.status !== "active" ||
     roomState?.current_turn_user_id !== playerId
   ) {
@@ -110,6 +122,7 @@ function resolveTone(remainingMs, isActive, timed) {
 export function useGameClock({
   gameId,
   roomState,
+  fallbackTimeControlId = "",
   currentUserId,
   opponentUserId,
   sessionToken,
@@ -120,7 +133,7 @@ export function useGameClock({
   const [nowMs, setNowMs] = useState(() => Date.now());
   const timeoutAttemptKeyRef = useRef("");
 
-  const timed = isTimedRoom(roomState);
+  const timed = isTimedRoom(roomState, fallbackTimeControlId);
   const gameStatus = String(roomState?.status || "").trim().toLowerCase();
 
   useEffect(() => {
@@ -136,8 +149,18 @@ export function useGameClock({
   }, [gameStatus, timed]);
 
   const playerClock = useMemo(() => {
-    const bottomRemainingMs = getEffectiveRemainingMs(roomState, currentUserId, nowMs);
-    const topRemainingMs = getEffectiveRemainingMs(roomState, opponentUserId, nowMs);
+    const bottomRemainingMs = getEffectiveRemainingMs(
+      roomState,
+      currentUserId,
+      nowMs,
+      fallbackTimeControlId
+    );
+    const topRemainingMs = getEffectiveRemainingMs(
+      roomState,
+      opponentUserId,
+      nowMs,
+      fallbackTimeControlId
+    );
     const activePlayerId = String(roomState?.current_turn_user_id || "").trim();
 
     return {
@@ -156,7 +179,7 @@ export function useGameClock({
         tone: resolveTone(bottomRemainingMs, activePlayerId === currentUserId, timed),
       },
     };
-  }, [currentUserId, nowMs, opponentUserId, roomState, timed]);
+  }, [currentUserId, fallbackTimeControlId, nowMs, opponentUserId, roomState, timed]);
 
   useEffect(() => {
     if (

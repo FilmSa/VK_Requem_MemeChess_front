@@ -217,6 +217,8 @@ export async function joinFriendInvite(inviteToken, token = "") {
         gameId: response.game_id || "",
         inviteToken: response.invite_token || inviteToken,
         playUrl: response.play_url || "",
+        gameMode: response.game_mode || "classic",
+        timeControlId: response.time_control_id || "unlimited",
         sessionToken: response.session_token || token || "",
         player: {
           id: response.player?.id || "",

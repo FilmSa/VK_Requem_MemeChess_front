@@ -321,6 +321,14 @@ export default function PlayPage() {
   const currentUserId = String(activeRoom.currentUserId || user?.id || "").trim();
   const opponentColor = getOpponentColor(activeRoom.playerColor);
   const roomState = activeRoom.roomState;
+  const resolvedTimeControlId = String(
+    activeRoom.matchTimeControlId || roomState?.time_control_id || ""
+  )
+    .trim()
+    .toLowerCase();
+  const showTimedClocks = Boolean(
+    resolvedTimeControlId && resolvedTimeControlId !== "unlimited"
+  );
   const isGameFinished = roomState?.status === "finished";
   const finishedReason = String(roomState?.finished_reason || "").trim();
   const winnerId = String(roomState?.winner_id || "").trim();
@@ -914,7 +922,7 @@ export default function PlayPage() {
                 }
                 topReaction={topReaction}
                 bottomReaction={bottomReaction}
-                showPlayerTimers={Boolean(gameClock.timed)}
+                showPlayerTimers={showTimedClocks}
                 topPlayerTime={gameClock.top?.time || "∞"}
                 bottomPlayerTime={gameClock.bottom?.time || "∞"}
                 topPlayerTimerTone={gameClock.top?.tone || "idle"}

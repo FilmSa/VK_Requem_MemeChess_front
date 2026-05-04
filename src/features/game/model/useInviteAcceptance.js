@@ -46,6 +46,10 @@ export function useInviteAcceptance(inviteToken) {
         savePlaySession({
           gameId: response.gameId,
           inviteToken: response.inviteToken,
+          match: {
+            gameMode: response.gameMode,
+            timeControlId: response.timeControlId,
+          },
           sessionToken: response.sessionToken,
           player: response.player,
         });
@@ -53,6 +57,10 @@ export function useInviteAcceptance(inviteToken) {
         navigate(`/play?game=${encodeURIComponent(response.gameId)}`, {
           replace: true,
           state: {
+            match: {
+              gameMode: response.gameMode,
+              timeControlId: response.timeControlId,
+            },
             sessionToken: response.sessionToken,
             player: response.player,
           },

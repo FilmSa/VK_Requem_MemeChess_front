@@ -184,6 +184,9 @@ export function useOnlineGameRoom(gameId) {
   ).trim();
   const resolvedGameMode =
     match?.gameMode || String(roomState?.game_mode || "").trim().toLowerCase();
+  const resolvedTimeControlId =
+    match?.timeControlId ||
+    String(roomState?.time_control_id || "").trim().toLowerCase();
   const opponentUserId =
     String(opponentProfile?.id || "").trim() ||
     (currentUserId && roomState?.player1_id === currentUserId
@@ -267,7 +270,7 @@ export function useOnlineGameRoom(gameId) {
     matchGameMode: resolvedGameMode,
     matchGameModeLabel: resolveMatchGameModeLabel(resolvedGameMode),
     matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
-    matchTimeControlId: match?.timeControlId || "",
+    matchTimeControlId: resolvedTimeControlId,
     isBotGame: Boolean(roomState?.bot_game),
     applyRoomState: setRoomState,
     buildSocketOptions,

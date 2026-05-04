@@ -11,6 +11,9 @@ import {
   MENU_TABS,
   MODE_OPTIONS,
   resolveMatchmakingGameMode,
+  resolveSelectedTimeControl,
+  resolveTimeControlLabel,
+  TIME_CONTROL_UNLIMITED,
 } from "../config/menuConfig.js";
 import { useMainMenuPanelState } from "../model/useMainMenuPanelState.js";
 import { useInviteLobby } from "../../game/model/useInviteLobby.js";
@@ -41,6 +44,7 @@ export default function MainMenuPanel({ style }) {
   const location = useLocation();
   const navigationFallbackTimeoutRef = useRef(null);
   const inviteGameModeRef = useRef("classic");
+  const inviteTimeControlRef = useRef(TIME_CONTROL_UNLIMITED);
   const {
     token,
     user,
@@ -58,6 +62,8 @@ export default function MainMenuPanel({ style }) {
   const [isClientBotEnabled, setIsClientBotEnabled] = useState(false);
   const [robotError, setRobotError] = useState("");
   const [isCreatingRobot, setIsCreatingRobot] = useState(false);
+  const [isInviteTimeControlEnabled, setIsInviteTimeControlEnabled] =
+    useState(true);
 
   const clearNavigationFallback = useCallback(() => {
     if (navigationFallbackTimeoutRef.current) {
@@ -129,6 +135,7 @@ export default function MainMenuPanel({ style }) {
   } = useMainMenuPanelState({ userId: user?.id });
 
   const selectedGameMode = resolveMatchmakingGameMode(selectedMode);
+  const selectedTimeControl = resolveSelectedTimeControl(activeCardId);
   const canUseClientBot = selectedGameMode === "classic";
   const clientBotHint = canUseClientBot
     ? "Партия и расчеты бота пойдут локально и будут доступны офлайн после первой загрузки приложения."
@@ -163,6 +170,7 @@ export default function MainMenuPanel({ style }) {
     onGameReady: (gameId) => {
       const match = {
         gameMode: inviteGameModeRef.current || selectedGameMode,
+        timeControlId: inviteTimeControlRef.current || TIME_CONTROL_UNLIMITED,
       };
 
       savePlaySession({
@@ -185,7 +193,10 @@ export default function MainMenuPanel({ style }) {
     if (inviteLobby.inviteLobby?.gameMode) {
       inviteGameModeRef.current = inviteLobby.inviteLobby.gameMode;
     }
-  }, [inviteLobby.inviteLobby?.gameMode]);
+    if (inviteLobby.inviteLobby?.timeControlId) {
+      inviteTimeControlRef.current = inviteLobby.inviteLobby.timeControlId;
+    }
+  }, [inviteLobby.inviteLobby?.gameMode, inviteLobby.inviteLobby?.timeControlId]);
 
   const matchmaking = useMatchmaking({
     token,
@@ -198,6 +209,7 @@ export default function MainMenuPanel({ style }) {
         agreedStake: result.agreedStake,
         gameMode: result.gameMode,
         gameCurrency: result.gameCurrency,
+        timeControlId: result.timeControlId || selectedTimeControl.id,
       };
 
       savePlaySession({
@@ -258,6 +270,7 @@ export default function MainMenuPanel({ style }) {
     setPanelError("");
     void matchmaking.startSearch({
       gameMode: selectedGameMode,
+      timeControlId: selectedTimeControl.id,
       minStake,
       maxStake,
     });
@@ -267,6 +280,7 @@ export default function MainMenuPanel({ style }) {
     setPanelError("");
     setRobotError("");
     setPlayModalPanel("friend");
+    setIsInviteTimeControlEnabled(true);
     setIsPlayModalOpen(true);
   }
 
@@ -274,6 +288,7 @@ export default function MainMenuPanel({ style }) {
     setIsPlayModalOpen(false);
     setRobotError("");
     setIsClientBotEnabled(false);
+    setIsInviteTimeControlEnabled(true);
     inviteLobby.clearInviteLobby();
   }
 
@@ -291,7 +306,13 @@ export default function MainMenuPanel({ style }) {
     setRobotError("");
     setPlayModalPanel("friend");
     inviteGameModeRef.current = selectedGameMode;
-    void inviteLobby.createInvite({ gameMode: selectedGameMode });
+    inviteTimeControlRef.current = isInviteTimeControlEnabled
+      ? selectedTimeControl.id
+      : TIME_CONTROL_UNLIMITED;
+    void inviteLobby.createInvite({
+      gameMode: selectedGameMode,
+      timeControlId: inviteTimeControlRef.current,
+    });
   }
 
   async function handleCreateRobot() {
@@ -305,6 +326,7 @@ export default function MainMenuPanel({ style }) {
       const player = buildLocalBotPlayerProfile(user);
       const match = {
         gameMode: selectedGameMode,
+        timeControlId: TIME_CONTROL_UNLIMITED,
       };
 
       savePlaySession({
@@ -356,6 +378,7 @@ export default function MainMenuPanel({ style }) {
 
       const match = {
         gameMode: response.gameMode,
+        timeControlId: TIME_CONTROL_UNLIMITED,
       };
 
       savePlaySession({
@@ -532,6 +555,9 @@ export default function MainMenuPanel({ style }) {
         activePanel={playModalPanel}
         onPanelChange={setPlayModalPanel}
         selectedGameModeLabel={selectedMode}
+        selectedTimeControlLabel={resolveTimeControlLabel(selectedTimeControl.id)}
+        isTimeControlEnabled={isInviteTimeControlEnabled}
+        onTimeControlEnabledChange={setIsInviteTimeControlEnabled}
         inviteLobby={inviteLobby.inviteLobby}
         inviteError={inviteLobby.inviteError}
         isCreatingInvite={inviteLobby.isCreatingInvite}

@@ -264,10 +264,11 @@ export function useInviteLobby({
     userId,
   ]);
 
-  const createInvite = useCallback(async ({ gameMode = "classic" } = {}) => {
-    if (isInitializing) {
-      return;
-    }
+  const createInvite = useCallback(
+    async ({ gameMode = "classic", timeControlId = "unlimited" } = {}) => {
+      if (isInitializing) {
+        return;
+      }
 
     if (!isAuthenticated) {
       onAuthRequired?.();
@@ -279,10 +280,11 @@ export function useInviteLobby({
     clearInviteLobby();
 
     try {
-      const response = await createFriendInvite(token, gameMode);
+      const response = await createFriendInvite(token, gameMode, timeControlId);
       setInviteLobby({
         gameId: response.gameId,
         gameMode: response.gameMode || gameMode,
+        timeControlId: response.timeControlId || timeControlId,
         inviteToken: response.inviteToken,
         inviteUrl: response.inviteUrl,
         expiresAt: response.expiresAt,
@@ -303,13 +305,9 @@ export function useInviteLobby({
     } finally {
       setIsCreatingInvite(false);
     }
-  }, [
-    clearInviteLobby,
-    isAuthenticated,
-    isInitializing,
-    onAuthRequired,
-    token,
-  ]);
+    },
+    [clearInviteLobby, isAuthenticated, isInitializing, onAuthRequired, token]
+  );
 
   const copyInvite = useCallback(async () => {
     if (!inviteLobby?.inviteUrl) {

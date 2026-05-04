@@ -37,11 +37,17 @@ function normalizeMatch(match) {
     .trim()
     .toLowerCase();
   const gameCurrency = String(match.gameCurrency || match.game_currency || "").trim();
+  const timeControlId = String(
+    match.timeControlId || match.time_control_id || ""
+  )
+    .trim()
+    .toLowerCase();
 
   return {
     agreedStake: Number.isFinite(agreedStake) ? agreedStake : 0,
     gameMode,
     gameCurrency,
+    timeControlId,
   };
 }
 
@@ -262,6 +268,7 @@ export function useOnlineGameRoom(gameId) {
     matchGameModeLabel: resolveMatchGameModeLabel(resolvedGameMode),
     matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
     isBotGame: Boolean(roomState?.bot_game),
+    applyRoomState: setRoomState,
     buildSocketOptions,
   };
 }

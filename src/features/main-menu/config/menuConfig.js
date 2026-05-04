@@ -18,6 +18,31 @@ import {
 import { DEFAULT_BOARD_SKIN_ID } from "../../../shared/lib/boardSkin.js";
 import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
 
+export const TIME_CONTROL_UNLIMITED = "unlimited";
+
+export const TIME_CONTROL_PRESETS = {
+  classic: {
+    id: "classic",
+    label: "30+9",
+    title: "Classic",
+  },
+  rapid: {
+    id: "rapid",
+    label: "15+9",
+    title: "Rapid",
+  },
+  blitz: {
+    id: "blitz",
+    label: "3+2",
+    title: "Blitz",
+  },
+  bullet: {
+    id: "bullet",
+    label: "1+5",
+    title: "Bullet",
+  },
+};
+
 const emojiItems = EMOJI_PREVIEW_ITEMS.map((item) => ({
   ...item,
   time: "",
@@ -123,29 +148,29 @@ export const CARD_SETS = {
   new: [
     {
       id: "classic",
-      title: "Classic",
-      time: "30+0",
+      title: TIME_CONTROL_PRESETS.classic.title,
+      time: TIME_CONTROL_PRESETS.classic.label,
       icon: classicIcon,
       background: "linear-gradient(121.87deg, #b700ff 0%, #6e0099 100%)",
     },
     {
       id: "rapid",
-      title: "Rapid",
-      time: "15+0",
+      title: TIME_CONTROL_PRESETS.rapid.title,
+      time: TIME_CONTROL_PRESETS.rapid.label,
       icon: rapidIcon,
       background: "linear-gradient(121.87deg, #ff00c8 0%, #990078 100%)",
     },
     {
       id: "blitz",
-      title: "Blitz",
-      time: "3+2",
+      title: TIME_CONTROL_PRESETS.blitz.title,
+      time: TIME_CONTROL_PRESETS.blitz.label,
       icon: blitzIcon,
       background: "linear-gradient(121.87deg, #16ceef 0%, #1f9fb5 100%)",
     },
     {
       id: "bullet",
-      title: "Bullet",
-      time: "1+0",
+      title: TIME_CONTROL_PRESETS.bullet.title,
+      time: TIME_CONTROL_PRESETS.bullet.label,
       icon: bulletIcon,
       background:
         "linear-gradient(120.45deg, rgba(255,36,39,0.75) 0.4%, rgba(177,25,27,0.75) 76.72%, rgba(153,21,24,0.75) 100%)",
@@ -202,6 +227,21 @@ export function resolveMatchmakingGameMode(label) {
     default:
       return "classic";
   }
+}
+
+export function resolveSelectedTimeControl(cardId) {
+  return TIME_CONTROL_PRESETS[cardId] || TIME_CONTROL_PRESETS[DEFAULT_CARD_IDS.new];
+}
+
+export function resolveTimeControlLabel(timeControlId) {
+  if (
+    !timeControlId ||
+    String(timeControlId).trim().toLowerCase() === TIME_CONTROL_UNLIMITED
+  ) {
+    return "Без лимита";
+  }
+
+  return TIME_CONTROL_PRESETS[timeControlId]?.label || "Без лимита";
 }
 
 export const BOT_DIFFICULTY_OPTIONS = [

@@ -21,6 +21,12 @@ export default function ChessBoardSection({
   bottomPlayerAvatar = DEFAULT_AVATAR,
   topReaction = null,
   bottomReaction = null,
+  topPlayerTime = "15:00",
+  bottomPlayerTime = "15:00",
+  topPlayerTimerTone = "idle",
+  bottomPlayerTimerTone = "idle",
+  topPlayerTimerActive = false,
+  bottomPlayerTimerActive = false,
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -87,8 +93,10 @@ export default function ChessBoardSection({
             name={topPlayerName}
             level=""
             avatar={topPlayerAvatar || DEFAULT_AVATAR}
-            time="15:00"
+            time={topPlayerTime}
             reaction={topReaction}
+            timerTone={topPlayerTimerTone}
+            timerIsActive={topPlayerTimerActive}
           />
         </div>
 
@@ -117,8 +125,10 @@ export default function ChessBoardSection({
             name={bottomPlayerName}
             level=""
             avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
-            time="15:00"
+            time={bottomPlayerTime}
             reaction={bottomReaction}
+            timerTone={bottomPlayerTimerTone}
+            timerIsActive={bottomPlayerTimerActive}
           />
         </div>
       </section>

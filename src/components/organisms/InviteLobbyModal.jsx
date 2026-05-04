@@ -37,6 +37,9 @@ export default function InviteLobbyModal({
   activePanel = "friend",
   onPanelChange,
   selectedGameModeLabel,
+  selectedTimeControlLabel = "Без лимита",
+  isTimeControlEnabled = true,
+  onTimeControlEnabledChange,
   inviteLobby,
   inviteError,
   isCreatingInvite,
@@ -124,6 +127,15 @@ export default function InviteLobbyModal({
               {selectedGameModeLabel || "Классика"}
             </span>
           </div>
+          <div
+            className="mt-2 text-[16px] leading-6"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            Время:{" "}
+            <span style={{ color: "var(--color-accent-pink)" }}>
+              {isTimeControlEnabled ? selectedTimeControlLabel : "Без лимита"}
+            </span>
+          </div>
         </div>
 
         <div className="mt-[12px] grid grid-cols-2 gap-[0px]">
@@ -182,6 +194,39 @@ export default function InviteLobbyModal({
 
         {activePanel === "friend" ? (
           <div className="mt-[12px]">
+            <div
+              className="mb-4 rounded-tl-[18px] rounded-br-[18px] border p-4"
+              style={{
+                borderColor: "var(--modal-chip-border)",
+                background: "var(--modal-chip-bg)",
+              }}
+            >
+              <label className="flex cursor-pointer items-center justify-between gap-[16px]">
+                <div>
+                  <div className="text-[16px] font-semibold">
+                    Ограничение по времени
+                  </div>
+                  <div
+                    className="mt-1 text-[13px] leading-5"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {isTimeControlEnabled
+                      ? `Партия будет создана с контролем ${selectedTimeControlLabel}.`
+                      : "Ссылка создаст партию без таймера."}
+                  </div>
+                </div>
+                <span className="shrink-0">
+                  <SwitchBase
+                    checked={isTimeControlEnabled}
+                    aria-label="Переключить ограничение по времени"
+                    onClick={() =>
+                      onTimeControlEnabledChange?.(!isTimeControlEnabled)
+                    }
+                  />
+                </span>
+              </label>
+            </div>
+
             <div
               className="rounded-tl-[18px] rounded-br-[18px] border p-4"
               style={{

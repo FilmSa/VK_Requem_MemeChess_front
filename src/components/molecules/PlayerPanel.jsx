@@ -7,6 +7,8 @@ export default function PlayerPanel({
   avatar,
   time = "15:00",
   reaction,
+  timerIsActive = false,
+  timerTone = "idle",
 }) {
   return (
     <div className="w-full flex items-center justify-between">
@@ -14,7 +16,7 @@ export default function PlayerPanel({
         <UserInfo name={name} level={level} avatar={avatar} reaction={reaction} />
       </div>
 
-      <Timer time={time} />
+      <Timer time={time} isActive={timerIsActive} tone={timerTone} />
     </div>
   );
 }

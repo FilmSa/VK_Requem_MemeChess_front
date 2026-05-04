@@ -12,6 +12,19 @@ function normalizeParticipant(participant) {
     is_guest: Boolean(participant.is_guest),
   };
 }
+export async function declareTimeoutLoss(gameId, token) {
+  try {
+    return await apiFetch(`/api/v1/games/${encodeURIComponent(gameId)}/timeout`, {
+      method: "POST",
+      token,
+    });
+  } catch (error) {
+    throw buildGameError(
+      error,
+      "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РІРµСЂС€РёС‚СЊ РїР°СЂС‚РёСЋ РїРѕ РІСЂРµРјРµРЅРё."
+    );
+  }
+}
 
 function buildGameError(error, fallbackMessage) {
   if (!(error instanceof ApiError)) {
@@ -32,6 +45,7 @@ function normalizeMatchSearchResult(response) {
     agreedStake: Number(response?.agreed_stake ?? 0),
     gameCurrency: response?.game_currency || "",
     gameMode: response?.game_mode || "",
+    timeControlId: response?.time_control_id || "",
   };
 }
 
@@ -99,6 +113,7 @@ export async function searchMatch(params, token) {
       token,
       body: {
         game_mode: params.gameMode,
+        time_control_id: params.timeControlId,
         min_stake: params.minStake,
         max_stake: params.maxStake,
       },

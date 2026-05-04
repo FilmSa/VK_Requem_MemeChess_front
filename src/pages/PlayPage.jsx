@@ -9,6 +9,7 @@ import { useGameSocket } from "../features/chess/hooks/useGameSocket.js";
 import { DEFAULT_AVATAR } from "../features/chess/lib/boardConfig.js";
 import { useOnlineGameRoom } from "../features/game/model/useOnlineGameRoom.js";
 import { useLocalBotGameRoom } from "../features/game/model/useLocalBotGameRoom.js";
+import { useGameClock } from "../features/game/model/useGameClock.js";
 import { useAuth } from "../features/auth/useAuth.js";
 import {
   readStoredEmojiQuickAccess,
@@ -324,6 +325,16 @@ export default function PlayPage() {
   const finishedReason = String(roomState?.finished_reason || "").trim();
   const winnerId = String(roomState?.winner_id || "").trim();
   const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
+  const gameClock = useGameClock({
+    gameId,
+    roomState,
+    currentUserId: activeRoom.currentUserId,
+    opponentUserId: activeRoom.opponentUserId,
+    sessionToken: activeRoom.sessionToken,
+    isOnlineGame: onlineRoom.isOnlineGame,
+    isLocalBotGame: activeRoom.isLocalBotGame,
+    onTimeoutResolved: activeRoom.applyRoomState,
+  });
 
   const chessGameState = useChessGame({
     playerColor: activeRoom.playerColor,
@@ -902,6 +913,12 @@ export default function PlayPage() {
                 }
                 topReaction={topReaction}
                 bottomReaction={bottomReaction}
+                topPlayerTime={gameClock.top?.time || "∞"}
+                bottomPlayerTime={gameClock.bottom?.time || "∞"}
+                topPlayerTimerTone={gameClock.top?.tone || "idle"}
+                bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
+                topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
+                bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
               />
             </div>
 

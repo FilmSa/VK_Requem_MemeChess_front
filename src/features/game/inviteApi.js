@@ -154,13 +154,18 @@ function getRecentJoinResult(cacheKey) {
   return cachedEntry.value;
 }
 
-export async function createFriendInvite(token, gameMode = "classic") {
+export async function createFriendInvite(
+  token,
+  gameMode = "classic",
+  timeControlId = "unlimited"
+) {
   try {
     const response = await apiFetch("/api/v1/games/invite", {
       method: "POST",
       token,
       body: {
         game_mode: gameMode,
+        time_control_id: timeControlId,
       },
     });
 
@@ -173,6 +178,7 @@ export async function createFriendInvite(token, gameMode = "classic") {
     return {
       gameId: response.game_id || "",
       gameMode: response.game_mode || gameMode,
+      timeControlId: response.time_control_id || timeControlId,
       inviteToken,
       inviteUrl,
       joinUrl: inviteUrl,

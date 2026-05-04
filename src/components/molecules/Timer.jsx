@@ -1,7 +1,23 @@
 import Badge from "../atoms/Badge";
 import Text from "../atoms/Text";
 
-export default function Timer({ time = "15:00", className = "" }) {
+const TIMER_OUTLINE_BY_TONE = {
+  idle: "transparent",
+  active: "#39d98a",
+  warning: "#ff9f43",
+  danger: "#ff5a5f",
+};
+
+export default function Timer({
+  time = "15:00",
+  className = "",
+  isActive = false,
+  tone = "idle",
+}) {
+  const outlineColor = isActive
+    ? TIMER_OUTLINE_BY_TONE[tone] || TIMER_OUTLINE_BY_TONE.active
+    : TIMER_OUTLINE_BY_TONE.idle;
+
   return (
     <Badge
       className={`
@@ -15,7 +31,7 @@ export default function Timer({ time = "15:00", className = "" }) {
       `}
       style={{
         background: "var(--player-timer-bg)",
-        boxShadow: "var(--player-timer-shadow)",
+        boxShadow: `${isActive ? `0 0 0 2px ${outlineColor}, ` : ""}var(--player-timer-shadow)`,
       }}
     >
       <Text

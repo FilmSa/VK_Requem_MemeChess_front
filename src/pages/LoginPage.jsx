@@ -125,7 +125,7 @@ export default function LoginPage() {
                 name="login"
                 label="Логин или почта"
                 type="text"
-                placeholder="Игрок_01"
+                placeholder="Логин"
                 value={form.login}
                 onChange={handleChange}
                 icon="user"

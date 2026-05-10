@@ -1,7 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
 import ThemeSwitch from "../atoms/ThemeSwitch.jsx";
 import { useTheme } from "../../features/theme/useTheme.js";
 import { withAssetBase } from "../../shared/lib/assets.js";
+import { buildAppHref } from "../../shared/router/buildAppHref.js";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 
@@ -19,12 +19,11 @@ export default function SidebarProfileCard({
   isAuthenticated,
   onLogout,
 }) {
-  const navigate = useNavigate();
   const { isLightTheme, toggleTheme } = useTheme();
 
   if (!isAuthenticated || !user) {
     function handleGuestClick() {
-      navigate("/login");
+      window.location.assign(buildAppHref("/login"));
     }
 
     function stopPropagation(event) {
@@ -72,8 +71,8 @@ export default function SidebarProfileCard({
         </div>
 
         <div className="mt-[14px] flex min-w-0 gap-[8px]">
-          <Link
-            to="/login"
+          <a
+            href={buildAppHref("/login")}
             onClick={stopPropagation}
             className="min-w-0 flex-1 rounded-[16px] px-[10px] py-[10px] text-center text-[13px] font-semibold no-underline transition hover:brightness-105"
             style={{
@@ -82,14 +81,17 @@ export default function SidebarProfileCard({
             }}
           >
             Войти
-          </Link>
+          </a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-[207px] overflow-hidden rounded-[24px] p-[16px]" style={buildCardStyle()}>
+    <div
+      className="w-[207px] overflow-hidden rounded-[24px] p-[16px]"
+      style={buildCardStyle()}
+    >
       <div className="flex min-w-0 items-center gap-3">
         <img
           src={user.avatar_url || fallbackAvatar}
@@ -102,19 +104,18 @@ export default function SidebarProfileCard({
         />
 
         <div className="min-w-0 flex-1">
-          
           <div className="flex items-start justify-between gap-2">
             <p className="truncate px-[6px] text-[16px] font-semibold">
               {user.username}
             </p>
           </div>
-           <ThemeSwitch checked={isLightTheme} onToggle={toggleTheme} />
+          <ThemeSwitch checked={isLightTheme} onToggle={toggleTheme} />
         </div>
       </div>
 
       <div className="mt-[14px] flex min-w-0 gap-[8px]">
-        <Link
-          to="/profile"
+        <a
+          href={buildAppHref("/profile")}
           className="min-w-0 flex-1 rounded-[16px] px-[10px] py-[10px] text-center text-[13px] font-semibold no-underline transition hover:brightness-105"
           style={{
             background: "var(--sidebar-primary-button-bg)",
@@ -122,7 +123,7 @@ export default function SidebarProfileCard({
           }}
         >
           Профиль
-        </Link>
+        </a>
         <button
           type="button"
           onClick={onLogout}

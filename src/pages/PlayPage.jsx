@@ -19,6 +19,8 @@ import {
 import { withAssetBase } from "../shared/lib/assets.js";
 import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
 import { useNotifications } from "../features/notifications/useNotifications.js";
+import GameResultModal from "../components/organisms/GameResultModal.jsx";
+import { useReliableNavigate } from "../shared/router/useReliableNavigate.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -296,7 +298,134 @@ function StatusCard({ title, description, action }) {
   );
 }
 
+function isDrawFinishedReason(reason) {
+  return (
+    reason === "draw_agreed" ||
+    reason === "stalemate" ||
+    reason === "insufficient_material" ||
+    reason === "threefold_repetition" ||
+    reason === "draw"
+  );
+}
+
+function buildGameResultPresentation({
+  finishedReason,
+  winnerId,
+  currentUserId,
+}) {
+  if (!finishedReason) {
+    return null;
+  }
+
+  const didCurrentUserWin = Boolean(winnerId) && winnerId === currentUserId;
+  const didCurrentUserLose = Boolean(winnerId) && winnerId !== currentUserId;
+
+  if (isDrawFinishedReason(finishedReason) || !winnerId) {
+    let subtitle = "Ничья.";
+    let reasonLabel = "Результат: ничья";
+
+    if (finishedReason === "stalemate") {
+      subtitle = "Ничья патом.";
+      reasonLabel = "Пат";
+    } else if (finishedReason === "draw_agreed") {
+      subtitle = "Ничья по соглашению.";
+      reasonLabel = "Согласованная ничья";
+    } else if (finishedReason === "insufficient_material") {
+      subtitle = "Ничья из-за недостатка материала.";
+      reasonLabel = "Недостаточно материала";
+    } else if (finishedReason === "threefold_repetition") {
+      subtitle = "Ничья по троекратному повторению.";
+      reasonLabel = "Троекратное повторение";
+    }
+
+    return {
+      outcome: "draw",
+      title: "Ничья",
+      subtitle,
+      reasonLabel,
+      score: "1/2 - 1/2",
+    };
+  }
+
+  if (finishedReason === "checkmate") {
+    return didCurrentUserWin
+      ? {
+          outcome: "win",
+          title: "Победа",
+          subtitle: "Победа матом.",
+          reasonLabel: "Мат",
+          score: "1 - 0",
+        }
+      : {
+          outcome: "loss",
+          title: "Поражение",
+          subtitle: "Поражение матом.",
+          reasonLabel: "Мат",
+          score: "0 - 1",
+        };
+  }
+
+  if (finishedReason === "resign") {
+    return didCurrentUserWin
+      ? {
+          outcome: "win",
+          title: "Победа",
+          subtitle: "Победа: противник сдался.",
+          reasonLabel: "Сдача соперника",
+          score: "1 - 0",
+        }
+      : {
+          outcome: "loss",
+          title: "Поражение",
+          subtitle: "Поражение: вы сдались.",
+          reasonLabel: "Сдача",
+          score: "0 - 1",
+        };
+  }
+
+  if (finishedReason === "timeout") {
+    return didCurrentUserWin
+      ? {
+          outcome: "win",
+          title: "Победа",
+          subtitle: "Победа: у противника вышло время.",
+          reasonLabel: "Время вышло",
+          score: "1 - 0",
+        }
+      : {
+          outcome: "loss",
+          title: "Поражение",
+          subtitle: "Поражение: у вас вышло время.",
+          reasonLabel: "Время вышло",
+          score: "0 - 1",
+        };
+  }
+
+  if (didCurrentUserWin) {
+    return {
+      outcome: "win",
+      title: "Победа",
+      subtitle: "Партия завершена в вашу пользу.",
+      reasonLabel: "Игра завершена",
+      score: "1 - 0",
+    };
+  }
+
+  if (didCurrentUserLose) {
+    return {
+      outcome: "loss",
+      title: "Поражение",
+      subtitle: "Партия завершена не в вашу пользу.",
+      reasonLabel: "Игра завершена",
+      score: "0 - 1",
+    };
+  }
+
+  return null;
+}
+
 export default function PlayPage() {
+  const reliableNavigate = useReliableNavigate();
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get("game") || "";
   const { user, refreshCurrency } = useAuth();
@@ -306,6 +435,8 @@ export default function PlayPage() {
   const [emojiCooldownActive, setEmojiCooldownActive] = useState(false);
   const [actionNotice, setActionNotice] = useState("");
   const [isResignConfirmMode, setIsResignConfirmMode] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [finishedEventResult, setFinishedEventResult] = useState(null);
   const [extraHighlightedSquares, setExtraHighlightedSquares] = useState({});
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
@@ -321,29 +452,31 @@ export default function PlayPage() {
   const currentUserId = String(activeRoom.currentUserId || user?.id || "").trim();
   const opponentColor = getOpponentColor(activeRoom.playerColor);
   const roomState = activeRoom.roomState;
-  const resolvedTimeControlId = String(
-    activeRoom.matchTimeControlId || roomState?.time_control_id || ""
-  )
-    .trim()
-    .toLowerCase();
-  const showTimedClocks = Boolean(
-    resolvedTimeControlId && resolvedTimeControlId !== "unlimited"
-  );
+  const resolvedOpponentUserId =
+    String(activeRoom.opponentUserId || "").trim() ||
+    (currentUserId && roomState?.player1_id === currentUserId
+      ? String(roomState?.player2_id || "").trim()
+      : String(roomState?.player1_id || "").trim());
   const isGameFinished = roomState?.status === "finished";
-  const finishedReason = String(roomState?.finished_reason || "").trim();
-  const winnerId = String(roomState?.winner_id || "").trim();
+  const finishedReason = String(
+    roomState?.finished_reason || finishedEventResult?.finishedReason || ""
+  ).trim();
+  const winnerId = String(
+    roomState?.winner_id || finishedEventResult?.winnerId || ""
+  ).trim();
   const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
   const gameClock = useGameClock({
     gameId,
     roomState,
     fallbackTimeControlId: activeRoom.matchTimeControlId,
-    currentUserId: activeRoom.currentUserId,
-    opponentUserId: activeRoom.opponentUserId,
+    currentUserId,
+    opponentUserId: resolvedOpponentUserId,
     sessionToken: activeRoom.sessionToken,
     isOnlineGame: onlineRoom.isOnlineGame,
     isLocalBotGame: activeRoom.isLocalBotGame,
     onTimeoutResolved: activeRoom.applyRoomState,
   });
+  const showTimedClocks = Boolean(gameClock.timed);
 
   const chessGameState = useChessGame({
     playerColor: activeRoom.playerColor,
@@ -420,6 +553,20 @@ export default function PlayPage() {
     activeRoom.opponentName,
     winnerId,
   ]);
+  const resultPresentation = useMemo(
+    () =>
+      finishedReason
+        ? buildGameResultPresentation({
+            finishedReason,
+            winnerId,
+            currentUserId,
+          })
+        : null,
+    [currentUserId, finishedReason, winnerId]
+  );
+  const resultModalKey = finishedReason
+    ? [gameId, finishedReason, winnerId, roomState?.moves?.length || 0].join(":")
+    : "";
 
   function playEmojiSound(reaction) {
     const reactionPayload = normalizeReactionInput(reaction);
@@ -502,8 +649,20 @@ export default function PlayPage() {
     }
 
     if (event.type === "game.finished") {
+      const eventFinishedReason = String(
+        event.payload?.finished_reason || event.payload?.finishedReason || ""
+      ).trim();
+      const eventWinnerId = String(
+        event.payload?.winner_id || event.payload?.winnerId || ""
+      ).trim();
+
       setIsResignConfirmMode(false);
       setActionNotice("");
+      setFinishedEventResult({
+        finishedReason: eventFinishedReason,
+        winnerId: eventWinnerId,
+      });
+      setIsResultModalOpen(true);
       return;
     }
 
@@ -551,9 +710,19 @@ export default function PlayPage() {
   useEffect(() => {
     setActionNotice("");
     setIsResignConfirmMode(false);
+    setIsResultModalOpen(false);
+    setFinishedEventResult(null);
     setExtraHighlightedSquares({});
     lastEvolutionMoveCountRef.current = null;
   }, [gameId]);
+
+  useEffect(() => {
+    if (!resultModalKey) {
+      return;
+    }
+
+    setIsResultModalOpen(true);
+  }, [resultModalKey]);
 
   useEffect(() => {
     if (!activeRoom.isLocalBotGame || !roomState) {
@@ -873,6 +1042,14 @@ export default function PlayPage() {
     }
   }
 
+  function handleCloseResultModal() {
+    setIsResultModalOpen(false);
+  }
+
+  function handleResultPrimaryAction() {
+    reliableNavigate("/");
+  }
+
   if (!activeRoom.isLocalBotGame && onlineRoom.isWaitingForAuthBootstrap) {
     return (
       <StatusCard
@@ -906,7 +1083,7 @@ export default function PlayPage() {
             className="mx-auto flex h-full w-full min-w-0 items-start justify-center overflow-hidden"
             style={{ gap: layout.contentGap }}
           >
-            <div className="flex h-full min-w-0 flex-1 justify-center overflow-hidden">
+            <div className="relative flex h-full min-w-0 flex-1 justify-center overflow-hidden">
               <ChessBoardSection
                 gameState={chessGameState}
                 sendMove={roomControls.sendMove}
@@ -929,6 +1106,26 @@ export default function PlayPage() {
                 bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
                 topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
                 bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
+                boardOverlay={
+                  <GameResultModal
+                    isOpen={Boolean(resultPresentation && isResultModalOpen)}
+                    outcome={resultPresentation?.outcome}
+                    title={resultPresentation?.title}
+                    subtitle={resultPresentation?.subtitle}
+                    reasonLabel={resultPresentation?.reasonLabel}
+                    score={resultPresentation?.score}
+                    currentPlayer={{
+                      name: activeRoom.currentUserName,
+                      avatar_url: activeRoom.currentUserProfile?.avatar_url || "",
+                    }}
+                    opponentPlayer={{
+                      name: activeRoom.opponentName,
+                      avatar_url: activeRoom.opponentProfile?.avatar_url || "",
+                    }}
+                    onPrimaryAction={handleResultPrimaryAction}
+                    onSecondaryAction={handleCloseResultModal}
+                  />
+                }
               />
             </div>
 
@@ -977,6 +1174,27 @@ export default function PlayPage() {
           </div>
         </main>
       </div>
+      <GameResultModal
+        isOpen={false}
+        outcome={resultPresentation?.outcome}
+        title={resultPresentation?.title}
+        subtitle={resultPresentation?.subtitle}
+        reasonLabel={resultPresentation?.reasonLabel}
+        score={resultPresentation?.score}
+        currentPlayer={{
+          name: activeRoom.currentUserName,
+          avatar_url: activeRoom.currentUserProfile?.avatar_url || "",
+        }}
+        opponentPlayer={{
+          name: activeRoom.opponentName,
+          avatar_url: activeRoom.opponentProfile?.avatar_url || "",
+        }}
+        primaryActionLabel="На главную"
+        onPrimaryAction={handleResultPrimaryAction}
+        secondaryActionLabel="Посмотреть доску"
+        onSecondaryAction={handleCloseResultModal}
+        anchorRect={null}
+      />
     </div>
   );
 }

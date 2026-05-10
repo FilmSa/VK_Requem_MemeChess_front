@@ -28,6 +28,7 @@ export default function ChessBoardSection({
   bottomPlayerTimerTone = "idle",
   topPlayerTimerActive = false,
   bottomPlayerTimerActive = false,
+  boardOverlay = null,
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -79,9 +80,9 @@ export default function ChessBoardSection({
   }, [onLayoutMetricsChange, topPlayerName, bottomPlayerName]);
 
   return (
-    <div className="flex h-full min-h-0 items-start justify-start overflow-visible">
+    <div className="flex min-h-0 items-start justify-start overflow-visible">
       <section
-        className="flex h-full flex-col"
+        className="flex flex-col"
         style={{
           width: boardWidth,
         }}
@@ -117,6 +118,7 @@ export default function ChessBoardSection({
           onPromotionCancel={cancelPromotion}
           canDragPieces={canDragPieces}
           isPieceDraggable={isPieceDraggable}
+          overlayContent={boardOverlay}
         />
 
         <div

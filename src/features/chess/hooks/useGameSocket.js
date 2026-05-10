@@ -25,6 +25,7 @@ export function useGameSocket({
   const gameParams = getGameParams();
   const { token, user } = useAuth();
   const socketRef = useRef(null);
+  const connectionAttemptRef = useRef(0);
   const callbacksRef = useRef({
     onRemoteMove,
     onStateChange,
@@ -68,6 +69,12 @@ export function useGameSocket({
     }
 
     let cancelled = false;
+    const attemptId = connectionAttemptRef.current + 1;
+    connectionAttemptRef.current = attemptId;
+
+    function isCurrentAttempt() {
+      return !cancelled && connectionAttemptRef.current === attemptId;
+    }
 
     async function connect() {
       try {
@@ -80,7 +87,7 @@ export function useGameSocket({
         if (!socketToken) {
           throw new Error("Не найден токен для подключения к игре.");
         }
-        if (cancelled) {
+        if (!isCurrentAttempt()) {
           return;
         }
 
@@ -90,36 +97,68 @@ export function useGameSocket({
           gameId: resolvedGameId,
           userId: resolvedUserId,
           onOpen: () => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onOpen?.();
           },
           onClose: (event) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onClose?.(event);
           },
           onJoined: (state) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onJoined?.(state);
           },
           onMove: ({ isOwnMessage, move }) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             if (isOwnMessage) {
               return;
             }
             callbacksRef.current.onRemoteMove?.(move);
           },
           onEmoji: (event) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onEmoji?.(event);
           },
           onGameEvent: (event) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onGameEvent?.(event);
           },
           onState: (state) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onStateChange?.(state);
           },
           onError: (error) => {
+            if (!isCurrentAttempt()) {
+              return;
+            }
             callbacksRef.current.onError?.(error);
           },
         });
 
+        if (!isCurrentAttempt()) {
+          client.close();
+          return;
+        }
+
         socketRef.current = client;
       } catch (error) {
+        if (!isCurrentAttempt()) {
+          return;
+        }
         callbacksRef.current.onError?.(
           error instanceof Error
             ? error
@@ -132,6 +171,9 @@ export function useGameSocket({
 
     return () => {
       cancelled = true;
+      if (connectionAttemptRef.current === attemptId) {
+        connectionAttemptRef.current += 1;
+      }
       socketRef.current?.close();
       socketRef.current = null;
     };

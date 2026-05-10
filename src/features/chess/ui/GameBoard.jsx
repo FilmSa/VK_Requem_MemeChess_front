@@ -23,6 +23,7 @@ export default function GameBoard({
   onPromotionCancel,
   canDragPieces,
   isPieceDraggable,
+  overlayContent = null,
 }) {
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
@@ -58,42 +59,52 @@ export default function GameBoard({
 
   return (
     <div
-      className="game-board"
+      className="relative"
       style={{
         width: boardWidth,
         height: boardWidth,
       }}
     >
-      <Chessboard
-        id="PawnRequiemBoard"
-        position={fen}
-        boardOrientation={boardOrientation}
-        boardWidth={boardWidth}
-        animationDuration={720}
-        arePiecesDraggable={canDragPieces}
-        customPieces={customPieces}
-        customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
-        customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
-        customSquareStyles={highlightedSquares}
-        isDraggablePiece={isPieceDraggable}
-        onPromotionCheck={() => false}
-        onSquareClick={onSquareClick}
-        onPieceDrop={onPieceDrop}
-      />
+      <div
+        className="game-board"
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        <Chessboard
+          id="PawnRequiemBoard"
+          position={fen}
+          boardOrientation={boardOrientation}
+          boardWidth={boardWidth}
+          animationDuration={720}
+          arePiecesDraggable={canDragPieces}
+          customPieces={customPieces}
+          customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
+          customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
+          customSquareStyles={highlightedSquares}
+          isDraggablePiece={isPieceDraggable}
+          onPromotionCheck={() => false}
+          onSquareClick={onSquareClick}
+          onPieceDrop={onPieceDrop}
+        />
 
-      <BoardEffectsLayer
-        activeEffects={activeEffects}
-        boardWidth={boardWidth}
-        boardOrientation={boardOrientation}
-      />
+        <BoardEffectsLayer
+          activeEffects={activeEffects}
+          boardWidth={boardWidth}
+          boardOrientation={boardOrientation}
+        />
 
-      <PromotionMenu
-        boardWidth={boardWidth}
-        customPieces={customPieces}
-        promotionState={promotionState}
-        onSelect={onPromotionSelect}
-        onCancel={onPromotionCancel}
-      />
+        <PromotionMenu
+          boardWidth={boardWidth}
+          customPieces={customPieces}
+          promotionState={promotionState}
+          onSelect={onPromotionSelect}
+          onCancel={onPromotionCancel}
+        />
+      </div>
+
+      {overlayContent ? overlayContent : null}
     </div>
   );
 }

@@ -1,11 +1,11 @@
-import { Link } from "react-router-dom";
 import Text from "../atoms/Text";
 import Icon from "../atoms/Icon";
+import { buildAppHref } from "../../shared/router/buildAppHref.js";
 
 export default function MenuButton({ label, icon, to, active }) {
   return (
-    <Link
-      to={to}
+    <a
+      href={buildAppHref(to)}
       className="flex h-[56px] w-[207px] items-center justify-between rounded-[20px_0px] border-none px-[8px] py-[6px] no-underline outline-none transition-all"
       style={{
         background: active ? "var(--menu-item-active-bg)" : "transparent",
@@ -36,6 +36,6 @@ export default function MenuButton({ label, icon, to, active }) {
         alt={label}
         className="h-[32px] w-[32px] shrink-0 object-contain"
       />
-    </Link>
+    </a>
   );
 }

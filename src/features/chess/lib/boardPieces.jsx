@@ -31,7 +31,7 @@ const pieceSkins = {
     bN: withAssetBase("/pieces/bN.svg"),
     bP: withAssetBase("/pieces/bP.svg"),
   },
-  "piece-skin-imperium": {
+  "piece.imperium": {
     wK: withAssetBase("/pieces/imperium/wK.svg"),
     wQ: withAssetBase("/pieces/imperium/wQ.svg"),
     wR: withAssetBase("/pieces/imperium/wR.svg"),
@@ -45,7 +45,7 @@ const pieceSkins = {
     bN: withAssetBase("/pieces/imperium/bN.svg"),
     bP: withAssetBase("/pieces/imperium/bP.svg"),
   },
-  "piece-skin-ROME": {
+  "piece.rome": {
     wK: withAssetBase("/pieces/rome/wK.svg"),
     wQ: withAssetBase("/pieces/rome/wQ.svg"),
     wR: withAssetBase("/pieces/rome/wR.svg"),
@@ -59,7 +59,7 @@ const pieceSkins = {
     bN: withAssetBase("/pieces/rome/bN.svg"),
     bP: withAssetBase("/pieces/rome/bP.svg"),
   },
-  "piece-skin-Halo": {
+  "piece.halo": {
     wK: withAssetBase("/pieces/Halo/wK.svg"),
     wQ: withAssetBase("/pieces/Halo/wQ.svg"),
     wR: withAssetBase("/pieces/Halo/wR.svg"),
@@ -73,7 +73,7 @@ const pieceSkins = {
     bN: withAssetBase("/pieces/Halo/bN.svg"),
     bP: withAssetBase("/pieces/Halo/bP.svg"),
   },
-  "piece-skin-Lotr": {
+  "piece.lotr": {
     wK: withAssetBase("/pieces/Lotr/wK.svg"),
     wQ: withAssetBase("/pieces/Lotr/wQ.svg"),
     wR: withAssetBase("/pieces/Lotr/wR.svg"),

@@ -499,7 +499,7 @@ export function useLocalBotGameRoom(gameId) {
     opponentUserId: roomState?.player2_id || botProfile.id,
     currentUserProfile: playerProfile,
     opponentProfile: botProfile,
-    currentUserName: playerProfile.username || LOCAL_PLAYER_NAME,
+    currentUserName: playerProfile.username || "guest",
     opponentName,
     matchStake: 0,
     matchGameMode,

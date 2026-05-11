@@ -1,112 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import PaginationDots from "../molecules/PaginationDots.jsx";
+import ShopPriceButton from "../molecules/ShopPriceButton.jsx";
+import SliderArrow from "../molecules/SliderArrow.jsx";
 import ShopPreviewBoard from "./ShopPreviewBoard.jsx";
-import { withAssetBase } from "../../shared/lib/assets.js";
-import { persistPieceSkin, readStoredPieceSkin } from "../../shared/lib/pieceSkin.js";
-
-const skins = [
-  {
-    id: 1,
-    title: "Шахматная рамка",
-    price: 2500,
-    heroImage: withAssetBase("/images/image.jpg"),
-    previewImage: withAssetBase("/images/Board.png"),
-  },
-  {
-    id: 2,
-    title: "Темный легион",
-    price: 2800,
-    heroImage: withAssetBase("/images/image.jpg"),
-    previewImage: withAssetBase("/images/Board.png"),
-  },
-  {
-    id: 3,
-    title: "Короли пустоты",
-    price: 3100,
-    heroImage: withAssetBase("/images/image.jpg"),
-    previewImage: withAssetBase("/images/Board.png"),
-  },
-  {
-    id: 4,
-    title: "Imperium",
-    price: 3500,
-    heroImage: withAssetBase("/images/imperium.png"),
-    previewImage: withAssetBase("/images/imperium.png"),
-    pieceSkinId: "piece-skin-imperium",
-  },
-];
-
-function PriceButton({ price }) {
-  return (
-    <button
-      type="button"
-      className="flex h-[42px] w-full items-center justify-center gap-[12px] rounded-[8px] text-[24px] font-bold leading-none"
-      style={{
-        background: "var(--shop-price-bg)",
-        color: "var(--shop-price-text)",
-      }}
-    >
-      <img
-        src={withAssetBase("/icons/crown.svg")}
-        alt="корона"
-        className="h-[22px] w-[22px]"
-      />
-      <span>{price}</span>
-    </button>
-  );
-}
-
-function SliderArrow({ direction = "left", onClick }) {
-  const iconSrc =
-    direction === "left"
-      ? withAssetBase("/icons/left.svg")
-      : withAssetBase("/icons/right.svg");
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-[126px] w-[47px] shrink-0 items-center justify-center border-0 p-0 outline-none"
-      style={{
-        background: "var(--shop-arrow-bg)",
-      }}
-    >
-      <img
-        src={iconSrc}
-        alt={direction === "left" ? "Назад" : "Вперед"}
-        className="h-[60px] w-[60px]"
-      />
-    </button>
-  );
-}
-
-function PaginationDots({ total, currentIndex }) {
-  return (
-    <div className="mt-[16px] flex gap-[10px]">
-      {Array.from({ length: total }).map((_, index) => (
-        <span
-          key={index}
-          className="h-[12px] w-[30px] rounded-[2px]"
-          style={{
-            background:
-              index === currentIndex
-                ? "var(--shop-dot-active)"
-                : "var(--shop-dot-inactive)",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+import { getCustomizationItem } from "../../shared/constants/customizationCatalog.js";
 
 function BoardPreview({ skin, onOpen }) {
   return (
-    <img
-      src={skin.previewImage}
-      alt={skin.title}
+    <button
+      type="button"
       onClick={onOpen}
-      className="block h-[294px] w-[294px] cursor-pointer object-fill"
-    />
+      className="mx-auto block aspect-square w-full max-w-[294px] overflow-hidden border border-black/20 bg-white/5 p-0 shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
+      style={{ borderRadius: "0px" }}
+    >
+      <img
+        src={skin.previewImage}
+        alt={skin.title}
+        className="block h-full w-full object-fill"
+      />
+    </button>
   );
 }
 
@@ -167,19 +80,46 @@ function SkinPreviewModal({ skin, onClose }) {
           </div>
         </div>
 
-        <ShopPreviewBoard boardWidth={720} boardOrientation="white" pieceSkinId={skin.pieceSkinId} />
+        <ShopPreviewBoard
+          boardWidth={720}
+          boardOrientation="white"
+          pieceSkinId={skin.item.slug}
+        />
       </div>
     </div>,
     document.body
   );
 }
 
-export default function ShopSkinsSection() {
+export default function ShopSkinsSection({
+  items = [],
+  onBuy,
+  buyingSlug = "",
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [openedSkin, setOpenedSkin] = useState(null);
-  const [selectedSkinId, setSelectedSkinId] = useState(() => readStoredPieceSkin());
 
-  const activeSkin = skins[activeIndex];
+  const skins = useMemo(
+    () =>
+      items.map((entry) => {
+        const catalogItem = getCustomizationItem(entry.item.slug);
+        return {
+          ...entry,
+          title: entry.item.title || catalogItem?.title || entry.item.slug,
+          heroImage: catalogItem?.shopHeroImage || catalogItem?.imageSrc || "",
+          previewImage: catalogItem?.imageSrc || catalogItem?.shopHeroImage || "",
+        };
+      }),
+    [items]
+  );
+
+  const activeSkin = skins[activeIndex] || null;
+
+  useEffect(() => {
+    if (activeIndex >= skins.length) {
+      setActiveIndex(0);
+    }
+  }, [activeIndex, skins.length]);
 
   function handlePrev() {
     setActiveIndex((prev) => (prev - 1 + skins.length) % skins.length);
@@ -190,118 +130,89 @@ export default function ShopSkinsSection() {
   }
 
   function handleOpenPreview() {
-    setOpenedSkin(activeSkin);
+    if (activeSkin) {
+      setOpenedSkin(activeSkin);
+    }
   }
 
   function handleClosePreview() {
     setOpenedSkin(null);
   }
 
-  function handleApplySkin() {
-    if (!activeSkin.pieceSkinId) {
-      return;
-    }
-
-    persistPieceSkin(activeSkin.pieceSkinId);
-    setSelectedSkinId(activeSkin.pieceSkinId);
+  if (!activeSkin) {
+    return null;
   }
 
   return (
     <>
-      <section className="ml-[0px]">
-        <div className="mb-[10px] flex items-start gap-[12px]">
+      <section className="relative h-[519px] w-[1323px]">
+        <div className="grid h-[489px] w-[1323px] grid-cols-[47px_1191px_47px] items-center gap-x-[19px]">
+          <SliderArrow
+            direction="left"
+            onClick={handlePrev}
+            className="h-[121px] w-[47px] self-center"
+          />
+
           <div
-            className="text-[34px] font-medium leading-[1.05]"
-            style={{ color: "var(--shop-title)" }}
+            className="h-[489px] w-[1191px] rounded-[40px_0_40px_0] px-[20px] py-[10px]"
+            style={{
+              background: "var(--shop-panel-bg)",
+              boxShadow: "var(--shop-panel-shadow)",
+            }}
           >
-            <div className="flex items-center gap-[12px]">
-              <span>Магазин</span>
-              <img
-                src={withAssetBase("/icons/cart.svg")}
-                alt="корзина"
-                className="h-[32px] w-[32px]"
-              />
-            </div>
-            <div>Скины</div>
-          </div>
-        </div>
-
-        <div className="flex items-center">
-          <div className="mr-[19px] shrink-0">
-            <SliderArrow direction="left" onClick={handlePrev} />
-          </div>
-
-          <div className="shrink-0">
-            <div
-              className="h-[590px] w-[1191px] overflow-hidden rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] px-[20px] py-[10px]"
-              style={{
-                background: "var(--shop-panel-bg)",
-                boxShadow: "var(--shop-panel-shadow)",
-              }}
-            >
-              <div className="flex gap-[20px]">
-                <div className="relative h-full flex-1">
+            <div className="grid h-full w-full grid-cols-[784px_312px] gap-[20px]">
+              <div className="relative h-[469px] w-[784px] overflow-hidden rounded-[40px_0_40px_0]">
+                <div className="h-full w-full">
                   <img
                     src={activeSkin.heroImage}
                     alt={activeSkin.title}
-                    className="h-full w-full rounded-tl-[40px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] object-cover"
+                    className="h-full w-full object-cover"
                   />
-
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: "var(--shop-panel-overlay)" }}
-                  />
-
-                  <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 text-center" />
                 </div>
 
-                <div className="flex h-[469px] w-[355px] shrink-0 flex-col items-center gap-[20px] rounded-tl-[0px] rounded-tr-[0px] rounded-br-[40px] rounded-bl-[0px] px-[20px] pb-[16px] pt-[18px]">
-                  <div
-                    className="mb-[18px] w-full text-center text-[36px] font-semibold leading-none"
-                    style={{ color: "var(--shop-title)" }}
-                  >
-                    {activeSkin.title}
-                  </div>
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{ background: "var(--shop-panel-overlay)" }}
+                />
+              </div>
 
-                  <div className="flex flex-1 items-center justify-center">
-                    <BoardPreview skin={activeSkin} onOpen={handleOpenPreview} />
-                  </div>
+              <div className="flex h-[469px] w-[312px] flex-col items-center justify-between py-[10px]">
+                <h3
+                  className="w-full text-center text-[36px] font-medium leading-none"
+                  style={{
+                    color: "var(--shop-title)",
+                    marginBlockStart: "20px",
+                    marginBlockEnd: "0px",
+                  }}
+                >
+                  {activeSkin.title}
+                </h3>
 
-                  <div className="mt-auto w-full">
-                    <PriceButton price={activeSkin.price} />
-                    {activeSkin.pieceSkinId ? (
-                      <button
-                        type="button"
-                        onClick={handleApplySkin}
-                        disabled={selectedSkinId === activeSkin.pieceSkinId}
-                        className="mt-[12px] flex h-[50px] w-full items-center justify-center rounded-[10px] text-[18px] font-semibold transition-colors duration-200"
-                        style={{
-                          background:
-                            selectedSkinId === activeSkin.pieceSkinId
-                              ? "var(--shop-apply-disabled-bg)"
-                              : "var(--shop-apply-bg)",
-                          color:
-                            selectedSkinId === activeSkin.pieceSkinId
-                              ? "var(--shop-apply-disabled-text)"
-                              : "var(--shop-apply-text)",
-                        }}
-                      >
-                        {selectedSkinId === activeSkin.pieceSkinId
-                          ? "Применено"
-                          : "Использовать"}
-                      </button>
-                    ) : null}
-                  </div>
+                <div className="flex flex-1 items-center justify-center py-[14px]">
+                  <BoardPreview skin={activeSkin} onOpen={handleOpenPreview} />
                 </div>
+
+                <ShopPriceButton
+                  price={activeSkin.price}
+                  label={activeSkin.owned ? "Куплено" : undefined}
+                  onClick={activeSkin.owned ? undefined : () => onBuy?.(activeSkin)}
+                  disabled={activeSkin.owned || buyingSlug === activeSkin.item.slug}
+                  compact
+                  className="h-[40px] w-[292px] text-[14px]"
+                />
               </div>
             </div>
-
-            <PaginationDots total={skins.length} currentIndex={activeIndex} />
           </div>
 
-          <div className="ml-[19px] shrink-0">
-            <SliderArrow direction="right" onClick={handleNext} />
-          </div>
+          <SliderArrow
+            direction="right"
+            onClick={handleNext}
+            className="h-[121px] w-[47px] self-center"
+          />
+        </div>
+
+        <div className="absolute left-[66px] top-[504px] flex h-[15px] items-center">
+          <PaginationDots total={skins.length} currentIndex={activeIndex} />
         </div>
       </section>
 

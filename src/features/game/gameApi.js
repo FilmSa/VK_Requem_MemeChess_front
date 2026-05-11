@@ -46,6 +46,12 @@ function normalizeMatchSearchResult(response) {
     gameCurrency: response?.game_currency || "",
     gameMode: response?.game_mode || "",
     timeControlId: response?.time_control_id || "",
+    timeControlLabel: response?.time_control_label || "",
+    timeControlBaseMs: Number(response?.time_control_base_ms ?? 0),
+    timeControlIncrementMs: Number(response?.time_control_increment_ms ?? 0),
+    player1RemainingMs: Number(response?.player1_remaining_ms ?? 0),
+    player2RemainingMs: Number(response?.player2_remaining_ms ?? 0),
+    currentTurnStartedAt: response?.current_turn_started_at || "",
   };
 }
 

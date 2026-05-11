@@ -1,82 +1,24 @@
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../../../features/auth/useAuth.js";
 import Logo from "../../../components/molecules/Logo.jsx";
 import MenuButton from "../../../components/molecules/MenuButton.jsx";
 import SidebarProfileCard from "../../../components/molecules/SidebarProfileCard.jsx";
+import { useAuth } from "../../../features/auth/useAuth.js";
 import { withAssetBase } from "../../lib/assets.js";
 
 const menuItems = [
   {
     id: "play",
-    label: "Играть",
+    label: "\u0418\u0433\u0440\u0430\u0442\u044c",
     icon: withAssetBase("/icons/sword.svg"),
     to: "/",
   },
   {
-    id: "tournaments",
-    label: "Турниры",
-    icon: withAssetBase("/icons/cup.svg"),
-    to: "/tournaments",
-  },
-  {
     id: "shop",
-    label: "Магазин",
+    label: "\u041c\u0430\u0433\u0430\u0437\u0438\u043d",
     icon: withAssetBase("/icons/cart.svg"),
     to: "/shop",
   },
 ];
-
-function formatCurrency(value) {
-  if (!Number.isFinite(value)) {
-    return "—";
-  }
-
-  return new Intl.NumberFormat("ru-RU").format(value);
-}
-
-function SidebarCurrencyCard({ gameFunds, isAuthenticated }) {
-  return (
-    <div
-      className="w-[207px] overflow-hidden rounded-[24px] border p-[16px]"
-      style={{
-        borderColor: "var(--sidebar-card-border)",
-        background: "var(--sidebar-card-background)",
-        boxShadow: "var(--sidebar-card-shadow)",
-      }}
-    >
-      <div className="flex items-center gap-[12px]">
-        <div
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-[16px]"
-          style={{
-            background: "var(--sidebar-primary-button-bg)",
-          }}
-        >
-          <img
-            src={withAssetBase("/icons/crown.svg")}
-            alt=""
-            className="h-[20px] w-[20px] object-contain"
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p
-            className="text-[11px] uppercase tracking-[0.22em]"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            Игровая валюта
-          </p>
-          <p
-            className="mt-[6px] truncate text-[24px] font-semibold"
-            style={{ color: "var(--color-text)" }}
-          >
-            {isAuthenticated ? formatCurrency(gameFunds) : "—"}
-          </p>
-        </div>
-      </div>
-
-    </div>
-  );
-}
 
 export default function AppSidebar() {
   const location = useLocation();
@@ -113,11 +55,6 @@ export default function AppSidebar() {
         </nav>
 
         <div className="flex flex-col gap-[14px]">
-          <SidebarCurrencyCard
-            gameFunds={Number(user?.game_funds ?? 0)}
-            isAuthenticated={isAuthenticated}
-          />
-
           <SidebarProfileCard
             user={user}
             isAuthenticated={isAuthenticated}

@@ -18,12 +18,25 @@ const defaultValues = {
 
 const registerErrorNotificationId = "auth-register-error";
 
+function normalizeNicknameValue(value) {
+  return String(value ?? "").replace(/[^A-Za-z0-9_]/g, "");
+}
+
 function validateForm(form) {
   const errors = {};
+  const normalizedNickname = form.nickname.trim();
 
-  if (form.nickname.trim().length < 3) {
+  if (normalizedNickname.length < 3) {
     errors.nickname =
       "Имя пользователя должно содержать минимум 3 символа.";
+  }
+
+  if (
+    normalizedNickname.length >= 3 &&
+    !/^[A-Za-z0-9_]+$/.test(normalizedNickname)
+  ) {
+    errors.nickname =
+      "Используйте только латинские буквы, цифры и подчёркивание.";
   }
 
   if (!form.email.includes("@")) {
@@ -76,7 +89,11 @@ export default function RegisterPage() {
   }
 
   function handleChange(event) {
-    const { name, value } = event.target;
+    const { name } = event.target;
+    const value =
+      name === "nickname"
+        ? normalizeNicknameValue(event.target.value)
+        : event.target.value;
 
     setForm((current) => ({ ...current, [name]: value }));
     clearSubmitError();

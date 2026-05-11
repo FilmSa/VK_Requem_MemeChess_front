@@ -6,17 +6,16 @@ import startGameIcon from "../../../../icons/startgame.svg";
 import friendGameIcon from "../../../../icons/friendgame.svg";
 import topTabIcon from "../../../../icons/sword.svg";
 import customizeTabIcon from "../../../../icons/bak.svg";
-import defaultPiecePreviewImage from "/images/image.jpg?url";
-import imperiumPreviewImage from "/images/imperium.png?url";
-import RomePreviewImage from "/images/Rome.png?url";
-import LotrPreviewImage from "/images/Lotr.png?url";
-import HaloPreviewImage from "/images/Halo.png?url";
 import {
   DEFAULT_EMOJI_QUICK_ACCESS_IDS,
   EMOJI_PREVIEW_ITEMS,
 } from "../../../shared/constants/emojiPreviewMedia.js";
-import { DEFAULT_BOARD_SKIN_ID } from "../../../shared/lib/boardSkin.js";
-import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
+import {
+  BOARD_CATALOG_ITEMS,
+  DEFAULT_BOARD_SKIN_SLUG,
+  DEFAULT_PIECE_SKIN_SLUG,
+  PIECE_CATALOG_ITEMS,
+} from "../../../shared/constants/customizationCatalog.js";
 
 export const TIME_CONTROL_UNLIMITED = "unlimited";
 
@@ -46,90 +45,10 @@ export const TIME_CONTROL_PRESETS = {
 const emojiItems = EMOJI_PREVIEW_ITEMS.map((item) => ({
   ...item,
   time: "",
-  background: "#0B0F2B",
-  cornerStyle: "diagonal",
 }));
 
-const boardItems = [
-  {
-    id: DEFAULT_BOARD_SKIN_ID,
-    title: "\u0421\u0435\u0440\u043e-\u0433\u043e\u043b\u0443\u0431\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
-    previewType: "board",
-    previewShape: "square",
-    lightSquare: "#E8EDF9",
-    darkSquare: "#B7C0D8",
-  },
-  {
-    id: "board-skin-burgundy",
-    title: "\u0411\u043e\u0440\u0434\u043e\u0432\u043e-\u0431\u0435\u0436\u0435\u0432\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
-    previewType: "board",
-    previewShape: "square",
-    lightSquare: "#D9C2A0",
-    darkSquare: "#6B1F32",
-  },
-  {
-    id: "board-skin-mono",
-    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
-    previewType: "board",
-    previewShape: "square",
-    lightSquare: "#F4F4F4",
-    darkSquare: "#1A1A1A",
-  },
-  {
-    id: "board-skin-rome",
-    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
-    previewType: "board",
-    previewShape: "square",
-    lightSquare: "#e9d7bc",
-        darkSquare: "#E5BA57",
-  },
-  {
-    id: "board-skin-halo",
-    title: "\u0427\u0435\u0440\u043d\u043e-\u0431\u0435\u043b\u0430\u044f \u0434\u043e\u0441\u043a\u0430",
-    previewType: "board",
-    previewShape: "square",
-    lightSquare: "#5ad2f0",
-    darkSquare: "#2d394b",
-  },
-];
-
-const pieceSkinItems = [
-  {
-    id: DEFAULT_PIECE_SKIN_ID,
-    title: "\u041a\u043b\u0430\u0441\u0441\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0444\u0438\u0433\u0443\u0440\u044b",
-    previewShape: "wide",
-    previewContentFit: "fill",
-    imageSrc: defaultPiecePreviewImage,
-  },
-  {
-    id: "piece-skin-imperium",
-    title: "Imperium",
-    previewShape: "wide",
-    previewContentFit: "fill",
-    imageSrc: imperiumPreviewImage,
-  },
-  {
-    id: "piece-skin-ROME",
-    title: "ROME",
-    previewShape: "wide",
-    previewContentFit: "fill",
-    imageSrc: RomePreviewImage,
-  },
-  {
-    id: "piece-skin-Halo",
-    title: "Halo",
-    previewShape: "wide",
-    previewContentFit: "fill",
-    imageSrc: HaloPreviewImage,
-  },
-  {
-    id: "piece-skin-Lotr",
-    title: "Lotr",
-    previewShape: "wide",
-    previewContentFit: "fill",
-    imageSrc: LotrPreviewImage,
-  },
-];
+const boardItems = BOARD_CATALOG_ITEMS;
+const pieceSkinItems = PIECE_CATALOG_ITEMS;
 
 export const MENU_TABS = [
   {

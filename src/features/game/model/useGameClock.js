@@ -1,75 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { declareTimeoutLoss } from "../gameApi.js";
+import { resolveTimeControlConfig } from "./timeControl.js";
 
 const CLOCK_TICK_MS = 250;
-const OPENING_MOVE_WINDOW_MS = 30 * 1000;
 const WARNING_THRESHOLD_MS = 3 * 60 * 1000;
 const DANGER_THRESHOLD_MS = 60 * 1000;
-const OPENING_CLOCK_STORAGE_KEY_PREFIX = "meme-chess.opening-clock";
 
-function resolveTimeControlId(roomState, fallbackTimeControlId = "") {
-  const fallbackId = String(fallbackTimeControlId || "").trim().toLowerCase();
-  if (!roomState || typeof roomState !== "object") {
-    return fallbackId;
-  }
-
-  const roomTimeControlId = String(roomState.time_control_id ?? "")
-    .trim()
-    .toLowerCase();
-  if (roomTimeControlId) {
-    return roomTimeControlId;
-  }
-
-  const configuredBaseMs = Number(roomState.time_control_base_ms);
-  if (Number.isFinite(configuredBaseMs) && configuredBaseMs > 0) {
-    return fallbackId || "timed";
-  }
-
-  return fallbackId || "unlimited";
+function isTimedRoom(roomState, fallbackTimeControl = {}) {
+  return resolveTimeControlConfig(roomState, fallbackTimeControl).timed;
 }
 
-function isTimedRoom(roomState, fallbackTimeControlId = "") {
-  const timeControlId = resolveTimeControlId(roomState, fallbackTimeControlId);
-
-  return Boolean(timeControlId && timeControlId !== "unlimited");
+function getBaseRemainingMs(roomState, fallbackTimeControl = {}) {
+  return resolveTimeControlConfig(roomState, fallbackTimeControl).baseMs;
 }
 
-function getBaseRemainingMs(roomState, fallbackTimeControlId = "") {
-  const configuredBaseMs = Number(roomState?.time_control_base_ms);
-  if (Number.isFinite(configuredBaseMs) && configuredBaseMs > 0) {
-    return configuredBaseMs;
-  }
-
-  switch (resolveTimeControlId(roomState, fallbackTimeControlId)) {
-    case "classic":
-      return 30 * 60 * 1000;
-    case "rapid":
-      return 15 * 60 * 1000;
-    case "blitz":
-      return 3 * 60 * 1000;
-    case "bullet":
-      return 60 * 1000;
-    default:
-      return 0;
-  }
-}
-
-function getStoredRemainingMs(roomState, playerId, fallbackTimeControlId = "") {
-  const baseRemainingMs = getBaseRemainingMs(roomState, fallbackTimeControlId);
+function getStoredRemainingMs(roomState, playerId, fallbackTimeControl = {}) {
+  const baseRemainingMs = getBaseRemainingMs(roomState, fallbackTimeControl);
   if (!roomState) {
-    return baseRemainingMs;
-  }
-
-  const hasStartedClock = Number.isFinite(
-    Date.parse(roomState?.current_turn_started_at || "")
-  );
-  const isPreClockOpening =
-    isTimedRoom(roomState, fallbackTimeControlId) &&
-    roomState?.status === "active" &&
-    !hasStartedClock &&
-    Number(roomState?.moves?.length || 0) < 2;
-
-  if (isPreClockOpening && baseRemainingMs > 0) {
     return baseRemainingMs;
   }
 
@@ -80,10 +27,6 @@ function getStoredRemainingMs(roomState, playerId, fallbackTimeControlId = "") {
 
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) {
-      return baseRemainingMs;
-    }
-
-    if (isPreClockOpening && numericValue <= 0 && baseRemainingMs > 0) {
       return baseRemainingMs;
     }
 
@@ -105,93 +48,19 @@ function getStoredRemainingMs(roomState, playerId, fallbackTimeControlId = "") {
   return baseRemainingMs;
 }
 
-function getOpeningTurnIndex(roomState, fallbackTimeControlId = "") {
-  if (
-    !isTimedRoom(roomState, fallbackTimeControlId) ||
-    roomState?.status !== "active" ||
-    Number.isFinite(Date.parse(roomState?.current_turn_started_at || ""))
-  ) {
-    return -1;
-  }
-
-  const moveCount = Array.isArray(roomState?.moves) ? roomState.moves.length : 0;
-  return moveCount < 2 ? moveCount : -1;
-}
-
-function buildOpeningClockStorageKey(gameId, turnIndex) {
-  return `${OPENING_CLOCK_STORAGE_KEY_PREFIX}.${String(gameId || "").trim()}.${turnIndex}`;
-}
-
-function readStoredOpeningTurnStartMs(gameId, turnIndex) {
-  if (typeof window === "undefined" || !gameId || turnIndex < 0) {
-    return null;
-  }
-
-  try {
-    const rawValue = window.sessionStorage.getItem(
-      buildOpeningClockStorageKey(gameId, turnIndex)
-    );
-    const parsedValue = Number(rawValue);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredOpeningTurnStartMs(gameId, turnIndex, startedAtMs) {
-  if (typeof window === "undefined" || !gameId || turnIndex < 0) {
-    return;
-  }
-
-  try {
-    window.sessionStorage.setItem(
-      buildOpeningClockStorageKey(gameId, turnIndex),
-      String(startedAtMs)
-    );
-  } catch {
-    // Ignore storage access failures and keep the timer only in memory.
-  }
-}
-
-function clearStoredOpeningTurnStartMs(gameId) {
-  if (typeof window === "undefined" || !gameId) {
-    return;
-  }
-
-  try {
-    window.sessionStorage.removeItem(buildOpeningClockStorageKey(gameId, 0));
-    window.sessionStorage.removeItem(buildOpeningClockStorageKey(gameId, 1));
-  } catch {
-    // Ignore storage cleanup failures.
-  }
-}
-
 function getEffectiveRemainingMs(
   roomState,
   playerId,
   nowMs,
-  fallbackTimeControlId = "",
-  openingTurnIndex = -1,
-  openingTurnStartMs = null
+  fallbackTimeControl = {}
 ) {
   const storedRemainingMs = Math.max(
     0,
-    getStoredRemainingMs(roomState, playerId, fallbackTimeControlId)
+    getStoredRemainingMs(roomState, playerId, fallbackTimeControl)
   );
 
   if (
-    openingTurnIndex >= 0 &&
-    roomState?.current_turn_user_id === playerId &&
-    Number.isFinite(openingTurnStartMs)
-  ) {
-    return Math.max(
-      0,
-      OPENING_MOVE_WINDOW_MS - Math.max(0, nowMs - openingTurnStartMs)
-    );
-  }
-
-  if (
-    !isTimedRoom(roomState, fallbackTimeControlId) ||
+    !isTimedRoom(roomState, fallbackTimeControl) ||
     roomState?.status !== "active" ||
     roomState?.current_turn_user_id !== playerId
   ) {
@@ -206,13 +75,9 @@ function getEffectiveRemainingMs(
   return Math.max(0, storedRemainingMs - Math.max(0, nowMs - startedAtMs));
 }
 
-function hasRunningClock(roomState, timed, openingTurnIndex, openingTurnStartMs) {
+function hasRunningClock(roomState, timed) {
   if (!timed) {
     return false;
-  }
-
-  if (openingTurnIndex >= 0 && Number.isFinite(openingTurnStartMs)) {
-    return true;
   }
 
   return Number.isFinite(Date.parse(roomState?.current_turn_started_at || ""));
@@ -246,7 +111,7 @@ function resolveTone(remainingMs, isActive, timed) {
 export function useGameClock({
   gameId,
   roomState,
-  fallbackTimeControlId = "",
+  fallbackTimeControl = null,
   currentUserId,
   opponentUserId,
   sessionToken,
@@ -255,44 +120,22 @@ export function useGameClock({
   onTimeoutResolved,
 }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [openingTurnStartMs, setOpeningTurnStartMs] = useState(null);
   const timeoutAttemptKeyRef = useRef("");
 
-  const timed = isTimedRoom(roomState, fallbackTimeControlId);
-  const gameStatus = String(roomState?.status || "").trim().toLowerCase();
-  const openingTurnIndex = getOpeningTurnIndex(roomState, fallbackTimeControlId);
-  const clockRunning = hasRunningClock(
-    roomState,
-    timed,
-    openingTurnIndex,
-    openingTurnStartMs
+  const resolvedFallbackTimeControl = useMemo(
+    () =>
+      typeof fallbackTimeControl === "string"
+        ? { time_control_id: fallbackTimeControl }
+        : fallbackTimeControl || {},
+    [fallbackTimeControl]
   );
-
-  useEffect(() => {
-    if (!gameId) {
-      setOpeningTurnStartMs(null);
-      return;
-    }
-
-    if (openingTurnIndex < 0 || gameStatus !== "active") {
-      setOpeningTurnStartMs(null);
-
-      if (gameStatus && gameStatus !== "active") {
-        clearStoredOpeningTurnStartMs(gameId);
-      }
-      return;
-    }
-
-    const storedStartedAtMs = readStoredOpeningTurnStartMs(gameId, openingTurnIndex);
-    if (Number.isFinite(storedStartedAtMs)) {
-      setOpeningTurnStartMs(storedStartedAtMs);
-      return;
-    }
-
-    const nextStartedAtMs = Date.now();
-    writeStoredOpeningTurnStartMs(gameId, openingTurnIndex, nextStartedAtMs);
-    setOpeningTurnStartMs(nextStartedAtMs);
-  }, [gameId, gameStatus, openingTurnIndex]);
+  const resolvedTimeControl = useMemo(
+    () => resolveTimeControlConfig(roomState, resolvedFallbackTimeControl),
+    [resolvedFallbackTimeControl, roomState]
+  );
+  const timed = Boolean(resolvedTimeControl.timed && resolvedTimeControl.baseMs > 0);
+  const gameStatus = String(roomState?.status || "").trim().toLowerCase();
+  const clockRunning = hasRunningClock(roomState, timed);
 
   useEffect(() => {
     if (!timed || gameStatus !== "active") {
@@ -311,17 +154,13 @@ export function useGameClock({
       roomState,
       currentUserId,
       nowMs,
-      fallbackTimeControlId,
-      openingTurnIndex,
-      openingTurnStartMs
+      resolvedTimeControl
     );
     const topRemainingMs = getEffectiveRemainingMs(
       roomState,
       opponentUserId,
       nowMs,
-      fallbackTimeControlId,
-      openingTurnIndex,
-      openingTurnStartMs
+      resolvedTimeControl
     );
     const activePlayerId = String(roomState?.current_turn_user_id || "").trim();
 
@@ -353,12 +192,10 @@ export function useGameClock({
   }, [
     clockRunning,
     currentUserId,
-    fallbackTimeControlId,
     nowMs,
-    openingTurnIndex,
-    openingTurnStartMs,
     opponentUserId,
     roomState,
+    resolvedTimeControl,
     timed,
   ]);
 
@@ -390,7 +227,6 @@ export function useGameClock({
     const timeoutKey = [
       gameId,
       playerClock.activePlayerId,
-      openingTurnIndex,
       roomState?.current_turn_started_at || "",
       roomState?.moves?.length || 0,
     ].join(":");
@@ -423,7 +259,6 @@ export function useGameClock({
     isLocalBotGame,
     isOnlineGame,
     onTimeoutResolved,
-    openingTurnIndex,
     playerClock.activePlayerId,
     playerClock.bottomRemainingMs,
     playerClock.topRemainingMs,

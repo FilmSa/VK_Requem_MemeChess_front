@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import InviteLobbyModal from "../../../components/organisms/InviteLobbyModal.jsx";
 import MainMenuPanelView from "../../../components/organisms/MainMenuPanel.jsx";
@@ -7,9 +7,11 @@ import {
   BOT_DIFFICULTY_OPTIONS,
   CUSTOMIZE_SECTIONS,
   MENU_ACTIONS,
+  BOARD_SKIN_ITEM_IDS,
   MENU_FIELD_LABELS,
   MENU_TABS,
   MODE_OPTIONS,
+  PIECE_SKIN_ITEM_IDS,
   resolveMatchmakingGameMode,
   resolveSelectedTimeControl,
   resolveTimeControlLabel,
@@ -19,8 +21,11 @@ import { useMainMenuPanelState } from "../model/useMainMenuPanelState.js";
 import { useInviteLobby } from "../../game/model/useInviteLobby.js";
 import { useMatchmaking } from "../../game/model/useMatchmaking.js";
 import { createRobotGame } from "../../game/gameApi.js";
+import { useInventory } from "../../inventory/useInventory.js";
 import { savePlaySession } from "../../game/playSession.js";
 import { useNotifications } from "../../notifications/useNotifications.js";
+import { updateEmojiQuickAccessIds } from "../../../shared/lib/emojiQuickAccess.js";
+import { useReliableNavigate } from "../../../shared/router/useReliableNavigate.js";
 
 function parseStakeValue(value) {
   const parsedValue = Number.parseInt(String(value || ""), 10);
@@ -41,8 +46,8 @@ function buildLocalBotPlayerProfile(user) {
 
 export default function MainMenuPanel({ style }) {
   const navigate = useNavigate();
+  const navigateToPlay = useReliableNavigate();
   const location = useLocation();
-  const navigationFallbackTimeoutRef = useRef(null);
   const inviteGameModeRef = useRef("classic");
   const inviteTimeControlRef = useRef(TIME_CONTROL_UNLIMITED);
   const {
@@ -52,6 +57,11 @@ export default function MainMenuPanel({ style }) {
     isInitializing,
     refreshCurrency,
   } = useAuth();
+  const {
+    ownedItems,
+    isInventoryLoading,
+    updateSelection,
+  } = useInventory();
   const { showNotification, dismissNotification } = useNotifications();
   const [panelError, setPanelError] = useState("");
   const [isPlayModalOpen, setIsPlayModalOpen] = useState(false);
@@ -64,50 +74,6 @@ export default function MainMenuPanel({ style }) {
   const [isCreatingRobot, setIsCreatingRobot] = useState(false);
   const [isInviteTimeControlEnabled, setIsInviteTimeControlEnabled] =
     useState(true);
-
-  const clearNavigationFallback = useCallback(() => {
-    if (navigationFallbackTimeoutRef.current) {
-      window.clearTimeout(navigationFallbackTimeoutRef.current);
-      navigationFallbackTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => clearNavigationFallback, [clearNavigationFallback]);
-
-  const navigateToPlay = useCallback(
-    (gameId, state = undefined) => {
-      if (!gameId) {
-        return;
-      }
-
-      clearNavigationFallback();
-
-      const encodedGameId = encodeURIComponent(gameId);
-      const playPath = `/play?game=${encodedGameId}`;
-      navigate(playPath, state ? { state } : undefined);
-
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      const usesHashRouter = import.meta.env.VITE_ROUTER_MODE === "hash";
-      const fallbackHref = usesHashRouter
-        ? `${window.location.origin}${window.location.pathname}${window.location.search}#${playPath}`
-        : new URL(playPath, window.location.href).toString();
-
-      navigationFallbackTimeoutRef.current = window.setTimeout(() => {
-        const isAlreadyOnTarget = usesHashRouter
-          ? window.location.hash === `#${playPath}`
-          : window.location.pathname === new URL(fallbackHref).pathname &&
-            window.location.search === new URL(fallbackHref).search;
-
-        if (!isAlreadyOnTarget) {
-          window.location.assign(fallbackHref);
-        }
-      }, 160);
-    },
-    [clearNavigationFallback, navigate]
-  );
 
   const {
     activeTab,
@@ -171,6 +137,11 @@ export default function MainMenuPanel({ style }) {
       const match = {
         gameMode: inviteGameModeRef.current || selectedGameMode,
         timeControlId: inviteTimeControlRef.current || TIME_CONTROL_UNLIMITED,
+        timeControlLabel: inviteLobby.inviteLobby?.timeControlLabel || "",
+        timeControlBaseMs: Number(inviteLobby.inviteLobby?.timeControlBaseMs ?? 0),
+        timeControlIncrementMs: Number(
+          inviteLobby.inviteLobby?.timeControlIncrementMs ?? 0
+        ),
       };
 
       savePlaySession({
@@ -181,7 +152,7 @@ export default function MainMenuPanel({ style }) {
       });
 
       setIsPlayModalOpen(false);
-      navigateToPlay(gameId, {
+      navigateToPlay(`/play?game=${encodeURIComponent(gameId)}`, {
         match,
         sessionToken: token,
         player: user,
@@ -210,6 +181,9 @@ export default function MainMenuPanel({ style }) {
         gameMode: result.gameMode,
         gameCurrency: result.gameCurrency,
         timeControlId: result.timeControlId || selectedTimeControl.id,
+        timeControlLabel: result.timeControlLabel || selectedTimeControl.label,
+        timeControlBaseMs: Number(result.timeControlBaseMs ?? 0),
+        timeControlIncrementMs: Number(result.timeControlIncrementMs ?? 0),
       };
 
       savePlaySession({
@@ -219,7 +193,7 @@ export default function MainMenuPanel({ style }) {
         player: user,
       });
 
-      navigateToPlay(result.gameId, {
+      navigateToPlay(`/play?game=${encodeURIComponent(result.gameId)}`, {
         match,
         sessionToken: token,
         player: user,
@@ -251,6 +225,66 @@ export default function MainMenuPanel({ style }) {
     setPanelError("");
     selectTab(tabId);
   }
+
+  const handleCustomizeCardSelect = useCallback(
+    (cardId) => {
+      setPanelError("");
+      selectCard(cardId);
+
+      if (!isAuthenticated || isInventoryLoading) {
+        return;
+      }
+
+      if (PIECE_SKIN_ITEM_IDS.has(cardId)) {
+        void updateSelection({ pieceSkinSlug: cardId }).catch((error) => {
+          setPanelError(
+            error?.message || "Не удалось сохранить выбранный набор фигур."
+          );
+        });
+        return;
+      }
+
+      if (BOARD_SKIN_ITEM_IDS.has(cardId)) {
+        void updateSelection({ boardSkinSlug: cardId }).catch((error) => {
+          setPanelError(
+            error?.message || "Не удалось сохранить выбранную доску."
+          );
+        });
+        return;
+      }
+
+      const nextEmoteSlugs = updateEmojiQuickAccessIds(
+        selectedEmojiQuickAccessIds,
+        cardId
+      );
+
+      void updateSelection({ emoteSlugs: nextEmoteSlugs }).catch((error) => {
+        setPanelError(
+          error?.message || "Не удалось сохранить выбранные эмоции."
+        );
+      });
+    },
+    [
+      isAuthenticated,
+      isInventoryLoading,
+      selectCard,
+      selectedEmojiQuickAccessIds,
+      updateSelection,
+    ]
+  );
+
+  const handleCardSelect = useCallback(
+    (cardId) => {
+      if (activeTab !== "customize") {
+        setPanelError("");
+        selectCard(cardId);
+        return;
+      }
+
+      handleCustomizeCardSelect(cardId);
+    },
+    [activeTab, handleCustomizeCardSelect, selectCard]
+  );
 
   function handleStartMatchmaking() {
     const minStake = parseStakeValue(depositFrom);
@@ -342,7 +376,7 @@ export default function MainMenuPanel({ style }) {
       });
 
       setIsPlayModalOpen(false);
-      navigateToPlay(gameId, {
+      navigateToPlay(`/play?game=${encodeURIComponent(gameId)}`, {
         match,
         player,
         localBotConfig: {
@@ -389,7 +423,7 @@ export default function MainMenuPanel({ style }) {
       });
 
       setIsPlayModalOpen(false);
-      navigateToPlay(response.gameId, {
+      navigateToPlay(`/play?game=${encodeURIComponent(response.gameId)}`, {
         match,
         sessionToken: token,
         player: user,
@@ -505,19 +539,50 @@ export default function MainMenuPanel({ style }) {
       : handleOpenPlayModal,
   };
 
+  const ownedItemsByType = useMemo(() => {
+    return ownedItems.reduce(
+      (result, item) => {
+        if (!item?.slug || !item?.type) {
+          return result;
+        }
+
+        if (!result[item.type]) {
+          result[item.type] = [];
+        }
+
+        result[item.type].push(item.slug);
+        return result;
+      },
+      {
+        emote: [],
+        board_skin: [],
+        piece_skin: [],
+      }
+    );
+  }, [ownedItems]);
+
   const customizeSections = CUSTOMIZE_SECTIONS.map((section) => {
     const itemsById = new Map(cards.map((item) => [item.id, item]));
     const quickAccessIds =
       section.id === "emoji"
         ? selectedEmojiQuickAccessIds
         : section.quickAccessIds;
+    const ownedIds = isAuthenticated
+      ? section.id === "emoji"
+        ? ownedItemsByType.emote
+        : section.id === "boards"
+        ? ownedItemsByType.board_skin
+        : section.id === "pieces"
+        ? ownedItemsByType.piece_skin
+        : []
+      : section.ownedIds;
 
     return {
       ...section,
       quickAccessItems: quickAccessIds
         .map((id) => itemsById.get(id))
         .filter(Boolean),
-      ownedItems: section.ownedIds.map((id) => itemsById.get(id)).filter(Boolean),
+      ownedItems: ownedIds.map((id) => itemsById.get(id)).filter(Boolean),
       selectedItemIds:
         section.id === "emoji"
           ? selectedEmojiQuickAccessIds
@@ -540,7 +605,7 @@ export default function MainMenuPanel({ style }) {
         onTabSelect={handleTabSelect}
         cards={cards}
         activeCardId={activeCardId}
-        onCardSelect={selectCard}
+        onCardSelect={handleCardSelect}
         modeField={modeField}
         memeField={memeField}
         depositField={depositField}

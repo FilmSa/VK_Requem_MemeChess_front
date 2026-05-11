@@ -30,17 +30,18 @@ export function useReliableNavigate() {
 
       const usesHashRouter = import.meta.env.VITE_ROUTER_MODE === "hash";
       const fallbackHref = new URL(buildAppHref(to), window.location.origin).toString();
-      const fallbackUrl = new URL(fallbackHref);
 
       fallbackTimerRef.current = window.setTimeout(() => {
-        const hasReachedTarget = usesHashRouter
-          ? window.location.hash === `#${to}`
-          : window.location.pathname === fallbackUrl.pathname &&
-            window.location.search === fallbackUrl.search;
+        const currentHref = usesHashRouter
+          ? `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`
+          : window.location.href;
 
-        if (!hasReachedTarget) {
+        if (currentHref !== fallbackHref) {
           window.location.assign(fallbackHref);
+          return;
         }
+
+        window.location.reload();
       }, 160);
     },
     [clearFallback, navigate]

@@ -15,6 +15,7 @@ import {
   readStoredEmojiQuickAccess,
   resolveEmojiQuickAccessItems,
   resolveEmojiReactionById,
+  subscribeEmojiQuickAccessChanges,
 } from "../shared/lib/emojiQuickAccess.js";
 import { withAssetBase } from "../shared/lib/assets.js";
 import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
@@ -438,6 +439,7 @@ export default function PlayPage() {
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [finishedEventResult, setFinishedEventResult] = useState(null);
   const [extraHighlightedSquares, setExtraHighlightedSquares] = useState({});
+  const [emojiQuickAccessIds, setEmojiQuickAccessIds] = useState([]);
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
@@ -468,7 +470,7 @@ export default function PlayPage() {
   const gameClock = useGameClock({
     gameId,
     roomState,
-    fallbackTimeControlId: activeRoom.matchTimeControlId,
+    fallbackTimeControl: activeRoom.matchTimeControl,
     currentUserId,
     opponentUserId: resolvedOpponentUserId,
     sessionToken: activeRoom.sessionToken,
@@ -491,9 +493,23 @@ export default function PlayPage() {
 
   const emojiOwnerId =
     activeRoom.currentUserProfile?.id || activeRoom.currentUserId || user?.id;
-  const emojiQuickAccessItems = useMemo(() => {
-    const quickAccessIds = readStoredEmojiQuickAccess(emojiOwnerId);
-    return resolveEmojiQuickAccessItems(quickAccessIds);
+  const emojiQuickAccessItems = useMemo(
+    () => resolveEmojiQuickAccessItems(emojiQuickAccessIds),
+    [emojiQuickAccessIds]
+  );
+
+  useEffect(() => {
+    setEmojiQuickAccessIds(readStoredEmojiQuickAccess(emojiOwnerId));
+  }, [emojiOwnerId]);
+
+  useEffect(() => {
+    if (!emojiOwnerId) {
+      return () => {};
+    }
+
+    return subscribeEmojiQuickAccessChanges(emojiOwnerId, (nextIds) => {
+      setEmojiQuickAccessIds(nextIds);
+    });
   }, [emojiOwnerId]);
 
   const socketOptions = onlineRoom.buildSocketOptions(chessGameState);

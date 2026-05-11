@@ -84,6 +84,20 @@ function buildError(error, fallbackMessage) {
   }
 
   if (
+    rawMessage.includes("username must contain only latin") ||
+    rawMessage.includes("username must be latin") ||
+    rawMessage.includes("username contains invalid characters")
+  ) {
+    return new ApiError("Используйте только латинские буквы, цифры и подчёркивание.", {
+      status: error.status,
+      fields: {
+        username: "Используйте только латинские буквы, цифры и подчёркивание.",
+      },
+      payload: error.payload,
+    });
+  }
+
+  if (
     error.status === 409 ||
     rawMessage.includes("username or email already taken")
   ) {

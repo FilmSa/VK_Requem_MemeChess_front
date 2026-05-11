@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth.js";
 import { joinFriendInvite } from "../inviteApi.js";
 import { savePlaySession } from "../playSession.js";
+import { useReliableNavigate } from "../../../shared/router/useReliableNavigate.js";
 
 function resolveInviteError(error) {
   const status = error?.status ?? 0;
@@ -21,7 +21,7 @@ function resolveInviteError(error) {
 }
 
 export function useInviteAcceptance(inviteToken) {
-  const navigate = useNavigate();
+  const navigate = useReliableNavigate();
   const { token: authToken, isInitializing } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -49,6 +49,9 @@ export function useInviteAcceptance(inviteToken) {
           match: {
             gameMode: response.gameMode,
             timeControlId: response.timeControlId,
+            timeControlLabel: response.timeControlLabel,
+            timeControlBaseMs: response.timeControlBaseMs,
+            timeControlIncrementMs: response.timeControlIncrementMs,
           },
           sessionToken: response.sessionToken,
           player: response.player,
@@ -60,6 +63,9 @@ export function useInviteAcceptance(inviteToken) {
             match: {
               gameMode: response.gameMode,
               timeControlId: response.timeControlId,
+              timeControlLabel: response.timeControlLabel,
+              timeControlBaseMs: response.timeControlBaseMs,
+              timeControlIncrementMs: response.timeControlIncrementMs,
             },
             sessionToken: response.sessionToken,
             player: response.player,

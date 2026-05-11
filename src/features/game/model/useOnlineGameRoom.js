@@ -3,6 +3,10 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth.js";
 import { getGameParticipants } from "../gameApi.js";
 import { readPlaySession } from "../playSession.js";
+import {
+  normalizeServerRoomState,
+  resolveTimeControlConfig,
+} from "./timeControl.js";
 
 function buildOnlineIdentity({ authUser, authToken, locationState, storedSession }) {
   return {
@@ -37,17 +41,16 @@ function normalizeMatch(match) {
     .trim()
     .toLowerCase();
   const gameCurrency = String(match.gameCurrency || match.game_currency || "").trim();
-  const timeControlId = String(
-    match.timeControlId || match.time_control_id || ""
-  )
-    .trim()
-    .toLowerCase();
+  const resolvedTimeControl = resolveTimeControlConfig(match);
 
   return {
     agreedStake: Number.isFinite(agreedStake) ? agreedStake : 0,
     gameMode,
     gameCurrency,
-    timeControlId,
+    timeControlId: resolvedTimeControl.id,
+    timeControlLabel: resolvedTimeControl.label,
+    timeControlBaseMs: resolvedTimeControl.baseMs,
+    timeControlIncrementMs: resolvedTimeControl.incrementMs,
   };
 }
 
@@ -101,10 +104,17 @@ export function useOnlineGameRoom(gameId) {
     () => normalizeMatch(location.state?.match) || normalizeMatch(storedSession?.match),
     [location.state, storedSession]
   );
+  const matchTimeControl = useMemo(() => resolveTimeControlConfig(match), [match]);
 
   const [roomState, setRoomState] = useState(null);
   const [socketError, setSocketError] = useState("");
   const [participants, setParticipants] = useState(null);
+  const applyRoomState = useCallback(
+    (nextState) => {
+      setRoomState(normalizeServerRoomState(nextState, matchTimeControl));
+    },
+    [matchTimeControl]
+  );
 
   const isOnlineGame = Boolean(gameId) && !isLocalBotSession;
   const isWaitingForAuthBootstrap =
@@ -184,9 +194,10 @@ export function useOnlineGameRoom(gameId) {
   ).trim();
   const resolvedGameMode =
     match?.gameMode || String(roomState?.game_mode || "").trim().toLowerCase();
-  const resolvedTimeControlId =
-    match?.timeControlId ||
-    String(roomState?.time_control_id || "").trim().toLowerCase();
+  const resolvedTimeControl = useMemo(
+    () => resolveTimeControlConfig(roomState, matchTimeControl),
+    [matchTimeControl, roomState]
+  );
   const opponentUserId =
     String(opponentProfile?.id || "").trim() ||
     (currentUserId && roomState?.player1_id === currentUserId
@@ -211,28 +222,34 @@ export function useOnlineGameRoom(gameId) {
         token: onlineIdentity.token,
         onJoined: (state) => {
           setSocketError("");
-          setRoomState(state);
-          chessGameState.syncFromServerState(state);
+          const normalizedState = normalizeServerRoomState(state, matchTimeControl);
+          setRoomState(normalizedState);
+          chessGameState.syncFromServerState(normalizedState);
         },
         onStateChange: (state) => {
           setSocketError("");
-          setRoomState(state);
+          const normalizedState = normalizeServerRoomState(state, matchTimeControl);
+          setRoomState(normalizedState);
 
           const localFen = chessGameState.getCurrentFen?.() || "";
-          const stateGameMode = String(state?.game_mode || match?.gameMode || "")
+          const stateGameMode = String(
+            normalizedState?.game_mode || match?.gameMode || ""
+          )
             .trim()
             .toLowerCase();
           const shouldForceSync =
-            Boolean(state?.bot_game) || isAlwaysSyncedMode(stateGameMode);
+            Boolean(normalizedState?.bot_game) || isAlwaysSyncedMode(stateGameMode);
           const shouldSyncByFen =
-            Boolean(state?.fen) && Boolean(localFen) && state.fen !== localFen;
+            Boolean(normalizedState?.fen) &&
+            Boolean(localFen) &&
+            normalizedState.fen !== localFen;
           const shouldSyncByMoveCount =
-            !state?.fen &&
-            Array.isArray(state?.moves) &&
-            state.moves.length !== chessGameState.moveCount;
+            !normalizedState?.fen &&
+            Array.isArray(normalizedState?.moves) &&
+            normalizedState.moves.length !== chessGameState.moveCount;
 
           if (shouldForceSync || shouldSyncByFen || shouldSyncByMoveCount) {
-            chessGameState.syncFromServerState(state);
+            chessGameState.syncFromServerState(normalizedState);
           }
         },
         onError: (error) => {
@@ -247,6 +264,7 @@ export function useOnlineGameRoom(gameId) {
       hasOnlineAccess,
       isOnlineGame,
       match?.gameMode,
+      matchTimeControl,
       onlineIdentity.token,
       onlineIdentity.user?.id,
     ]
@@ -270,9 +288,10 @@ export function useOnlineGameRoom(gameId) {
     matchGameMode: resolvedGameMode,
     matchGameModeLabel: resolveMatchGameModeLabel(resolvedGameMode),
     matchGameCurrencyLabel: resolveMatchCurrencyLabel(match?.gameCurrency || ""),
-    matchTimeControlId: resolvedTimeControlId,
+    matchTimeControlId: resolvedTimeControl.id,
+    matchTimeControl,
     isBotGame: Boolean(roomState?.bot_game),
-    applyRoomState: setRoomState,
+    applyRoomState,
     buildSocketOptions,
   };
 }

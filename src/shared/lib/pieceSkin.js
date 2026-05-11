@@ -1,5 +1,10 @@
+import {
+  DEFAULT_PIECE_SKIN_SLUG,
+  normalizePieceSkinSlug,
+} from "../constants/customizationCatalog.js";
+
 const PIECE_SKIN_STORAGE_KEY = "meme-chess.piece-skin";
-const DEFAULT_PIECE_SKIN_ID = "piece-skin-default";
+const DEFAULT_PIECE_SKIN_ID = DEFAULT_PIECE_SKIN_SLUG;
 
 function readStoredPieceSkin() {
   if (typeof window === "undefined") {
@@ -8,20 +13,22 @@ function readStoredPieceSkin() {
 
   try {
     const storedValue = window.localStorage.getItem(PIECE_SKIN_STORAGE_KEY);
-    return storedValue || DEFAULT_PIECE_SKIN_ID;
+    return normalizePieceSkinSlug(storedValue) || DEFAULT_PIECE_SKIN_ID;
   } catch {
     return DEFAULT_PIECE_SKIN_ID;
   }
 }
 
 function persistPieceSkin(skinId) {
+  const normalizedSkinId = normalizePieceSkinSlug(skinId) || DEFAULT_PIECE_SKIN_ID;
+
   if (typeof window === "undefined") {
     return;
   }
 
   try {
-    window.localStorage.setItem(PIECE_SKIN_STORAGE_KEY, skinId);
-    dispatchPieceSkinChange(skinId);
+    window.localStorage.setItem(PIECE_SKIN_STORAGE_KEY, normalizedSkinId);
+    dispatchPieceSkinChange(normalizedSkinId);
   } catch {
     // Ignore storage failures.
   }

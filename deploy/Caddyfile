@@ -13,6 +13,10 @@
 		reverse_proxy backend:8080
 	}
 
+	handle /emoji/* {
+		reverse_proxy backend:8080
+	}
+
 	handle /debug/* {
 		reverse_proxy backend:8080
 	}

@@ -3,13 +3,16 @@ import {
   EMOJI_PREVIEW_ITEMS,
   MAX_EMOJI_QUICK_ACCESS_ITEMS,
 } from "../constants/emojiPreviewMedia.js";
+import { normalizeEmoteSlug } from "../constants/customizationCatalog.js";
 import { withAssetBase } from "./assets.js";
 
 const emojiQuickAccessStorageKeyPrefix =
   "meme-chess.main-menu.emoji-quick-access";
+const emojiQuickAccessChangeEventName =
+  "meme-chess.main-menu.emoji-quick-access-change";
 
 function isEmojiCard(cardId) {
-  return typeof cardId === "string" && cardId.startsWith("emoji-");
+  return Boolean(normalizeEmoteSlug(cardId));
 }
 
 function getEmojiQuickAccessStorageKey(userId) {
@@ -39,12 +42,11 @@ export function readStoredEmojiQuickAccess(userId) {
     }
 
     const normalizedIds = parsedValue
-      .filter((value) => isEmojiCard(value))
+      .map((value) => normalizeEmoteSlug(value))
+      .filter(Boolean)
       .slice(0, MAX_EMOJI_QUICK_ACCESS_ITEMS);
 
-    return normalizedIds.length
-      ? normalizedIds
-      : DEFAULT_EMOJI_QUICK_ACCESS_IDS;
+    return normalizedIds;
   } catch {
     return DEFAULT_EMOJI_QUICK_ACCESS_IDS;
   }
@@ -57,31 +59,47 @@ export function persistEmojiQuickAccess(userId, quickAccessIds) {
   }
 
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(quickAccessIds));
+    const normalizedIds = quickAccessIds
+      .map((value) => normalizeEmoteSlug(value))
+      .filter(Boolean)
+      .slice(0, MAX_EMOJI_QUICK_ACCESS_ITEMS);
+    window.localStorage.setItem(storageKey, JSON.stringify(normalizedIds));
+    dispatchEmojiQuickAccessChange(userId, normalizedIds);
   } catch {
     // Ignore storage access issues and keep the selection in memory only.
   }
 }
 
 export function updateEmojiQuickAccessIds(currentIds, selectedId) {
-  if (!isEmojiCard(selectedId)) {
+  const normalizedSelectedId = normalizeEmoteSlug(selectedId);
+  if (!normalizedSelectedId) {
     return currentIds;
   }
 
   return [
-    selectedId,
-    ...currentIds.filter((currentId) => currentId !== selectedId),
+    normalizedSelectedId,
+    ...currentIds
+      .map((currentId) => normalizeEmoteSlug(currentId))
+      .filter(Boolean)
+      .filter((currentId) => currentId !== normalizedSelectedId),
   ].slice(0, MAX_EMOJI_QUICK_ACCESS_ITEMS);
 }
 
 export function resolveEmojiQuickAccessItems(quickAccessIds) {
   const itemsById = new Map(EMOJI_PREVIEW_ITEMS.map((item) => [item.id, item]));
 
-  return quickAccessIds.map((id) => itemsById.get(id)).filter(Boolean);
+  return quickAccessIds
+    .map((id) => normalizeEmoteSlug(id))
+    .filter(Boolean)
+    .map((id) => itemsById.get(id))
+    .filter(Boolean);
 }
 
 export function resolveEmojiReactionById(itemId) {
-  const item = EMOJI_PREVIEW_ITEMS.find((emojiItem) => emojiItem.id === itemId);
+  const normalizedItemId = normalizeEmoteSlug(itemId);
+  const item = EMOJI_PREVIEW_ITEMS.find(
+    (emojiItem) => emojiItem.id === normalizedItemId
+  );
 
   if (!item) {
     return null;
@@ -92,5 +110,45 @@ export function resolveEmojiReactionById(itemId) {
     title: item.title,
     videoSrc: item.videoSrc || "",
     imageSrc: item.imageSrc || withAssetBase("/images/default-emoji.png"),
+  };
+}
+
+function dispatchEmojiQuickAccessChange(userId, quickAccessIds) {
+  if (typeof window === "undefined" || typeof window.CustomEvent !== "function") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(emojiQuickAccessChangeEventName, {
+      detail: {
+        userId: String(userId || "").trim(),
+        quickAccessIds,
+      },
+    })
+  );
+}
+
+export function subscribeEmojiQuickAccessChanges(userId, callback) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const normalizedUserId = String(userId || "").trim();
+  const listener = (event) => {
+    if (!event?.detail) {
+      return;
+    }
+
+    if (String(event.detail.userId || "").trim() !== normalizedUserId) {
+      return;
+    }
+
+    callback(event.detail.quickAccessIds || DEFAULT_EMOJI_QUICK_ACCESS_IDS);
+  };
+
+  window.addEventListener(emojiQuickAccessChangeEventName, listener);
+
+  return () => {
+    window.removeEventListener(emojiQuickAccessChangeEventName, listener);
   };
 }

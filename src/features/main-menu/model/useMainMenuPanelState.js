@@ -9,15 +9,18 @@ import {
 import {
   persistBoardSkin,
   readStoredBoardSkin,
+  subscribeBoardSkinChanges,
 } from "../../../shared/lib/boardSkin.js";
 import {
   persistEmojiQuickAccess,
   readStoredEmojiQuickAccess,
+  subscribeEmojiQuickAccessChanges,
   updateEmojiQuickAccessIds,
 } from "../../../shared/lib/emojiQuickAccess.js";
 import {
   persistPieceSkin,
   readStoredPieceSkin,
+  subscribePieceSkinChanges,
 } from "../../../shared/lib/pieceSkin.js";
 import {
   persistMemeMode,
@@ -60,6 +63,16 @@ export function useMainMenuPanelState({ userId } = {}) {
   }, [userId]);
 
   useEffect(() => {
+    if (!userId) {
+      return () => {};
+    }
+
+    return subscribeEmojiQuickAccessChanges(userId, (nextIds) => {
+      setSelectedEmojiQuickAccessIds(nextIds);
+    });
+  }, [userId]);
+
+  useEffect(() => {
     persistEmojiQuickAccess(userId, selectedEmojiQuickAccessIds);
   }, [selectedEmojiQuickAccessIds, userId]);
 
@@ -68,11 +81,23 @@ export function useMainMenuPanelState({ userId } = {}) {
   }, []);
 
   useEffect(() => {
+    return subscribePieceSkinChanges((skinId) => {
+      setSelectedPieceSkin(skinId);
+    });
+  }, []);
+
+  useEffect(() => {
     persistPieceSkin(selectedPieceSkin);
   }, [selectedPieceSkin]);
 
   useEffect(() => {
     setSelectedBoardSkin(readStoredBoardSkin());
+  }, []);
+
+  useEffect(() => {
+    return subscribeBoardSkinChanges((skinId) => {
+      setSelectedBoardSkin(skinId);
+    });
   }, []);
 
   useEffect(() => {

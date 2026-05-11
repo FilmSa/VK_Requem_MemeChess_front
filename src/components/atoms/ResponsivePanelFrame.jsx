@@ -13,6 +13,7 @@ export default function ResponsivePanelFrame({
   baseHeight,
   style,
   className = "",
+  horizontalAlign = "center",
   children,
 }) {
   const resizeObserverRef = useRef(null);
@@ -73,12 +74,19 @@ export default function ResponsivePanelFrame({
     const heightScale = containerSize.height / baseHeight;
     const scale = resolveScale(Math.min(widthScale, heightScale));
     const scaledWidth = baseWidth * scale;
+    const centeredLeft = Math.max((containerSize.width - scaledWidth) / 2, 0);
 
     return {
       scale,
-      left: Math.max((containerSize.width - scaledWidth) / 2, 0),
+      left: horizontalAlign === "left" ? 0 : centeredLeft,
     };
-  }, [baseHeight, baseWidth, containerSize.height, containerSize.width]);
+  }, [
+    baseHeight,
+    baseWidth,
+    containerSize.height,
+    containerSize.width,
+    horizontalAlign,
+  ]);
 
   return (
     <div

@@ -1,20 +1,39 @@
 import { withAssetBase } from "../../../shared/lib/assets.js";
 import { DEFAULT_PIECE_SKIN_ID } from "../../../shared/lib/pieceSkin.js";
 
-const makePiece = (src, alt) => ({ squareWidth, isDragging }) => (
-  <img
-    src={src}
-    alt={alt}
-    style={{
-      width: squareWidth * 0.8,
-      height: squareWidth * 0.8,
-      margin: squareWidth * 0.1,
-      opacity: isDragging ? 0.75 : 1,
-      pointerEvents: "none",
-      userSelect: "none",
-    }}
-  />
-);
+function resolveIntroDelay(square) {
+  if (typeof square !== "string" || square.length < 2) {
+    return 0;
+  }
+
+  const file = square[0]?.toLowerCase();
+  const rank = Number.parseInt(square[1], 10);
+  const fileIndex = Math.max(0, "abcdefgh".indexOf(file));
+  const rankBand = [8, 7, 2, 1].indexOf(rank);
+  const safeRankBand = rankBand >= 0 ? rankBand : 0;
+
+  return fileIndex * 60 + safeRankBand * 18;
+}
+
+const makePiece =
+  (src, alt, { animateIntro = false } = {}) =>
+  ({ squareWidth, isDragging, square }) => (
+    <img
+      src={src}
+      alt={alt}
+      className={animateIntro ? "board-piece-image board-piece-image--intro" : "board-piece-image"}
+      style={{
+        width: squareWidth * 0.8,
+        height: squareWidth * 0.8,
+        margin: squareWidth * 0.1,
+        opacity: isDragging ? 0.75 : 1,
+        pointerEvents: "none",
+        userSelect: "none",
+        transformOrigin: "50% 100%",
+        animationDelay: animateIntro ? `${resolveIntroDelay(square)}ms` : undefined,
+      }}
+    />
+  );
 
 const pieceSkins = {
   [DEFAULT_PIECE_SKIN_ID]: {
@@ -89,22 +108,22 @@ const pieceSkins = {
   },
 };
 
-function createCustomPieces(skinId = DEFAULT_PIECE_SKIN_ID) {
+function createCustomPieces(skinId = DEFAULT_PIECE_SKIN_ID, options = {}) {
   const skin = pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
 
   return {
-    wK: makePiece(skin.wK, "wK"),
-    wQ: makePiece(skin.wQ, "wQ"),
-    wR: makePiece(skin.wR, "wR"),
-    wB: makePiece(skin.wB, "wB"),
-    wN: makePiece(skin.wN, "wN"),
-    wP: makePiece(skin.wP, "wP"),
-    bK: makePiece(skin.bK, "bK"),
-    bQ: makePiece(skin.bQ, "bQ"),
-    bR: makePiece(skin.bR, "bR"),
-    bB: makePiece(skin.bB, "bB"),
-    bN: makePiece(skin.bN, "bN"),
-    bP: makePiece(skin.bP, "bP"),
+    wK: makePiece(skin.wK, "wK", options),
+    wQ: makePiece(skin.wQ, "wQ", options),
+    wR: makePiece(skin.wR, "wR", options),
+    wB: makePiece(skin.wB, "wB", options),
+    wN: makePiece(skin.wN, "wN", options),
+    wP: makePiece(skin.wP, "wP", options),
+    bK: makePiece(skin.bK, "bK", options),
+    bQ: makePiece(skin.bQ, "bQ", options),
+    bR: makePiece(skin.bR, "bR", options),
+    bB: makePiece(skin.bB, "bB", options),
+    bN: makePiece(skin.bN, "bN", options),
+    bP: makePiece(skin.bP, "bP", options),
   };
 }
 

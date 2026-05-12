@@ -44,6 +44,7 @@ export function useInviteLobby({
   const [inviteLobby, setInviteLobby] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const waitingSocketRef = useRef(null);
+  const autoEnterHandledGameIdRef = useRef("");
 
   const closeInviteSocket = useCallback(() => {
     waitingSocketRef.current?.close();
@@ -52,6 +53,7 @@ export function useInviteLobby({
 
   const clearInviteLobby = useCallback(() => {
     closeInviteSocket();
+    autoEnterHandledGameIdRef.current = "";
     setInviteLobby(null);
     setIsInviteModalOpen(false);
   }, [closeInviteSocket]);
@@ -75,6 +77,7 @@ export function useInviteLobby({
       return;
     }
 
+    autoEnterHandledGameIdRef.current = gameId;
     closeInviteSocket();
     setIsInviteModalOpen(false);
     onGameReady?.(gameId);
@@ -87,11 +90,21 @@ export function useInviteLobby({
       return undefined;
     }
 
+    const gameId = String(inviteLobby.gameId).trim();
+    if (!gameId || autoEnterHandledGameIdRef.current === gameId) {
+      return undefined;
+    }
+
     const timeoutId = window.setTimeout(() => {
+      if (autoEnterHandledGameIdRef.current === gameId) {
+        return;
+      }
+
+      autoEnterHandledGameIdRef.current = gameId;
       closeInviteSocket();
       setIsInviteModalOpen(false);
-      onGameReady?.(inviteLobby.gameId);
-    }, 250);
+      onGameReady?.(gameId);
+    }, 0);
 
     return () => window.clearTimeout(timeoutId);
   }, [
@@ -267,17 +280,18 @@ export function useInviteLobby({
   const createInvite = useCallback(
     async ({ gameMode = "classic", timeControlId = "unlimited" } = {}) => {
       if (isInitializing) {
-        return;
+        return null;
       }
 
     if (!isAuthenticated) {
       onAuthRequired?.();
-      return;
+      return null;
     }
 
     setIsCreatingInvite(true);
     setInviteError("");
     clearInviteLobby();
+    autoEnterHandledGameIdRef.current = "";
 
     try {
       const response = await createFriendInvite(token, gameMode, timeControlId);
@@ -299,12 +313,14 @@ export function useInviteLobby({
         connectionError: "",
       });
       setIsInviteModalOpen(true);
+      return response;
     } catch (error) {
       setInviteError(
         error.message ||
           "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u0441\u0441\u044b\u043b\u043a\u0443-\u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435."
       );
       setIsInviteModalOpen(false);
+      return null;
     } finally {
       setIsCreatingInvite(false);
     }

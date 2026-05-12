@@ -26,6 +26,10 @@ import { savePlaySession } from "../../game/playSession.js";
 import { useNotifications } from "../../notifications/useNotifications.js";
 import { updateEmojiQuickAccessIds } from "../../../shared/lib/emojiQuickAccess.js";
 import { useReliableNavigate } from "../../../shared/router/useReliableNavigate.js";
+import {
+  buildChess960InitialFen,
+  buildStandardInitialFen,
+} from "../../chess/lib/chess960.js";
 
 function parseStakeValue(value) {
   const parsedValue = Number.parseInt(String(value || ""), 10);
@@ -44,7 +48,7 @@ function buildLocalBotPlayerProfile(user) {
   };
 }
 
-export default function MainMenuPanel({ style }) {
+export default function MainMenuPanel({ style, onPreviewStateChange }) {
   const navigate = useNavigate();
   const navigateToPlay = useReliableNavigate();
   const location = useLocation();
@@ -74,6 +78,9 @@ export default function MainMenuPanel({ style }) {
   const [isCreatingRobot, setIsCreatingRobot] = useState(false);
   const [isInviteTimeControlEnabled, setIsInviteTimeControlEnabled] =
     useState(true);
+  const [selectedFischerFen, setSelectedFischerFen] = useState(() =>
+    buildChess960InitialFen()
+  );
 
   const {
     activeTab,
@@ -102,6 +109,10 @@ export default function MainMenuPanel({ style }) {
 
   const selectedGameMode = resolveMatchmakingGameMode(selectedMode);
   const selectedTimeControl = resolveSelectedTimeControl(activeCardId);
+  const previewInitialFen =
+    selectedGameMode === "fischer"
+      ? selectedFischerFen
+      : buildStandardInitialFen();
   const canUseClientBot = selectedGameMode === "classic";
   const clientBotHint = canUseClientBot
     ? "Партия и расчеты бота пойдут локально и будут доступны офлайн после первой загрузки приложения."
@@ -153,9 +164,11 @@ export default function MainMenuPanel({ style }) {
 
       setIsPlayModalOpen(false);
       navigateToPlay(`/play?game=${encodeURIComponent(gameId)}`, {
-        match,
-        sessionToken: token,
-        player: user,
+        state: {
+          match,
+          sessionToken: token,
+          player: user,
+        },
       });
     },
   });
@@ -194,15 +207,21 @@ export default function MainMenuPanel({ style }) {
       });
 
       navigateToPlay(`/play?game=${encodeURIComponent(result.gameId)}`, {
-        match,
-        sessionToken: token,
-        player: user,
+        state: {
+          match,
+          sessionToken: token,
+          player: user,
+        },
       });
     },
   });
 
   function handleModeSelect(option) {
     setPanelError("");
+    setRobotError("");
+    if (resolveMatchmakingGameMode(option) === "fischer") {
+      setSelectedFischerFen(buildChess960InitialFen());
+    }
     setSelectedMode(option);
     setIsModeOpen(false);
   }
@@ -377,13 +396,15 @@ export default function MainMenuPanel({ style }) {
 
       setIsPlayModalOpen(false);
       navigateToPlay(`/play?game=${encodeURIComponent(gameId)}`, {
-        match,
-        player,
-        localBotConfig: {
-          enabled: true,
-          computeMode: "client",
-          gameMode: selectedGameMode,
-          difficulty: robotDifficulty,
+        state: {
+          match,
+          player,
+          localBotConfig: {
+            enabled: true,
+            computeMode: "client",
+            gameMode: selectedGameMode,
+            difficulty: robotDifficulty,
+          },
         },
       });
       return;
@@ -424,9 +445,11 @@ export default function MainMenuPanel({ style }) {
 
       setIsPlayModalOpen(false);
       navigateToPlay(`/play?game=${encodeURIComponent(response.gameId)}`, {
-        match,
-        sessionToken: token,
-        player: user,
+        state: {
+          match,
+          sessionToken: token,
+          player: user,
+        },
       });
     } catch (error) {
       setRobotError(
@@ -514,6 +537,27 @@ export default function MainMenuPanel({ style }) {
 
     setIsClientBotEnabled(false);
   }, [canUseClientBot]);
+
+  useEffect(() => {
+    onPreviewStateChange?.({
+      gameMode: selectedGameMode,
+      gameModeLabel: selectedMode,
+      timeControlId: selectedTimeControl.id,
+      timeControlLabel: selectedTimeControl.label,
+      timeControlBaseMs: selectedTimeControl.baseMs ?? 0,
+      timeControlIncrementMs: selectedTimeControl.incrementMs ?? 0,
+      initialFen: previewInitialFen,
+    });
+  }, [
+    onPreviewStateChange,
+    previewInitialFen,
+    selectedGameMode,
+    selectedMode,
+    selectedTimeControl.baseMs,
+    selectedTimeControl.id,
+    selectedTimeControl.incrementMs,
+    selectedTimeControl.label,
+  ]);
 
   const actions = {
     startLabel: matchmaking.isSearching

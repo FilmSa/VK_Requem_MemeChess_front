@@ -433,6 +433,7 @@ function buildMoveHistoryDtos(history) {
 export function useChessGame(options = {}) {
   const params = getGameParams();
   const playerColor = options.playerColor || params.playerColor || "w";
+  const allowBothColors = Boolean(options.allowBothColors);
   const gameMode = String(options.gameMode || "").trim().toLowerCase();
   const usesServerAuthoritativeRules =
     Boolean(options.forceServerAuthoritative) || isServerAuthoritativeMode(gameMode);
@@ -620,6 +621,10 @@ export function useChessGame(options = {}) {
   }
 
   function isPlayersTurn(chessInstance = gameRef.current) {
+    if (allowBothColors) {
+      return true;
+    }
+
     return chessInstance.turn() === playerColor;
   }
 
@@ -630,7 +635,7 @@ export function useChessGame(options = {}) {
     if (!isPlayersTurn(chessInstance)) {
       return false;
     }
-    return piece.color === playerColor;
+    return allowBothColors ? true : piece.color === playerColor;
   }
 
   function getLegalMoves(square, chessInstance = gameRef.current) {

@@ -29,6 +29,7 @@ export default function ChessBoardSection({
   topPlayerTimerActive = false,
   bottomPlayerTimerActive = false,
   boardOverlay = null,
+  animateIntroPieces = false,
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -119,6 +120,7 @@ export default function ChessBoardSection({
           canDragPieces={canDragPieces}
           isPieceDraggable={isPieceDraggable}
           overlayContent={boardOverlay}
+          animateIntroPieces={animateIntroPieces}
         />
 
         <div

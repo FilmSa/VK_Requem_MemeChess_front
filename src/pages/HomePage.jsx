@@ -1,13 +1,80 @@
+import { useEffect, useState } from "react";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import ChessBoardSection from "../features/chess/ui/ChessBoardSection.jsx";
 import MainMenuPanel from "../features/main-menu/ui/MainMenuPanel.jsx";
 import { useChessGame } from "../features/chess/hooks/useChessGame.js";
 import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
+import {
+  DEFAULT_CARD_IDS,
+  MODE_OPTIONS,
+  resolveMatchmakingGameMode,
+  resolveSelectedTimeControl,
+} from "../features/main-menu/config/menuConfig.js";
+import { buildStandardInitialFen } from "../features/chess/lib/chess960.js";
+
+function formatPreviewClock(baseMs) {
+  if (!Number.isFinite(baseMs) || baseMs <= 0) {
+    return "∞";
+  }
+
+  const totalSeconds = Math.max(0, Math.ceil(baseMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function HomePreviewBoard({
+  initialFen,
+  gameMode,
+  boardWidth,
+  onLayoutMetricsChange,
+  topPlayerTime,
+  bottomPlayerTime,
+  animateIntroPieces,
+}) {
+  const chessGameState = useChessGame({
+    allowBothColors: true,
+    gameMode,
+    initialFen,
+  });
+
+  return (
+    <ChessBoardSection
+      gameState={chessGameState}
+      boardWidth={boardWidth}
+      onLayoutMetricsChange={onLayoutMetricsChange}
+      topPlayerTime={topPlayerTime}
+      bottomPlayerTime={bottomPlayerTime}
+      animateIntroPieces={animateIntroPieces}
+    />
+  );
+}
 
 export default function HomePage() {
-  const chessGameState = useChessGame();
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
+  const defaultTimeControl = resolveSelectedTimeControl(DEFAULT_CARD_IDS.new);
+  const [previewState, setPreviewState] = useState(() => ({
+    gameMode: resolveMatchmakingGameMode(MODE_OPTIONS[0]),
+    timeControlBaseMs: defaultTimeControl.baseMs ?? 0,
+    initialFen: buildStandardInitialFen(),
+  }));
+  const [animateIntroPieces, setAnimateIntroPieces] = useState(false);
+  const previewClock = formatPreviewClock(previewState.timeControlBaseMs);
+  const previewBoardKey = `${previewState.gameMode}:${previewState.initialFen}`;
+
+  useEffect(() => {
+    setAnimateIntroPieces(true);
+
+    const stopAnimationTimer = window.setTimeout(() => {
+      setAnimateIntroPieces(false);
+    }, 2200);
+
+    return () => {
+      clearTimeout(stopAnimationTimer);
+    };
+  }, [previewBoardKey]);
 
   return (
     <div className="app-page h-screen w-screen overflow-hidden">
@@ -21,11 +88,15 @@ export default function HomePage() {
             style={{ gap: layout.contentGap }}
           >
             <div className="flex h-full min-w-0 flex-1 justify-center overflow-hidden">
-              <ChessBoardSection
-                gameState={chessGameState}
-                enableSocket={false}
+              <HomePreviewBoard
+                key={previewBoardKey}
+                initialFen={previewState.initialFen}
+                gameMode={previewState.gameMode}
                 boardWidth={layout.boardSize}
                 onLayoutMetricsChange={handleBoardMetricsChange}
+                topPlayerTime={previewClock}
+                bottomPlayerTime={previewClock}
+                animateIntroPieces={animateIntroPieces}
               />
             </div>
 
@@ -40,6 +111,7 @@ export default function HomePage() {
                   width: "100%",
                   height: layout.panelHeight,
                 }}
+                onPreviewStateChange={setPreviewState}
               />
             </div>
           </div>

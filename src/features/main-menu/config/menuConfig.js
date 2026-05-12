@@ -24,21 +24,29 @@ export const TIME_CONTROL_PRESETS = {
     id: "classic",
     label: "30+9",
     title: "Classic",
+    baseMs: 30 * 60 * 1000,
+    incrementMs: 9 * 1000,
   },
   rapid: {
     id: "rapid",
     label: "15+9",
     title: "Rapid",
+    baseMs: 15 * 60 * 1000,
+    incrementMs: 9 * 1000,
   },
   blitz: {
     id: "blitz",
     label: "3+2",
     title: "Blitz",
+    baseMs: 3 * 60 * 1000,
+    incrementMs: 2 * 1000,
   },
   bullet: {
     id: "bullet",
     label: "1+5",
     title: "Bullet",
+    baseMs: 60 * 1000,
+    incrementMs: 5 * 1000,
   },
 };
 

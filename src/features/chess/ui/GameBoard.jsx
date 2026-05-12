@@ -24,6 +24,7 @@ export default function GameBoard({
   canDragPieces,
   isPieceDraggable,
   overlayContent = null,
+  animateIntroPieces = false,
 }) {
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
@@ -45,8 +46,11 @@ export default function GameBoard({
   }, []);
 
   const customPieces = useMemo(
-    () => createCustomPieces(selectedPieceSkin),
-    [selectedPieceSkin]
+    () =>
+      createCustomPieces(selectedPieceSkin, {
+        animateIntro: animateIntroPieces,
+      }),
+    [animateIntroPieces, selectedPieceSkin]
   );
   const boardSkinConfig = useMemo(
     () => getBoardSkinConfig(selectedBoardSkin),

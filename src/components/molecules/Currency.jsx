@@ -2,24 +2,6 @@ import Badge from "../atoms/Badge";
 import Icon from "../atoms/Icon";
 import Text from "../atoms/Text";
 
-function resolveValueFontSize(value) {
-  const text = String(value ?? "").trim();
-
-  if (text.length >= 12) {
-    return "11px";
-  }
-
-  if (text.length >= 9) {
-    return "12px";
-  }
-
-  if (text.length >= 7) {
-    return "13px";
-  }
-
-  return "14px";
-}
-
 export default function CurrencyBadge({
   icon,
   value,
@@ -42,11 +24,11 @@ export default function CurrencyBadge({
         borderRadius: "18px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        gap: "12px",
+        justifyContent: "flex-start",
+        gap: "4px",
       }}
     >
-      <div className="flex min-w-0 items-center gap-[10px]">
+      <div className="flex min-w-0 items-center gap-[4px]">
         <Icon
           src={icon}
           alt=""
@@ -54,7 +36,7 @@ export default function CurrencyBadge({
         />
         {label ? (
           <Text
-            className="truncate text-[12px] font-semibold uppercase tracking-[0.12em] leading-none"
+            className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] leading-none"
             style={{
               fontFamily: '"Unbounded", sans-serif',
               color: textColor,
@@ -70,7 +52,7 @@ export default function CurrencyBadge({
         style={{
           fontFamily: '"Unbounded", sans-serif',
           color: textColor,
-          fontSize: resolveValueFontSize(value),
+          fontSize: "12px",
         }}
       >
         {value}

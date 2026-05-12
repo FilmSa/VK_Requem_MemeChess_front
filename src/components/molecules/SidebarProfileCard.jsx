@@ -161,7 +161,7 @@ export default function SidebarProfileCard({
           </div>
         </a>
 
-        <div className="flex gap-[8px]">
+        <div className="flex gap-[3px]">
           <div className="min-w-0 flex-1">
             <CurrencyBadge
               onClick={openCurrencyConvertModal}

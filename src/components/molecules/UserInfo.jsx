@@ -3,6 +3,48 @@ import { createPortal } from "react-dom";
 import Avatar from "../atoms/Avatar";
 import Text from "../atoms/Text";
 
+function VolumeIcon({ muted = false }) {
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 10h4l5-4v12l-5-4H4z"
+        fill={muted ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.88)"}
+      />
+      {muted ? (
+        <path
+          d="M16 9l5 6M21 9l-5 6"
+          stroke="rgba(255,120,120,0.92)"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+        />
+      ) : (
+        <>
+          <path
+            d="M16 9.2c1.2.8 1.9 1.95 1.9 2.8 0 .85-.7 2-1.9 2.8"
+            stroke="rgba(255,255,255,0.72)"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M18.9 6.8c2.1 1.6 3.1 3.37 3.1 5.2s-1 3.6-3.1 5.2"
+            stroke="rgba(30,224,255,0.9)"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function ReactionOverlay({ anchorRef, reaction }) {
   const [position, setPosition] = useState(null);
 
@@ -78,8 +120,19 @@ function ReactionOverlay({ anchorRef, reaction }) {
   );
 }
 
-export default function UserInfo({ name, level, avatar, reaction }) {
+export default function UserInfo({
+  name,
+  level,
+  avatar,
+  reaction,
+  emojiVolume = 0.5,
+  onEmojiVolumeChange,
+  showEmojiVolumeControl = false,
+}) {
   const infoRef = useRef(null);
+  const clampedEmojiVolume = Math.min(1, Math.max(0, Number(emojiVolume) || 0));
+  const emojiVolumePercent = Math.round(clampedEmojiVolume * 100);
+  const emojiSliderFill = `${emojiVolumePercent}%`;
 
   return (
     <div
@@ -96,15 +149,59 @@ export default function UserInfo({ name, level, avatar, reaction }) {
       <ReactionOverlay anchorRef={infoRef} reaction={reaction} />
 
       <div className="flex flex-col justify-center">
-        <Text
-          className="text-[14px] font-medium leading-[1.2] text-white"
-          style={{
-            fontFamily: '"Unbounded", sans-serif',
-            color: "var(--player-panel-name)",
-          }}
-        >
-          {name}
-        </Text>
+        <div className="flex items-center gap-[8px]">
+          <Text
+            className="text-[14px] font-medium leading-[1.2] text-white"
+            style={{
+              fontFamily: '"Unbounded", sans-serif',
+              color: "var(--player-panel-name)",
+            }}
+          >
+            {name}
+          </Text>
+
+          {showEmojiVolumeControl ? (
+            <div className="group relative flex items-center">
+              <button
+                type="button"
+                className="flex items-center justify-center border-none bg-transparent p-0 outline-none transition focus:outline-none"
+                style={{ background: "transparent", outline: "none", boxShadow: "none" }}
+                title="Громкость эмодзи"
+              >
+                <VolumeIcon muted={clampedEmojiVolume <= 0.001} />
+              </button>
+
+              <div className="pointer-events-none absolute left-full top-1/2 z-[120] ml-[8px] -translate-y-1/2 opacity-0 transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                <div className="flex items-center gap-[10px] rounded-tl-[14px] rounded-br-[14px] bg-[#11172f]/95 px-[12px] py-[10px] shadow-[0_14px_32px_rgba(0,0,0,0.38)] backdrop-blur">
+                  <span
+                    className="whitespace-nowrap text-[10px] uppercase tracking-[0.12em]"
+                    style={{
+                      color: "var(--color-text-muted)",
+                      fontFamily: '"Unbounded", sans-serif',
+                    }}
+                  >
+                    Громкость эмодзи
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={clampedEmojiVolume}
+                    onChange={(event) =>
+                      onEmojiVolumeChange?.(event.target.valueAsNumber)
+                    }
+                    aria-label="Громкость эмодзи"
+                    className="h-[4px] w-[120px] cursor-pointer appearance-none rounded-full bg-transparent"
+                    style={{
+                      background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${emojiSliderFill}, rgba(255,255,255,0.14) ${emojiSliderFill}, rgba(255,255,255,0.14) 100%)`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         {level ? (
           <Text

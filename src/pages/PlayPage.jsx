@@ -22,6 +22,16 @@ import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useRespons
 import { useNotifications } from "../features/notifications/useNotifications.js";
 import GameResultModal from "../components/organisms/GameResultModal.jsx";
 import { useReliableNavigate } from "../shared/router/useReliableNavigate.js";
+import {
+  persistMemeEffectsVolume,
+  readStoredMemeEffectsVolume,
+  subscribeMemeEffectsVolumeChanges,
+} from "../shared/lib/memeEffectsVolume.js";
+import {
+  persistEmojiVolume,
+  readStoredEmojiVolume,
+  subscribeEmojiVolumeChanges,
+} from "../shared/lib/emojiVolume.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -434,6 +444,10 @@ export default function PlayPage() {
   const [topReaction, setTopReaction] = useState(null);
   const [bottomReaction, setBottomReaction] = useState(null);
   const [emojiCooldownActive, setEmojiCooldownActive] = useState(false);
+  const [memeEffectsVolume, setMemeEffectsVolume] = useState(() =>
+    readStoredMemeEffectsVolume()
+  );
+  const [emojiVolume, setEmojiVolume] = useState(() => readStoredEmojiVolume());
   const [actionNotice, setActionNotice] = useState("");
   const [isResignConfirmMode, setIsResignConfirmMode] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -443,6 +457,7 @@ export default function PlayPage() {
   const topReactionTimeoutRef = useRef(null);
   const bottomReactionTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
+  const activeReactionAudioEntriesRef = useRef(new Set());
   const finishedCurrencyRefreshKeyRef = useRef("");
   const lastEvolutionMoveCountRef = useRef(null);
   const { viewportRef, layout, handleBoardMetricsChange } =
@@ -584,6 +599,20 @@ export default function PlayPage() {
     ? [gameId, finishedReason, winnerId, roomState?.moves?.length || 0].join(":")
     : "";
 
+  function updateActiveReactionAudioVolumes(nextLayerVolume = emojiVolume) {
+    activeReactionAudioEntriesRef.current.forEach((entry) => {
+      if (!entry?.audio || entry.audio.ended) {
+        activeReactionAudioEntriesRef.current.delete(entry);
+        return;
+      }
+
+      entry.audio.volume = Math.min(
+        1,
+        Math.max(0, entry.baseVolume * nextLayerVolume)
+      );
+    });
+  }
+
   function playEmojiSound(reaction) {
     const reactionPayload = normalizeReactionInput(reaction);
     if (!reactionPayload?.soundSrc) {
@@ -591,7 +620,18 @@ export default function PlayPage() {
     }
 
     const sound = new Audio(reactionPayload.soundSrc);
-    sound.volume = 0.65;
+    const entry = {
+      audio: sound,
+      baseVolume: 0.65,
+    };
+    const unregisterAudio = () => {
+      activeReactionAudioEntriesRef.current.delete(entry);
+    };
+
+    sound.volume = Math.min(1, Math.max(0, entry.baseVolume * emojiVolume));
+    activeReactionAudioEntriesRef.current.add(entry);
+    sound.addEventListener("ended", unregisterAudio, { once: true });
+    sound.addEventListener("error", unregisterAudio, { once: true });
     sound.play().catch(() => {});
   }
 
@@ -811,10 +851,31 @@ export default function PlayPage() {
   ]);
 
   useEffect(() => {
+    updateActiveReactionAudioVolumes(emojiVolume);
+  }, [emojiVolume]);
+
+  useEffect(() => {
+    return subscribeMemeEffectsVolumeChanges((volume) => {
+      setMemeEffectsVolume(volume);
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeEmojiVolumeChanges((volume) => {
+      setEmojiVolume(volume);
+    });
+  }, []);
+
+  useEffect(() => {
     return () => {
       clearReactionTimer("top");
       clearReactionTimer("bottom");
       dismissNotification("play-status");
+      activeReactionAudioEntriesRef.current.forEach(({ audio }) => {
+        audio.pause();
+        audio.src = "";
+      });
+      activeReactionAudioEntriesRef.current.clear();
 
       if (cooldownTimeoutRef.current) {
         window.clearTimeout(cooldownTimeoutRef.current);
@@ -989,6 +1050,16 @@ export default function PlayPage() {
     roomControls.sendEmoji(reaction);
   }
 
+  function handleMemeEffectsVolumeChange(nextVolume) {
+    setMemeEffectsVolume(nextVolume);
+    persistMemeEffectsVolume(nextVolume);
+  }
+
+  function handleEmojiVolumeChange(nextVolume) {
+    setEmojiVolume(nextVolume);
+    persistEmojiVolume(nextVolume);
+  }
+
   async function handleResign() {
     if (isGameFinished || !gameId || !roomState) {
       return;
@@ -1122,6 +1193,8 @@ export default function PlayPage() {
                 bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
                 topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
                 bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
+                topPlayerEmojiVolume={emojiVolume}
+                onTopPlayerEmojiVolumeChange={handleEmojiVolumeChange}
                 boardOverlay={
                   <GameResultModal
                     isOpen={Boolean(resultPresentation && isResultModalOpen)}
@@ -1165,6 +1238,8 @@ export default function PlayPage() {
                 canViewNext={chessGameState.canViewNext}
                 onPreviousMove={chessGameState.viewPreviousMove}
                 onNextMove={chessGameState.viewNextMove}
+                memeEffectsVolume={memeEffectsVolume}
+                onMemeEffectsVolumeChange={handleMemeEffectsVolumeChange}
                 onResign={handleResign}
                 onResignConfirm={handleResignConfirm}
                 onResignCancel={handleResignCancel}

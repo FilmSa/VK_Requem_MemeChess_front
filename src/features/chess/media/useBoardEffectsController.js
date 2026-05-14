@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { getBoardEffectConfig } from "./effectsManifest.js";
+import {
+  readStoredMemeEffectsVolume,
+  subscribeMemeEffectsVolumeChanges,
+} from "../../../shared/lib/memeEffectsVolume.js";
 
 function resolveEffectConfig(effectSource) {
   if (
@@ -17,6 +21,22 @@ function resolveEffectConfig(effectSource) {
 export function useBoardEffectsController() {
   const [activeEffects, setActiveEffects] = useState([]);
   const timeoutsRef = useRef(new Map());
+  const activeAudioEntriesRef = useRef(new Set());
+  const memeEffectsVolumeRef = useRef(readStoredMemeEffectsVolume());
+
+  function updateActiveAudioVolumes(nextLayerVolume = memeEffectsVolumeRef.current) {
+    activeAudioEntriesRef.current.forEach((entry) => {
+      if (!entry?.audio || entry.audio.ended) {
+        activeAudioEntriesRef.current.delete(entry);
+        return;
+      }
+
+      entry.audio.volume = Math.min(
+        1,
+        Math.max(0, entry.baseVolume * nextLayerVolume)
+      );
+    });
+  }
 
   useEffect(() => {
     const timeouts = timeoutsRef.current;
@@ -24,14 +44,40 @@ export function useBoardEffectsController() {
     return () => {
       timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
       timeouts.clear();
+      activeAudioEntriesRef.current.forEach(({ audio }) => {
+        audio.pause();
+        audio.src = "";
+      });
+      activeAudioEntriesRef.current.clear();
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeMemeEffectsVolumeChanges((volume) => {
+      memeEffectsVolumeRef.current = volume;
+      updateActiveAudioVolumes(volume);
+    });
   }, []);
 
   function playSound(src, volume = 1) {
     try {
       const audio = new Audio(src);
-      audio.volume = volume;
+      const entry = {
+        audio,
+        baseVolume: Math.min(1, Math.max(0, volume)),
+      };
+      const unregisterAudio = () => {
+        activeAudioEntriesRef.current.delete(entry);
+      };
+
+      audio.volume = Math.min(
+        1,
+        Math.max(0, entry.baseVolume * memeEffectsVolumeRef.current)
+      );
       audio.currentTime = 0;
+      activeAudioEntriesRef.current.add(entry);
+      audio.addEventListener("ended", unregisterAudio, { once: true });
+      audio.addEventListener("error", unregisterAudio, { once: true });
       audio.play().catch(() => {});
     } catch (error) {
       console.warn("Sound error:", error);

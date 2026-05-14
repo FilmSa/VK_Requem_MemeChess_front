@@ -41,6 +41,8 @@ export default function GameSettingsPanel({
   canViewNext = false,
   onPreviousMove,
   onNextMove,
+  memeEffectsVolume = 0.5,
+  onMemeEffectsVolumeChange,
   onResign,
   onResignConfirm,
   onResignCancel,
@@ -85,6 +87,8 @@ export default function GameSettingsPanel({
                 onNext={onNextMove}
                 previousDisabled={!canViewPrevious}
                 nextDisabled={!canViewNext}
+                memeEffectsVolume={memeEffectsVolume}
+                onMemeEffectsVolumeChange={onMemeEffectsVolumeChange}
               />
             </div>
 

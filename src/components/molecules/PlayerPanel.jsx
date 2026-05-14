@@ -10,11 +10,22 @@ export default function PlayerPanel({
   showTimer = true,
   timerIsActive = false,
   timerTone = "idle",
+  emojiVolume = 0.5,
+  onEmojiVolumeChange,
+  showEmojiVolumeControl = false,
 }) {
   return (
     <div className="w-full flex items-center justify-between">
       <div className="mb-[-12px]">
-        <UserInfo name={name} level={level} avatar={avatar} reaction={reaction} />
+        <UserInfo
+          name={name}
+          level={level}
+          avatar={avatar}
+          reaction={reaction}
+          emojiVolume={emojiVolume}
+          onEmojiVolumeChange={onEmojiVolumeChange}
+          showEmojiVolumeControl={showEmojiVolumeControl}
+        />
       </div>
 
       {showTimer ? (

@@ -28,6 +28,8 @@ export default function ChessBoardSection({
   bottomPlayerTimerTone = "idle",
   topPlayerTimerActive = false,
   bottomPlayerTimerActive = false,
+  topPlayerEmojiVolume = 0.5,
+  onTopPlayerEmojiVolumeChange,
   boardOverlay = null,
   animateIntroPieces = false,
 }) {
@@ -101,6 +103,9 @@ export default function ChessBoardSection({
             showTimer={showPlayerTimers}
             timerTone={topPlayerTimerTone}
             timerIsActive={topPlayerTimerActive}
+            emojiVolume={topPlayerEmojiVolume}
+            onEmojiVolumeChange={onTopPlayerEmojiVolumeChange}
+            showEmojiVolumeControl
           />
         </div>
 

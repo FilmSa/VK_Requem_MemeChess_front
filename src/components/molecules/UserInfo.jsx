@@ -128,6 +128,8 @@ export default function UserInfo({
   emojiVolume = 0.5,
   onEmojiVolumeChange,
   showEmojiVolumeControl = false,
+  emojiVolumeButtonRef = null,
+  emojiVolumePopupWidth = null,
 }) {
   const infoRef = useRef(null);
   const clampedEmojiVolume = Math.min(1, Math.max(0, Number(emojiVolume) || 0));
@@ -148,10 +150,10 @@ export default function UserInfo({
 
       <ReactionOverlay anchorRef={infoRef} reaction={reaction} />
 
-      <div className="flex flex-col justify-center">
-        <div className="flex items-center gap-[8px]">
+      <div className="min-w-0 flex flex-1 flex-col justify-center">
+        <div className="flex min-w-0 items-center gap-[8px]">
           <Text
-            className="text-[14px] font-medium leading-[1.2] text-white"
+            className="min-w-0 truncate text-[14px] font-medium leading-[1.2] text-white"
             style={{
               fontFamily: '"Unbounded", sans-serif',
               color: "var(--player-panel-name)",
@@ -163,24 +165,35 @@ export default function UserInfo({
           {showEmojiVolumeControl ? (
             <div className="group relative flex items-center">
               <button
+                ref={emojiVolumeButtonRef}
                 type="button"
                 className="flex items-center justify-center border-none bg-transparent p-0 outline-none transition focus:outline-none"
-                style={{ background: "transparent", outline: "none", boxShadow: "none" }}
+                style={{
+                  background: "transparent",
+                  outline: "none",
+                  boxShadow: "none",
+                }}
                 title="Громкость эмодзи"
               >
                 <VolumeIcon muted={clampedEmojiVolume <= 0.001} />
               </button>
 
-              <div className="pointer-events-none absolute left-full top-1/2 z-[120] ml-[8px] -translate-y-1/2 opacity-0 transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                <div className="flex items-center gap-[10px] rounded-tl-[14px] rounded-br-[14px] bg-[#11172f]/95 px-[12px] py-[10px] shadow-[0_14px_32px_rgba(0,0,0,0.38)] backdrop-blur">
+              <div
+                className="pointer-events-none absolute left-full top-1/2 z-[120] ml-[8px] min-w-0 -translate-y-1/2 opacity-0 transition duration-150 delay-[250ms] group-hover:pointer-events-auto group-hover:opacity-100 group-hover:delay-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:delay-0"
+                style={
+                  emojiVolumePopupWidth
+                    ? { width: `${emojiVolumePopupWidth}px` }
+                    : undefined
+                }
+              >
+                <div className="flex w-full min-w-0 items-center gap-[10px] overflow-hidden rounded-tl-[14px] rounded-br-[14px] bg-[#11172f]/95 px-[12px] py-[10px] shadow-[0_14px_32px_rgba(0,0,0,0.38)] backdrop-blur">
                   <span
-                    className="whitespace-nowrap text-[10px] uppercase tracking-[0.12em]"
+                    className="min-w-0 max-w-[45%] truncate text-[10px] uppercase tracking-[0.12em]"
                     style={{
                       color: "var(--color-text-muted)",
                       fontFamily: '"Unbounded", sans-serif',
                     }}
                   >
-                    Громкость эмодзи
                   </span>
                   <input
                     type="range"
@@ -192,7 +205,7 @@ export default function UserInfo({
                       onEmojiVolumeChange?.(event.target.valueAsNumber)
                     }
                     aria-label="Громкость эмодзи"
-                    className="h-[4px] w-[120px] cursor-pointer appearance-none rounded-full bg-transparent"
+                    className="h-[4px] min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-transparent"
                     style={{
                       background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${emojiSliderFill}, rgba(255,255,255,0.14) ${emojiSliderFill}, rgba(255,255,255,0.14) 100%)`,
                     }}

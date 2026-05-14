@@ -12,6 +12,8 @@ export default function ShopPreviewBoard({
   boardWidth = 720,
   boardOrientation = "white",
   pieceSkinId,
+  interactive = true,
+  boardId = "ShopPreviewBoard",
 }) {
   const [game, setGame] = useState(() => new Chess());
   const [selectedBoardSkin, setSelectedBoardSkin] = useState(() =>
@@ -50,12 +52,14 @@ export default function ShopPreviewBoard({
   return (
     <div className="flex justify-center">
       <Chessboard
-        id="ShopPreviewBoard"
+        id={boardId}
         position={game.fen()}
-        onPieceDrop={onPieceDrop}
+        onPieceDrop={interactive ? onPieceDrop : undefined}
         boardWidth={boardWidth}
         boardOrientation={boardOrientation}
         customPieces={customPieces}
+        arePiecesDraggable={interactive}
+        showBoardNotation={false}
         customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
         customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
       />

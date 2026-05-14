@@ -6,24 +6,45 @@ import SliderArrow from "../molecules/SliderArrow.jsx";
 import ShopPreviewBoard from "./ShopPreviewBoard.jsx";
 import { getCustomizationItem } from "../../shared/constants/customizationCatalog.js";
 
+function getResponsivePreviewBoardWidth() {
+  if (typeof window === "undefined") {
+    return 720;
+  }
+
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+
+  return Math.max(
+    220,
+    Math.min(720, viewportWidth - 96, viewportHeight - 170)
+  );
+}
+
 function BoardPreview({ skin, onOpen }) {
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="mx-auto block aspect-square w-full max-w-[294px] overflow-hidden border border-black/20 bg-white/5 p-0 shadow-[0_4px_4px_rgba(0,0,0,0.25)]"
-      style={{ borderRadius: "0px" }}
+      className="mx-auto block aspect-square w-full max-w-[294px] overflow-hidden p-0 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
+      aria-label={`Открыть предпросмотр скина ${skin.title}`}
+      style={{ borderRadius: "0px", background: "transparent", border: "none" }}
     >
-      <img
-        src={skin.previewImage}
-        alt={skin.title}
-        className="block h-full w-full object-fill"
-      />
+      <div className="pointer-events-none">
+        <ShopPreviewBoard
+          boardWidth={294}
+          boardOrientation="white"
+          pieceSkinId={skin.item.slug}
+          interactive={false}
+          boardId={`ShopPreviewCard-${skin.item.slug}`}
+        />
+      </div>
     </button>
   );
 }
 
 function SkinPreviewModal({ skin, onClose }) {
+  const [boardWidth, setBoardWidth] = useState(getResponsivePreviewBoardWidth);
+
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") {
@@ -31,12 +52,21 @@ function SkinPreviewModal({ skin, onClose }) {
       }
     }
 
+    function handleViewportChange() {
+      setBoardWidth(getResponsivePreviewBoardWidth());
+    }
+
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    handleViewportChange();
 
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
     };
   }, [onClose]);
 
@@ -55,7 +85,7 @@ function SkinPreviewModal({ skin, onClose }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "30px",
+        padding: "clamp(12px, 3vw, 30px)",
       }}
     >
       <div
@@ -64,7 +94,7 @@ function SkinPreviewModal({ skin, onClose }) {
           position: "relative",
           background: "var(--shop-modal-surface)",
           borderRadius: "18px",
-          padding: "30px",
+          padding: "clamp(14px, 3vw, 30px)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
           maxWidth: "95vw",
           maxHeight: "95vh",
@@ -81,9 +111,10 @@ function SkinPreviewModal({ skin, onClose }) {
         </div>
 
         <ShopPreviewBoard
-          boardWidth={720}
+          boardWidth={boardWidth}
           boardOrientation="white"
           pieceSkinId={skin.item.slug}
+          boardId={`ShopPreviewModal-${skin.item.slug}`}
         />
       </div>
     </div>,

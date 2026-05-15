@@ -11,7 +11,6 @@ import { resolveTimeControlConfig } from "../features/game/model/timeControl.js"
 import { useInventory } from "../features/inventory/useInventory.js";
 import {
   DEFAULT_BOARD_SKIN_SLUG,
-  DEFAULT_EMOTE_SLUGS,
   DEFAULT_PIECE_SKIN_SLUG,
   getCustomizationItem,
 } from "../shared/constants/customizationCatalog.js";
@@ -31,13 +30,7 @@ import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 const ratingIcon = withAssetBase("/icons/rock.svg");
-const inventoryShowcaseSlugs = ["piece.halo", "piece.lotr", "piece.imperium"];
 const HISTORY_PAGE_SIZE = 10;
-const defaultOwnedItemSlugs = new Set([
-  DEFAULT_PIECE_SKIN_SLUG,
-  DEFAULT_BOARD_SKIN_SLUG,
-  ...DEFAULT_EMOTE_SLUGS,
-]);
 
 function formatDate(value, options = {}) {
   if (!value) {
@@ -944,14 +937,11 @@ export default function ProfilePage() {
   const selectedBoardSkinId =
     selected?.boardSkinSlug || readStoredBoardSkin() || DEFAULT_BOARD_SKIN_SLUG;
 
-  const purchasedPieceItems = useMemo(
+  const ownedPieceItems = useMemo(
     () =>
       ownedItems
         .filter(
-          (item) =>
-            item?.slug &&
-            item.type === "piece_skin" &&
-            !defaultOwnedItemSlugs.has(item.slug)
+          (item) => item?.slug && item.type === "piece_skin"
         )
         .sort((left, right) =>
           String(left?.title || left?.slug || "").localeCompare(
@@ -962,21 +952,10 @@ export default function ProfilePage() {
     [ownedItems]
   );
 
-  const featuredInventoryItems = useMemo(() => {
-    if (purchasedPieceItems.length > 0) {
-      return purchasedPieceItems.slice(0, 3);
-    }
-
-    return inventoryShowcaseSlugs
-      .map((slug) => getCustomizationItem(slug))
-      .filter(Boolean)
-      .map((item) => ({
-        slug: item.slug,
-        type: item.type,
-        title: item.title,
-        asset_url: item.imageSrc || "",
-      }));
-  }, [purchasedPieceItems]);
+  const featuredInventoryItems = useMemo(
+    () => ownedPieceItems.slice(0, 3),
+    [ownedPieceItems]
+  );
 
   async function handleProfileSubmit(nextValues) {
     const nextUsername = String(nextValues?.username || "").trim();

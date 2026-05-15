@@ -59,7 +59,7 @@ export async function declareTimeoutLoss(gameId, token) {
   } catch (error) {
     throw buildGameError(
       error,
-      "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РІРµСЂС€РёС‚СЊ РїР°СЂС‚РёСЋ РїРѕ РІСЂРµРјРµРЅРё."
+      "Не удалось завершить партию по времени."
     );
   }
 }
@@ -215,7 +215,7 @@ export async function createRobotGame(params, token) {
       opponent: normalizeParticipant(response?.opponent),
     };
   } catch (error) {
-    throw buildGameError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РёРіСЂСѓ СЃ СЂРѕР±РѕС‚РѕРј.");
+    throw buildGameError(error, "Не удалось создать игру с роботом.");
   }
 }
 

@@ -22,6 +22,7 @@ const RANDOM_MEME_FALLBACK_TAGS = [
   "DEFOLT",
 ];
 const SEQUENCE_ANIMATION_DURATION_MS = 680;
+const BOT_REPLY_VISUAL_DELAY_MS = 900;
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -50,6 +51,27 @@ function parseMoveSequence(move) {
     .filter(Boolean);
 
   return parts.length ? parts : null;
+}
+
+function getOppositeColor(color) {
+  return color === "b" ? "w" : "b";
+}
+
+function setFenTurn(fen, turn) {
+  const normalizedFen = String(fen || "").trim();
+  const normalizedTurn = turn === "b" ? "b" : "w";
+
+  if (!normalizedFen) {
+    return normalizedFen;
+  }
+
+  const fenParts = normalizedFen.split(/\s+/);
+  if (fenParts.length < 2) {
+    return normalizedFen;
+  }
+
+  fenParts[1] = normalizedTurn;
+  return fenParts.join(" ");
 }
 
 function listBoardSquares() {
@@ -413,6 +435,142 @@ function buildMoveMemeContext(move, chessAfterMove) {
   };
 }
 
+function countPiecesByType(chessInstance, color, type) {
+  if (!chessInstance) {
+    return 0;
+  }
+
+  let count = 0;
+  const board = chessInstance.board();
+
+  for (const rank of board) {
+    for (const piece of rank) {
+      if (piece?.color === color && piece.type === type) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+}
+
+function pickRandomArrayItem(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
+  return items[Math.floor(Math.random() * items.length)] ?? null;
+}
+
+function resolveSequenceTargetSquare(sequence) {
+  if (!sequence?.length) {
+    return "";
+  }
+
+  const lastStep = sequence[sequence.length - 1];
+  if (lastStep?.to && lastStep.to !== lastStep.from) {
+    return lastStep.to;
+  }
+
+  return lastStep?.from || "";
+}
+
+function buildTurnAdjustedGame(chessInstance, turn) {
+  if (!chessInstance) {
+    return null;
+  }
+
+  return loadGameFromFen(setFenTurn(chessInstance.fen(), turn));
+}
+
+function listThreatenedNonPawnTargets(chessAfterMove, attackerSquare, attackerColor) {
+  if (!chessAfterMove || !attackerSquare) {
+    return [];
+  }
+
+  const attackGame = buildTurnAdjustedGame(chessAfterMove, attackerColor);
+  if (!attackGame) {
+    return [];
+  }
+
+  return attackGame
+    .moves({ square: attackerSquare, verbose: true })
+    .filter((move) => Boolean(move.captured) && move.captured !== "p");
+}
+
+function buildSpecialModeMoveMemeContext({
+  previousGame,
+  chessAfterMove,
+  move,
+  sequence,
+}) {
+  const defenderColor = chessAfterMove.turn();
+  const attackerColor = getOppositeColor(defenderColor);
+  const movedPieceSquare =
+    move?.to || resolveSequenceTargetSquare(sequence) || move?.from || "";
+  const kingSquare =
+    findKingSquare(chessAfterMove, defenderColor) || movedPieceSquare || move?.to || "";
+  const capturedEnemyQueen =
+    previousGame &&
+    countPiecesByType(previousGame, defenderColor, "q") >
+      countPiecesByType(chessAfterMove, defenderColor, "q");
+
+  if (chessAfterMove.isCheckmate()) {
+    return {
+      candidateTags: ["SMART"],
+      targetSquare: kingSquare,
+    };
+  }
+
+  if (capturedEnemyQueen) {
+    return {
+      candidateTags: ["SMART"],
+      targetSquare: movedPieceSquare || kingSquare,
+    };
+  }
+
+  if (chessAfterMove.inCheck()) {
+    return {
+      candidateTags: ["CHECK"],
+      targetSquare: kingSquare,
+    };
+  }
+
+  const threatenedTargets = listThreatenedNonPawnTargets(
+    chessAfterMove,
+    movedPieceSquare,
+    attackerColor
+  );
+
+  if (threatenedTargets.length >= 2) {
+    return {
+      candidateTags: ["ATTACK"],
+      targetSquare: movedPieceSquare || kingSquare,
+    };
+  }
+
+  if (threatenedTargets.length >= 1) {
+    const threatenedTarget = pickRandomArrayItem(threatenedTargets);
+
+    if (Math.random() < 0.5) {
+      return {
+        candidateTags: ["DANGER"],
+        targetSquare: threatenedTarget?.to || movedPieceSquare || kingSquare,
+      };
+    }
+
+    return {
+      candidateTags: ["ATTACK"],
+      targetSquare: movedPieceSquare || threatenedTarget?.to || kingSquare,
+    };
+  }
+
+  return {
+    candidateTags: ["DEFOLT"],
+    targetSquare: movedPieceSquare || kingSquare,
+  };
+}
+
 function buildMoveDto(move) {
   const moveDto = {
     from: String(move?.from || "").toLowerCase(),
@@ -439,6 +597,8 @@ export function useChessGame(options = {}) {
     Boolean(options.forceServerAuthoritative) || isServerAuthoritativeMode(gameMode);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
+  const currentUserId = String(options.currentUserId || "").trim();
+  const isBotGame = Boolean(options.isBotGame);
   const serverLegalMoves = Array.isArray(options.serverLegalMoves)
     ? options.serverLegalMoves.filter((move) => typeof move === "string" && move.trim())
     : [];
@@ -472,6 +632,9 @@ export function useChessGame(options = {}) {
   const serverMovesRef = useRef(serverMoves);
   const lastSyncedMoveCountRef = useRef(serverMoves.length);
   const sequenceAnimationTimerRef = useRef(null);
+  const pendingServerSyncTimerRef = useRef(null);
+  const pendingServerSyncPayloadRef = useRef(null);
+  const lastTriggeredMoveEffectKeyRef = useRef("");
 
   useEffect(() => {
     gameRef.current = game;
@@ -494,8 +657,20 @@ export function useChessGame(options = {}) {
       if (sequenceAnimationTimerRef.current) {
         window.clearTimeout(sequenceAnimationTimerRef.current);
       }
+      if (pendingServerSyncTimerRef.current) {
+        window.clearTimeout(pendingServerSyncTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    pendingServerSyncPayloadRef.current = null;
+    lastTriggeredMoveEffectKeyRef.current = "";
+    if (pendingServerSyncTimerRef.current) {
+      window.clearTimeout(pendingServerSyncTimerRef.current);
+      pendingServerSyncTimerRef.current = null;
+    }
+  }, [initialFen, gameMode]);
 
   useEffect(() => {
     if (typeof options.memeModeEnabled === "boolean") {
@@ -618,6 +793,49 @@ export function useChessGame(options = {}) {
       to: move.to,
       piece: move.piece,
     });
+  }
+
+  function triggerClientMoveEffect({
+    move,
+    chessAfterMove,
+    previousGame = null,
+    historyBeforeMove = [],
+    sequence = null,
+  }) {
+    if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE || !memeModeEnabledRef.current || !chessAfterMove) {
+      return;
+    }
+
+    if (isServerAuthoritativeMode(gameMode)) {
+      const localContext = buildSpecialModeMoveMemeContext({
+        previousGame,
+        chessAfterMove,
+        move,
+        sequence,
+      });
+      const memeEffect = pickRandomMemeEffect(localContext.candidateTags);
+      const resolvedToSquare =
+        move?.to || resolveSequenceTargetSquare(sequence) || localContext.targetSquare || null;
+      const movedPieceSquare =
+        move?.to || resolveSequenceTargetSquare(sequence) || move?.from || "";
+
+      triggerEffect(memeEffect || "1", {
+        square: localContext.targetSquare,
+        from: move?.from || sequence?.[0]?.from || null,
+        to: resolvedToSquare,
+        piece:
+          move?.piece ||
+          chessAfterMove.get(movedPieceSquare)?.type ||
+          null,
+      });
+      return;
+    }
+
+    if (!move) {
+      return;
+    }
+
+    void triggerMoveEffect(move, chessAfterMove, historyBeforeMove);
   }
 
   function isPlayersTurn(chessInstance = gameRef.current) {
@@ -1119,38 +1337,107 @@ export function useChessGame(options = {}) {
         ? state.moves[nextHistoryLength - 1]
         : null;
     const lastSequence = parseMoveSequence(lastMoveEntry?.move);
-
-    lastSyncedMoveCountRef.current = nextHistoryLength;
-    setGame(nextGame);
-    syncHistoryCursor(nextHistoryLength, previousHistoryLength);
+    const previousFen =
+      nextHistoryLength > 1
+        ? state?.moves?.[nextHistoryLength - 2]?.fen
+        : state?.initial_fen || initialFen;
+    const previousGame = loadGameFromFen(previousFen);
+    const historyAfterMove = nextGame.history({ verbose: true });
+    const latestMoveFromHistory =
+      historyAfterMove.length >= nextHistoryLength
+        ? historyAfterMove[nextHistoryLength - 1]
+        : historyAfterMove[historyAfterMove.length - 1] || null;
+    const historyBeforeMove =
+      nextHistoryLength > 0 ? historyAfterMove.slice(0, -1) : historyAfterMove;
+    const effectMoveKey =
+      nextHistoryLength === previousHistoryLength + 1 && lastMoveEntry?.move
+        ? `${state?.game_id || "game"}:${nextHistoryLength}:${lastMoveEntry.move}`
+        : "";
+    const pendingPayload = pendingServerSyncPayloadRef.current;
 
     if (
-      usesServerAuthoritativeRules &&
-      isLatestView &&
-      nextHistoryLength === previousHistoryLength + 1 &&
-      lastSequence?.length > 1
+      pendingServerSyncTimerRef.current &&
+      pendingPayload?.effectMoveKey === effectMoveKey &&
+      pendingPayload?.historyLength === nextHistoryLength
     ) {
-      const previousFen =
-        nextHistoryLength > 1
-          ? state.moves[nextHistoryLength - 2]?.fen
-          : state?.initial_fen || initialFen;
-      const intermediateFen = buildSequenceIntermediateFen(previousFen, lastSequence);
+      return true;
+    }
 
-      if (intermediateFen && intermediateFen !== nextGame.fen()) {
-        clearSequenceAnimation();
-        setSequenceAnimationFen(intermediateFen);
-        sequenceAnimationTimerRef.current = window.setTimeout(() => {
-          sequenceAnimationTimerRef.current = null;
-          setSequenceAnimationFen("");
-        }, SEQUENCE_ANIMATION_DURATION_MS);
+    if (pendingServerSyncTimerRef.current) {
+      window.clearTimeout(pendingServerSyncTimerRef.current);
+      pendingServerSyncTimerRef.current = null;
+    }
+    const shouldTriggerEffect =
+      Boolean(effectMoveKey) &&
+      effectMoveKey !== lastTriggeredMoveEffectKeyRef.current;
+
+    const commitServerState = () => {
+      lastSyncedMoveCountRef.current = nextHistoryLength;
+      setGame(nextGame);
+      syncHistoryCursor(nextHistoryLength, previousHistoryLength);
+
+      if (
+        usesServerAuthoritativeRules &&
+        isLatestView &&
+        nextHistoryLength === previousHistoryLength + 1 &&
+        lastSequence?.length > 1
+      ) {
+        const intermediateFen = buildSequenceIntermediateFen(previousFen, lastSequence);
+
+        if (intermediateFen && intermediateFen !== nextGame.fen()) {
+          clearSequenceAnimation();
+          setSequenceAnimationFen(intermediateFen);
+          sequenceAnimationTimerRef.current = window.setTimeout(() => {
+            sequenceAnimationTimerRef.current = null;
+            setSequenceAnimationFen("");
+          }, SEQUENCE_ANIMATION_DURATION_MS);
+        } else {
+          clearSequenceAnimation();
+        }
       } else {
         clearSequenceAnimation();
       }
-    } else {
-      clearSequenceAnimation();
+
+      clearSelection();
+
+      if (shouldTriggerEffect) {
+        lastTriggeredMoveEffectKeyRef.current = effectMoveKey;
+        triggerClientMoveEffect({
+          move: latestMoveFromHistory,
+          chessAfterMove: nextGame,
+          previousGame,
+          historyBeforeMove,
+          sequence: lastSequence,
+        });
+      }
+    };
+
+    const lastMoveUserId = String(
+      lastMoveEntry?.user_id || lastMoveEntry?.userId || ""
+    ).trim();
+    const movedByOpponent =
+      isBotGame &&
+      Boolean(currentUserId) &&
+      nextHistoryLength === previousHistoryLength + 1 &&
+      ((lastMoveUserId && lastMoveUserId !== currentUserId) ||
+        String(state?.current_turn_user_id || state?.currentTurnUserId || "").trim() ===
+          currentUserId);
+
+    if (movedByOpponent && isLatestView) {
+      pendingServerSyncPayloadRef.current = {
+        effectMoveKey,
+        historyLength: nextHistoryLength,
+      };
+      pendingServerSyncTimerRef.current = window.setTimeout(() => {
+        pendingServerSyncTimerRef.current = null;
+        pendingServerSyncPayloadRef.current = null;
+        commitServerState();
+      }, BOT_REPLY_VISUAL_DELAY_MS);
+      return true;
     }
 
-    clearSelection();
+    pendingServerSyncPayloadRef.current = null;
+    commitServerState();
     return true;
   }
 

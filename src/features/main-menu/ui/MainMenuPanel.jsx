@@ -24,6 +24,11 @@ import { createRobotGame } from "../../game/gameApi.js";
 import { useInventory } from "../../inventory/useInventory.js";
 import { savePlaySession } from "../../game/playSession.js";
 import { useNotifications } from "../../notifications/useNotifications.js";
+import {
+  DEFAULT_BOARD_SKIN_SLUG,
+  DEFAULT_PIECE_SKIN_SLUG,
+} from "../../../shared/constants/customizationCatalog.js";
+import { DEFAULT_EMOJI_QUICK_ACCESS_IDS } from "../../../shared/constants/emojiPreviewMedia.js";
 import { updateEmojiQuickAccessIds } from "../../../shared/lib/emojiQuickAccess.js";
 import { useReliableNavigate } from "../../../shared/router/useReliableNavigate.js";
 import {
@@ -46,6 +51,10 @@ function buildLocalBotPlayerProfile(user) {
     username: "Игрок",
     avatar_url: "",
   };
+}
+
+function mergeOwnedIds(defaultIds, ownedIds) {
+  return Array.from(new Set([...(defaultIds || []), ...(ownedIds || [])]));
 }
 
 export default function MainMenuPanel({ style, onPreviewStateChange }) {
@@ -605,21 +614,56 @@ export default function MainMenuPanel({ style, onPreviewStateChange }) {
     );
   }, [ownedItems]);
 
+  const availableOwnedIdsByType = useMemo(() => {
+    if (!isAuthenticated) {
+      return {
+        emote: DEFAULT_EMOJI_QUICK_ACCESS_IDS,
+        board_skin: [DEFAULT_BOARD_SKIN_SLUG],
+        piece_skin: [DEFAULT_PIECE_SKIN_SLUG],
+      };
+    }
+
+    return {
+      emote: mergeOwnedIds(DEFAULT_EMOJI_QUICK_ACCESS_IDS, ownedItemsByType.emote),
+      board_skin: mergeOwnedIds(
+        [DEFAULT_BOARD_SKIN_SLUG],
+        ownedItemsByType.board_skin
+      ),
+      piece_skin: mergeOwnedIds(
+        [DEFAULT_PIECE_SKIN_SLUG],
+        ownedItemsByType.piece_skin
+      ),
+    };
+  }, [isAuthenticated, ownedItemsByType]);
+
+  const selectedBoardSkinId = availableOwnedIdsByType.board_skin.includes(
+    selectedBoardSkin
+  )
+    ? selectedBoardSkin
+    : DEFAULT_BOARD_SKIN_SLUG;
+  const selectedPieceSkinId = availableOwnedIdsByType.piece_skin.includes(
+    selectedPieceSkin
+  )
+    ? selectedPieceSkin
+    : DEFAULT_PIECE_SKIN_SLUG;
+  const selectedGuestSafeEmojiIds = selectedEmojiQuickAccessIds.filter((itemId) =>
+    availableOwnedIdsByType.emote.includes(itemId)
+  );
+
   const customizeSections = CUSTOMIZE_SECTIONS.map((section) => {
     const itemsById = new Map(cards.map((item) => [item.id, item]));
     const quickAccessIds =
       section.id === "emoji"
-        ? selectedEmojiQuickAccessIds
+        ? selectedGuestSafeEmojiIds
         : section.quickAccessIds;
-    const ownedIds = isAuthenticated
-      ? section.id === "emoji"
-        ? ownedItemsByType.emote
+    const ownedIds =
+      section.id === "emoji"
+        ? availableOwnedIdsByType.emote
         : section.id === "boards"
-        ? ownedItemsByType.board_skin
+        ? availableOwnedIdsByType.board_skin
         : section.id === "pieces"
-        ? ownedItemsByType.piece_skin
-        : []
-      : section.ownedIds;
+        ? availableOwnedIdsByType.piece_skin
+        : [];
 
     return {
       ...section,
@@ -629,11 +673,11 @@ export default function MainMenuPanel({ style, onPreviewStateChange }) {
       ownedItems: ownedIds.map((id) => itemsById.get(id)).filter(Boolean),
       selectedItemIds:
         section.id === "emoji"
-          ? selectedEmojiQuickAccessIds
+          ? selectedGuestSafeEmojiIds
           : section.id === "boards"
-          ? [selectedBoardSkin]
+          ? [selectedBoardSkinId]
           : section.id === "pieces"
-          ? [selectedPieceSkin]
+          ? [selectedPieceSkinId]
           : [],
       isOpen: Boolean(openCustomizeSections[section.id]),
       isExpanded: Boolean(expandedCustomizeSections[section.id]),

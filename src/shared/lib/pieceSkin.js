@@ -2,12 +2,17 @@ import {
   DEFAULT_PIECE_SKIN_SLUG,
   normalizePieceSkinSlug,
 } from "../constants/customizationCatalog.js";
+import { readStoredAuthToken } from "./authToken.js";
 
 const PIECE_SKIN_STORAGE_KEY = "meme-chess.piece-skin";
 const DEFAULT_PIECE_SKIN_ID = DEFAULT_PIECE_SKIN_SLUG;
 
 function readStoredPieceSkin() {
   if (typeof window === "undefined") {
+    return DEFAULT_PIECE_SKIN_ID;
+  }
+
+  if (!readStoredAuthToken()) {
     return DEFAULT_PIECE_SKIN_ID;
   }
 

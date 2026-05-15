@@ -3,6 +3,7 @@ import {
   DEFAULT_BOARD_SKIN_SLUG,
   normalizeBoardSkinSlug,
 } from "../constants/customizationCatalog.js";
+import { readStoredAuthToken } from "./authToken.js";
 
 const BOARD_SKIN_STORAGE_KEY = "meme-chess.board-skin";
 const DEFAULT_BOARD_SKIN_ID = DEFAULT_BOARD_SKIN_SLUG;
@@ -20,6 +21,10 @@ const BOARD_SKINS = Object.fromEntries(
 
 function readStoredBoardSkin() {
   if (typeof window === "undefined") {
+    return DEFAULT_BOARD_SKIN_ID;
+  }
+
+  if (!readStoredAuthToken()) {
     return DEFAULT_BOARD_SKIN_ID;
   }
 

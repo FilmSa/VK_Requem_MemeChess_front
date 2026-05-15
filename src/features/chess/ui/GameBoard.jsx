@@ -10,6 +10,8 @@ import {
 import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
 import PromotionMenu from "./PromotionMenu.jsx";
 
+const BOARD_MOVE_ANIMATION_DURATION_MS = 920;
+
 export default function GameBoard({
   fen,
   boardWidth,
@@ -81,7 +83,7 @@ export default function GameBoard({
           position={fen}
           boardOrientation={boardOrientation}
           boardWidth={boardWidth}
-          animationDuration={720}
+          animationDuration={BOARD_MOVE_ANIMATION_DURATION_MS}
           arePiecesDraggable={canDragPieces}
           customPieces={customPieces}
           customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}

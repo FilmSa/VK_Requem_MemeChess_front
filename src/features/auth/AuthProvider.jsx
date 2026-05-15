@@ -8,9 +8,15 @@ import {
 import * as authApi from "./authApi.js";
 import { AuthContext } from "./AuthContext.js";
 import {
+  DEFAULT_BOARD_SKIN_SLUG,
+  DEFAULT_PIECE_SKIN_SLUG,
+} from "../../shared/constants/customizationCatalog.js";
+import {
   persistAuthToken,
   readStoredAuthToken,
 } from "../../shared/lib/authToken.js";
+import { persistBoardSkin } from "../../shared/lib/boardSkin.js";
+import { persistPieceSkin } from "../../shared/lib/pieceSkin.js";
 
 export default function AuthProvider({ children }) {
   const [token, setToken] = useState(() => readStoredAuthToken());
@@ -19,12 +25,18 @@ export default function AuthProvider({ children }) {
     Boolean(readStoredAuthToken())
   );
 
+  const resetBoardCustomization = useCallback(() => {
+    persistPieceSkin(DEFAULT_PIECE_SKIN_SLUG);
+    persistBoardSkin(DEFAULT_BOARD_SKIN_SLUG);
+  }, []);
+
   const clearSession = useCallback(() => {
     persistAuthToken("");
+    resetBoardCustomization();
     setToken("");
     setUser(null);
     setIsInitializing(false);
-  }, []);
+  }, [resetBoardCustomization]);
 
   const applySession = useCallback((nextToken, nextUser, options = {}) => {
     persistAuthToken(nextToken, options);
@@ -104,6 +116,12 @@ export default function AuthProvider({ children }) {
       isCancelled = true;
     };
   }, [clearSession, token]);
+
+  useEffect(() => {
+    if (!token && !isInitializing) {
+      resetBoardCustomization();
+    }
+  }, [isInitializing, resetBoardCustomization, token]);
 
   const login = useCallback(
     async (credentials, options = {}) => {

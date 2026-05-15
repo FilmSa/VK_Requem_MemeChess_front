@@ -498,6 +498,8 @@ export default function PlayPage() {
   const chessGameState = useChessGame({
     playerColor: activeRoom.playerColor,
     gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
+    currentUserId,
+    isBotGame: activeRoom.isBotGame,
     serverLegalMoves: roomState?.legal_moves || [],
     serverMoves: roomState?.moves || [],
     initialFen: roomState?.initial_fen || "",

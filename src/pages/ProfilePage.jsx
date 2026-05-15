@@ -107,8 +107,8 @@ function resolveStatusMeta(entry, currentUserId) {
 
   if (!winnerId) {
     return {
-      label: "Завершено",
-      tone: "neutral",
+      label: "Поражение",
+      tone: "danger",
     };
   }
 
@@ -795,7 +795,7 @@ export default function ProfilePage() {
       setHistoryNextOffset(response.nextOffset);
     } catch (error) {
       setHistoryLoadMoreError(
-        error?.message || "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РµС‰Рµ РїР°СЂС‚РёРё."
+        error?.message || "Не удалось загрузить ещё партии."
       );
     } finally {
       setIsHistoryLoadingMore(false);

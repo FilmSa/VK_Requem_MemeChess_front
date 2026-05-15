@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Chessboard } from "react-chessboard";
+import { Chess } from "chess.js";
 
 import ResponsivePanelFrame from "../components/atoms/ResponsivePanelFrame.jsx";
 import * as authApi from "../features/auth/authApi.js";
 import { useAuth } from "../features/auth/useAuth.js";
-import { createCustomPieces } from "../features/chess/lib/boardPieces.jsx";
+import { getPieceSkinAssets } from "../features/chess/lib/boardPieces.jsx";
 import { getMyGameHistory } from "../features/game/gameApi.js";
 import { resolveTimeControlConfig } from "../features/game/model/timeControl.js";
 import { useInventory } from "../features/inventory/useInventory.js";
@@ -212,16 +212,35 @@ function HistoryBoardPreview({
   boardSkinId,
   boardWidth = 198,
 }) {
-  const customPieces = useMemo(
-    () => createCustomPieces(pieceSkinId || DEFAULT_PIECE_SKIN_SLUG),
+  const pieceSkinAssets = useMemo(
+    () => getPieceSkinAssets(pieceSkinId || DEFAULT_PIECE_SKIN_SLUG),
     [pieceSkinId]
   );
   const boardSkinConfig = useMemo(
     () => getBoardSkinConfig(boardSkinId || DEFAULT_BOARD_SKIN_SLUG),
     [boardSkinId]
   );
+  const boardCells = useMemo(() => {
+    if (!fen) {
+      return [];
+    }
 
-  if (!fen) {
+    try {
+      const chess = new Chess();
+      chess.load(fen);
+      const board = chess.board();
+      const ranks = boardOrientation === "black" ? [...board].reverse() : board;
+
+      return ranks.flatMap((rank) => {
+        const files = boardOrientation === "black" ? [...rank].reverse() : rank;
+        return files;
+      });
+    } catch {
+      return [];
+    }
+  }, [boardOrientation, fen]);
+
+  if (!fen || boardCells.length === 0) {
     return (
       <div
         className="flex h-[198px] items-center justify-center rounded-tl-[18px] rounded-br-[18px] border px-[18px] text-center text-[13px]"
@@ -234,21 +253,49 @@ function HistoryBoardPreview({
 
   return (
     <div
+      id={boardId}
       className="overflow-hidden rounded-tl-[16px] rounded-br-[16px] border"
-      style={chipStyle()}
+      style={{
+        ...chipStyle(),
+        width: boardWidth,
+        height: boardWidth,
+      }}
     >
-      <Chessboard
-        id={boardId}
-        position={fen}
-        boardWidth={boardWidth}
-        boardOrientation={boardOrientation}
-        customPieces={customPieces}
-        showBoardNotation={false}
-        arePiecesDraggable={false}
-        animationDuration={0}
-        customLightSquareStyle={{ backgroundColor: boardSkinConfig.lightSquare }}
-        customDarkSquareStyle={{ backgroundColor: boardSkinConfig.darkSquare }}
-      />
+      <div
+        className="grid h-full w-full grid-cols-8"
+        style={{ gridTemplateRows: "repeat(8, minmax(0, 1fr))" }}
+      >
+        {boardCells.map((piece, index) => {
+          const row = Math.floor(index / 8);
+          const col = index % 8;
+          const isLight = (row + col) % 2 === 0;
+          const pieceKey = piece
+            ? `${piece.color}${piece.type.toUpperCase()}`
+            : "";
+          const pieceSrc = pieceKey ? pieceSkinAssets[pieceKey] : "";
+
+          return (
+            <div
+              key={`${boardId}-${index}`}
+              className="flex items-center justify-center"
+              style={{
+                backgroundColor: isLight
+                  ? boardSkinConfig.lightSquare
+                  : boardSkinConfig.darkSquare,
+              }}
+            >
+              {pieceSrc ? (
+                <img
+                  src={pieceSrc}
+                  alt={pieceKey}
+                  draggable={false}
+                  className="h-[76%] w-[76%] object-contain select-none"
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

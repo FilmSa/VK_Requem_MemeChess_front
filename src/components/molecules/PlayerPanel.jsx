@@ -7,6 +7,7 @@ export default function PlayerPanel({
   level,
   avatar,
   profileHref = "",
+  timer = null,
   time = "15:00",
   reaction,
   showTimer = true,
@@ -62,7 +63,7 @@ export default function PlayerPanel({
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateEmojiPopupWidth);
     };
-  }, [showEmojiVolumeControl, time, name]);
+  }, [showEmojiVolumeControl, name]);
 
   return (
     <div ref={panelRef} className="w-full flex items-center justify-between">
@@ -83,7 +84,12 @@ export default function PlayerPanel({
 
       {showTimer ? (
         <div ref={timerRef}>
-          <Timer time={time} isActive={timerIsActive} tone={timerTone} />
+          <Timer
+            timer={timer}
+            time={time}
+            isActive={timerIsActive}
+            tone={timerTone}
+          />
         </div>
       ) : null}
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { preloadProfilePage, preloadShopPage } from "../App/routeLoaders.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import ChessBoardSection from "../features/chess/ui/ChessBoardSection.jsx";
 import MainMenuPanel from "../features/main-menu/ui/MainMenuPanel.jsx";
@@ -12,6 +13,10 @@ import {
   resolveSelectedTimeControl,
 } from "../features/main-menu/config/menuConfig.js";
 import { buildStandardInitialFen } from "../features/chess/lib/chess960.js";
+import { preloadShopCatalog } from "../features/shop/shopApi.js";
+import { preloadMyGameHistory } from "../features/game/gameApi.js";
+
+const PROFILE_HISTORY_WARMUP_LIMIT = 10;
 
 function formatPreviewClock(baseMs) {
   if (!Number.isFinite(baseMs) || baseMs <= 0) {
@@ -30,8 +35,8 @@ function HomePreviewBoard({
   gameMode,
   boardWidth,
   onLayoutMetricsChange,
-  topPlayerTime,
-  bottomPlayerTime,
+  topPlayerTimer,
+  bottomPlayerTimer,
   bottomPlayerAvatar,
   bottomPlayerProfileHref,
   animateIntroPieces,
@@ -47,8 +52,8 @@ function HomePreviewBoard({
       gameState={chessGameState}
       boardWidth={boardWidth}
       onLayoutMetricsChange={onLayoutMetricsChange}
-      topPlayerTime={topPlayerTime}
-      bottomPlayerTime={bottomPlayerTime}
+      topPlayerTimer={topPlayerTimer}
+      bottomPlayerTimer={bottomPlayerTimer}
       bottomPlayerAvatar={bottomPlayerAvatar}
       bottomPlayerProfileHref={bottomPlayerProfileHref}
       animateIntroPieces={animateIntroPieces}
@@ -57,7 +62,7 @@ function HomePreviewBoard({
 }
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
   const defaultTimeControl = resolveSelectedTimeControl(DEFAULT_CARD_IDS.new);
@@ -68,6 +73,11 @@ export default function HomePage() {
   }));
   const [animateIntroPieces, setAnimateIntroPieces] = useState(false);
   const previewClock = formatPreviewClock(previewState.timeControlBaseMs);
+  const previewTimer = {
+    displayTime: previewClock,
+    isTimed: true,
+    isActive: false,
+  };
   const previewBoardKey = `${previewState.gameMode}:${previewState.initialFen}`;
 
   useEffect(() => {
@@ -81,6 +91,38 @@ export default function HomePage() {
       clearTimeout(stopAnimationTimer);
     };
   }, [previewBoardKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    const runWarmup = () => {
+      if (isCancelled) {
+        return;
+      }
+
+      void preloadShopPage();
+      void preloadProfilePage();
+      void preloadShopCatalog(token);
+
+      if (token) {
+        void preloadMyGameHistory(token, {
+          limit: PROFILE_HISTORY_WARMUP_LIMIT,
+          offset: 0,
+        });
+      }
+    };
+
+    const timeoutId = window.setTimeout(runWarmup, 0);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [token]);
 
   return (
     <div className="app-page h-screen w-screen overflow-hidden">
@@ -100,8 +142,8 @@ export default function HomePage() {
                 gameMode={previewState.gameMode}
                 boardWidth={layout.boardSize}
                 onLayoutMetricsChange={handleBoardMetricsChange}
-                topPlayerTime={previewClock}
-                bottomPlayerTime={previewClock}
+                topPlayerTimer={previewTimer}
+                bottomPlayerTimer={previewTimer}
                 bottomPlayerAvatar={user?.avatar_url || undefined}
                 bottomPlayerProfileHref={user?.id ? "/profile" : ""}
                 animateIntroPieces={animateIntroPieces}

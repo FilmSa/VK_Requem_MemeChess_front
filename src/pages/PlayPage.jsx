@@ -1194,6 +1194,8 @@ export default function PlayPage() {
                   }
                   topReaction={topReaction}
                   bottomReaction={bottomReaction}
+                  topPlayerTimer={gameClock.top}
+                  bottomPlayerTimer={gameClock.bottom}
                 showPlayerTimers={showTimedClocks}
                 topPlayerTime={gameClock.top?.time || "∞"}
                 bottomPlayerTime={gameClock.bottom?.time || "∞"}

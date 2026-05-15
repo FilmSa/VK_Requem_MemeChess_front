@@ -1,6 +1,9 @@
 import { ApiError, apiFetch } from "../../shared/api/client.js";
 import { resolveApiResourceUrl } from "../../shared/config/api.js";
 
+const GAME_HISTORY_CACHE_TTL_MS = 60 * 1000;
+const gameHistoryCache = new Map();
+
 function normalizeParticipant(participant) {
   if (!participant) {
     return null;
@@ -48,6 +51,45 @@ function normalizeHistoryEntry(entry) {
     lastMoveNumber: Number(entry.last_move_number ?? 0),
     createdAt: entry.created_at || "",
   };
+}
+
+function buildHistoryCacheKey(token, limit, offset) {
+  return `${token ? `auth:${token}` : "guest"}:${limit}:${offset}`;
+}
+
+function cloneHistoryPayload(payload) {
+  return {
+    games: Array.isArray(payload?.games) ? [...payload.games] : [],
+    hasMore: Boolean(payload?.hasMore),
+    nextOffset: Number(payload?.nextOffset ?? 0),
+  };
+}
+
+function readCachedHistory(key) {
+  const cacheEntry = gameHistoryCache.get(key);
+  if (!cacheEntry) {
+    return null;
+  }
+
+  if (cacheEntry.value && cacheEntry.expiresAt > Date.now()) {
+    return cloneHistoryPayload(cacheEntry.value);
+  }
+
+  return null;
+}
+
+export function invalidateGameHistoryCache(token) {
+  if (typeof token !== "string" || !token) {
+    gameHistoryCache.clear();
+    return;
+  }
+
+  const cachePrefix = `auth:${token}:`;
+  for (const key of gameHistoryCache.keys()) {
+    if (key.startsWith(cachePrefix)) {
+      gameHistoryCache.delete(key);
+    }
+  }
 }
 
 export async function declareTimeoutLoss(gameId, token) {
@@ -150,7 +192,7 @@ export async function getGameParticipants(gameId, token) {
   }
 }
 
-export async function getMyGameHistory(token, options = {}) {
+async function getMyGameHistoryRequest(token, options = {}) {
   const limit = Math.max(1, Math.min(Number(options.limit) || 20, 100));
   const offset = Math.max(0, Number(options.offset) || 0);
   const searchParams = new URLSearchParams({
@@ -173,6 +215,75 @@ export async function getMyGameHistory(token, options = {}) {
     };
   } catch (error) {
     throw buildGameError(error, "Не удалось загрузить историю игр.");
+  }
+}
+
+export async function getMyGameHistory(token, options = {}) {
+  const limit = Math.max(1, Math.min(Number(options.limit) || 20, 100));
+  const offset = Math.max(0, Number(options.offset) || 0);
+  const forceRefresh = Boolean(options.forceRefresh);
+  const cacheKey = buildHistoryCacheKey(token, limit, offset);
+  const existingEntry = gameHistoryCache.get(cacheKey);
+
+  if (!forceRefresh) {
+    const cachedHistory = readCachedHistory(cacheKey);
+    if (cachedHistory) {
+      return cachedHistory;
+    }
+  }
+
+  if (!forceRefresh && existingEntry?.promise) {
+    const payload = await existingEntry.promise;
+    return cloneHistoryPayload(payload);
+  }
+
+  const requestPromise = getMyGameHistoryRequest(token, {
+    ...options,
+    limit,
+    offset,
+  })
+    .then((payload) => {
+      gameHistoryCache.set(cacheKey, {
+        value: payload,
+        expiresAt: Date.now() + GAME_HISTORY_CACHE_TTL_MS,
+        promise: null,
+      });
+
+      return payload;
+    })
+    .catch((error) => {
+      if (gameHistoryCache.get(cacheKey)?.promise === requestPromise) {
+        gameHistoryCache.delete(cacheKey);
+      }
+
+      throw error;
+    })
+    .finally(() => {
+      const activeEntry = gameHistoryCache.get(cacheKey);
+      if (activeEntry?.promise === requestPromise) {
+        gameHistoryCache.set(cacheKey, {
+          value: activeEntry.value || null,
+          expiresAt: activeEntry.expiresAt || 0,
+          promise: null,
+        });
+      }
+    });
+
+  gameHistoryCache.set(cacheKey, {
+    value: existingEntry?.value || null,
+    expiresAt: existingEntry?.expiresAt || 0,
+    promise: requestPromise,
+  });
+
+  const payload = await requestPromise;
+  return cloneHistoryPayload(payload);
+}
+
+export async function preloadMyGameHistory(token, options = {}) {
+  try {
+    await getMyGameHistory(token, options);
+  } catch {
+    // Ignore warm-up failures and let the profile page retry normally.
   }
 }
 

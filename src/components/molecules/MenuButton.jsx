@@ -1,15 +1,41 @@
+import { useCallback } from "react";
 import Text from "../atoms/Text";
 import Icon from "../atoms/Icon";
-import { buildAppHref } from "../../shared/router/buildAppHref.js";
+import { useReliableNavigate } from "../../shared/router/useReliableNavigate.js";
 
-export default function MenuButton({ label, icon, to, active }) {
+export default function MenuButton({ label, icon, to, active, preload }) {
+  const reliableNavigate = useReliableNavigate();
+
+  const handleActivate = useCallback(
+    async (event) => {
+      event?.preventDefault?.();
+
+      try {
+        await preload?.();
+      } catch {
+        // Ignore preload failures and let navigation continue.
+      }
+
+      reliableNavigate(to);
+    },
+    [preload, reliableNavigate, to]
+  );
+
   return (
-    <a
-      href={buildAppHref(to)}
+    <button
+      type="button"
+      onClick={handleActivate}
+      onMouseEnter={() => {
+        void preload?.();
+      }}
+      onFocus={() => {
+        void preload?.();
+      }}
       className="flex h-[56px] w-[207px] items-center justify-between rounded-[20px_0px] border-none px-[8px] py-[6px] no-underline outline-none transition-all"
       style={{
         background: active ? "var(--menu-item-active-bg)" : "transparent",
         boxShadow: active ? "var(--menu-item-shadow)" : "none",
+        textAlign: "left",
       }}
     >
       <Text
@@ -36,6 +62,6 @@ export default function MenuButton({ label, icon, to, active }) {
         alt={label}
         className="h-[32px] w-[32px] shrink-0 object-contain"
       />
-    </a>
+    </button>
   );
 }

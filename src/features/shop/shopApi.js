@@ -5,6 +5,9 @@ import {
   normalizePieceSkinSlug,
 } from "../../shared/constants/customizationCatalog.js";
 
+const SHOP_CATALOG_CACHE_TTL_MS = 60 * 1000;
+const shopCatalogCache = new Map();
+
 function normalizeItem(item) {
   if (!item) {
     return null;
@@ -44,34 +47,128 @@ function buildError(error, fallbackMessage) {
   return new Error(fallbackMessage);
 }
 
-export async function getShopCatalog(token) {
+function buildShopCatalogCacheKey(token) {
+  return token ? `auth:${token}` : "guest";
+}
+
+function cloneShopCatalogPayload(payload) {
+  return {
+    items: Array.isArray(payload?.items) ? [...payload.items] : [],
+  };
+}
+
+function normalizeShopCatalogResponse(response) {
+  return {
+    items: Array.isArray(response?.items)
+      ? response.items
+          .map((entry) => {
+            const normalizedItem = normalizeItem(entry?.item);
+            if (!normalizedItem) {
+              return null;
+            }
+
+            return {
+              item: normalizedItem,
+              price: Number(entry?.price ?? 0),
+              owned: Boolean(entry?.owned),
+              isActive: entry?.is_active !== false,
+            };
+          })
+          .filter(Boolean)
+      : [],
+  };
+}
+
+function readCachedShopCatalog(key) {
+  const cacheEntry = shopCatalogCache.get(key);
+  if (!cacheEntry) {
+    return null;
+  }
+
+  if (cacheEntry.value && cacheEntry.expiresAt > Date.now()) {
+    return cloneShopCatalogPayload(cacheEntry.value);
+  }
+
+  return null;
+}
+
+export function invalidateShopCatalogCache(token) {
+  if (typeof token === "string") {
+    shopCatalogCache.delete(buildShopCatalogCacheKey(token));
+    return;
+  }
+
+  shopCatalogCache.clear();
+}
+
+export async function getShopCatalog(token, options = {}) {
+  const { forceRefresh = false } = options;
+  const cacheKey = buildShopCatalogCacheKey(token);
+  const existingEntry = shopCatalogCache.get(cacheKey);
+
+  if (!forceRefresh) {
+    const cachedCatalog = readCachedShopCatalog(cacheKey);
+    if (cachedCatalog) {
+      return cachedCatalog;
+    }
+  }
+
+  if (!forceRefresh && existingEntry?.promise) {
+    const payload = await existingEntry.promise;
+    return cloneShopCatalogPayload(payload);
+  }
+
+  const requestPromise = (async () => {
+    try {
+      const response = await apiFetch("/api/v1/shop/catalog", {
+        method: "GET",
+        token,
+      });
+
+      const normalizedPayload = normalizeShopCatalogResponse(response);
+      shopCatalogCache.set(cacheKey, {
+        value: normalizedPayload,
+        expiresAt: Date.now() + SHOP_CATALOG_CACHE_TTL_MS,
+        promise: null,
+      });
+
+      return normalizedPayload;
+    } catch (error) {
+      if (shopCatalogCache.get(cacheKey)?.promise === requestPromise) {
+        shopCatalogCache.delete(cacheKey);
+      }
+
+      throw buildError(
+        error,
+        "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°С‚Р°Р»РѕРі РјР°РіР°Р·РёРЅР°."
+      );
+    } finally {
+      const activeEntry = shopCatalogCache.get(cacheKey);
+      if (activeEntry?.promise === requestPromise) {
+        shopCatalogCache.set(cacheKey, {
+          value: activeEntry.value || null,
+          expiresAt: activeEntry.expiresAt || 0,
+          promise: null,
+        });
+      }
+    }
+  })();
+
+  shopCatalogCache.set(cacheKey, {
+    value: existingEntry?.value || null,
+    expiresAt: existingEntry?.expiresAt || 0,
+    promise: requestPromise,
+  });
+
+  const payload = await requestPromise;
+  return cloneShopCatalogPayload(payload);
+}
+
+export async function preloadShopCatalog(token) {
   try {
-    const response = await apiFetch("/api/v1/shop/catalog", {
-      method: "GET",
-      token,
-    });
-
-    return {
-      items: Array.isArray(response?.items)
-        ? response.items
-            .map((entry) => {
-              const normalizedItem = normalizeItem(entry?.item);
-              if (!normalizedItem) {
-                return null;
-              }
-
-              return {
-                item: normalizedItem,
-                price: Number(entry?.price ?? 0),
-                owned: Boolean(entry?.owned),
-                isActive: entry?.is_active !== false,
-              };
-            })
-            .filter(Boolean)
-        : [],
-    };
-  } catch (error) {
-    throw buildError(error, "Не удалось загрузить каталог магазина.");
+    await getShopCatalog(token);
+  } catch {
+    // Ignore warm-up failures and let the actual page request retry.
   }
 }
 
@@ -85,7 +182,10 @@ export async function convertToCrowns(amount, token) {
 
     return normalizeCurrency(response);
   } catch (error) {
-    throw buildError(error, "Не удалось конвертировать рейтинг в короны.");
+    throw buildError(
+      error,
+      "РќРµ СѓРґР°Р»РѕСЃСЊ РєРѕРЅРІРµСЂС‚РёСЂРѕРІР°С‚СЊ СЂРµР№С‚РёРЅРі РІ РєРѕСЂРѕРЅС‹."
+    );
   }
 }
 
@@ -97,8 +197,9 @@ export async function buyShopItem(slug, token) {
       body: { slug },
     });
 
+    invalidateShopCatalogCache(token);
     return normalizeCurrency(response);
   } catch (error) {
-    throw buildError(error, "Не удалось купить предмет.");
+    throw buildError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ РєСѓРїРёС‚СЊ РїСЂРµРґРјРµС‚.");
   }
 }

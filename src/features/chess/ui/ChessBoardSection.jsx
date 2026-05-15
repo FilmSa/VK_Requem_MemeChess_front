@@ -23,6 +23,8 @@ export default function ChessBoardSection({
   bottomPlayerProfileHref = "",
   topReaction = null,
   bottomReaction = null,
+  topPlayerTimer = null,
+  bottomPlayerTimer = null,
   topPlayerTime = "15:00",
   bottomPlayerTime = "15:00",
   showPlayerTimers = true,
@@ -98,6 +100,7 @@ export default function ChessBoardSection({
             level=""
             avatar={topPlayerAvatar || DEFAULT_AVATAR}
             profileHref={topPlayerProfileHref}
+            timer={topPlayerTimer}
             time={topPlayerTime}
             reaction={topReaction}
             showTimer={showPlayerTimers}
@@ -134,6 +137,7 @@ export default function ChessBoardSection({
             level=""
             avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
             profileHref={bottomPlayerProfileHref}
+            timer={bottomPlayerTimer}
             time={bottomPlayerTime}
             reaction={bottomReaction}
             showTimer={showPlayerTimers}

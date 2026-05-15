@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   HashRouter,
@@ -8,14 +8,26 @@ import {
   useLocation,
 } from "react-router-dom";
 import ProtectedRoute from "../features/auth/ProtectedRoute.jsx";
-import HomePage from "../pages/HomePage.jsx";
-import InvitePage from "../pages/InvitePage.jsx";
-import LoginPage from "../pages/LoginPage.jsx";
-import PlayPage from "../pages/PlayPage.jsx";
-import ProfilePage from "../pages/ProfilePage.jsx";
-import RegisterPage from "../pages/RegisterPage.jsx";
-import ShopPage from "../pages/ShopPage.jsx";
-import TournamentsPage from "../pages/TournamentsPage.jsx";
+import {
+  preloadHomePage,
+  preloadInvitePage,
+  preloadLoginPage,
+  preloadPlayPage,
+  preloadProfilePage,
+  preloadRegisterPage,
+  resolveRoutePreloader,
+  preloadShopPage,
+  preloadTournamentsPage,
+} from "./routeLoaders.js";
+
+const HomePage = lazy(preloadHomePage);
+const InvitePage = lazy(preloadInvitePage);
+const LoginPage = lazy(preloadLoginPage);
+const PlayPage = lazy(preloadPlayPage);
+const ProfilePage = lazy(preloadProfilePage);
+const RegisterPage = lazy(preloadRegisterPage);
+const ShopPage = lazy(preloadShopPage);
+const TournamentsPage = lazy(preloadTournamentsPage);
 
 const PRIMARY_ROUTE_ORDER = new Map([
   ["/", 0],
@@ -45,40 +57,87 @@ function resolveRouteTransitionDirection(previousPathname, nextPathname) {
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const [displayedLocation, setDisplayedLocation] = useState(location);
   const previousPathnameRef = useRef(location.pathname);
   const transitionDirection = resolveRouteTransitionDirection(
     previousPathnameRef.current,
-    location.pathname
+    displayedLocation.pathname
   );
 
   useEffect(() => {
-    previousPathnameRef.current = location.pathname;
-  }, [location.pathname]);
+    const isSameRoute =
+      displayedLocation.pathname === location.pathname &&
+      displayedLocation.search === location.search &&
+      displayedLocation.hash === location.hash;
+
+    if (isSameRoute) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const nextLocation = location;
+    const routePreloader = resolveRoutePreloader(nextLocation.pathname);
+
+    Promise.resolve(routePreloader ? routePreloader() : null)
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) {
+          return;
+        }
+
+        previousPathnameRef.current = displayedLocation.pathname;
+        setDisplayedLocation(nextLocation);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayedLocation, location]);
 
   return (
     <div className="route-transition-shell">
       <div
-        key={location.pathname}
+        key={`${displayedLocation.pathname}${displayedLocation.search}`}
         className={`route-transition route-transition--${transitionDirection}`}
       >
-        <Routes location={location}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/play" element={<PlayPage />} />
-          <Route path="/invite/:token" element={<InvitePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/tournaments" element={<TournamentsPage />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteLoadingScreen />}>
+          <Routes location={displayedLocation}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/play" element={<PlayPage />} />
+            <Route path="/invite/:token" element={<InvitePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/tournaments" element={<TournamentsPage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function RouteLoadingScreen() {
+  return (
+    <div className="app-page flex min-h-screen items-center justify-center px-4 py-8">
+      <div
+        className="rounded-[24px] border px-6 py-5 text-[15px]"
+        style={{
+          borderColor: "var(--status-card-border)",
+          background: "var(--status-card-background)",
+          boxShadow: "var(--status-card-shadow)",
+          color: "var(--color-text)",
+        }}
+      >
+        Загружаем страницу...
       </div>
     </div>
   );

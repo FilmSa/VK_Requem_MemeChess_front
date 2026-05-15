@@ -2,6 +2,7 @@ import CurrencyBadge from "./Currency.jsx";
 import { useCurrencyConvertModal } from "../../features/shop/useCurrencyConvertModal.js";
 import { withAssetBase } from "../../shared/lib/assets.js";
 import { buildAppHref } from "../../shared/router/buildAppHref.js";
+import { useReliableNavigate } from "../../shared/router/useReliableNavigate.js";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 const crownsIcon = withAssetBase("/icons/crown.svg");
@@ -48,8 +49,11 @@ export default function SidebarProfileCard({
   user,
   isAuthenticated,
   onLogout,
+  onPreloadProfile,
+  onPreloadShop,
 }) {
   const { openCurrencyConvertModal } = useCurrencyConvertModal();
+  const reliableNavigate = useReliableNavigate();
 
   if (!isAuthenticated || !user) {
     function handleGuestClick() {
@@ -114,15 +118,42 @@ export default function SidebarProfileCard({
     );
   }
 
+  async function navigateWithPreload(to, preload) {
+    try {
+      await preload?.();
+    } catch {
+      // Ignore preload failures and continue with navigation.
+    }
+
+    reliableNavigate(to);
+  }
+
   return (
     <div
       className="w-full overflow-hidden rounded-[24px] p-[16px]"
       style={buildCardStyle()}
     >
       <div className="flex flex-col gap-[12px]">
-        <a
-          href={buildAppHref("/profile")}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            void navigateWithPreload("/profile", onPreloadProfile);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              void navigateWithPreload("/profile", onPreloadProfile);
+            }
+          }}
+          onMouseEnter={() => {
+            void onPreloadProfile?.();
+          }}
+          onFocus={() => {
+            void onPreloadProfile?.();
+          }}
           className="flex min-w-0 items-center gap-3 no-underline"
+          style={{ background: "transparent", border: 0, padding: 0, textAlign: "left" }}
         >
           <img
             src={user.avatar_url || fallbackAvatar}
@@ -159,7 +190,7 @@ export default function SidebarProfileCard({
               Выйти
             </button>
           </div>
-        </a>
+        </div>
 
         <div className="flex gap-[3px]">
           <div className="min-w-0 flex-1">
@@ -175,7 +206,9 @@ export default function SidebarProfileCard({
           </div>
           <div className="min-w-0 flex-1">
             <CurrencyBadge
-              href={buildAppHref("/shop")}
+              onClick={() => {
+                void navigateWithPreload("/shop", onPreloadShop);
+              }}
               icon={ratingIcon}
               value={formatCompactCurrency(Number(user.game_funds ?? 0))}
               background="linear-gradient(135deg, rgba(92, 43, 182, 0.98) 0%, rgba(47, 20, 118, 0.98) 100%)"

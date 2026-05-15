@@ -4,6 +4,7 @@ import MenuButton from "../../../components/molecules/MenuButton.jsx";
 import SidebarProfileCard from "../../../components/molecules/SidebarProfileCard.jsx";
 import { useAuth } from "../../../features/auth/useAuth.js";
 import { withAssetBase } from "../../lib/assets.js";
+import { preloadProfilePage, preloadShopPage } from "../../../App/routeLoaders.js";
 
 const menuItems = [
   {
@@ -17,6 +18,7 @@ const menuItems = [
     label: "\u041c\u0430\u0433\u0430\u0437\u0438\u043d",
     icon: withAssetBase("/icons/cart.svg"),
     to: "/shop",
+    preload: preloadShopPage,
   },
 ];
 
@@ -45,6 +47,7 @@ export default function AppSidebar() {
               label={item.label}
               icon={item.icon}
               to={item.to}
+              preload={item.preload}
               active={
                 item.id === "play"
                   ? isPlaySection
@@ -59,6 +62,8 @@ export default function AppSidebar() {
             user={user}
             isAuthenticated={isAuthenticated}
             onLogout={handleLogout}
+            onPreloadProfile={preloadProfilePage}
+            onPreloadShop={preloadShopPage}
           />
         </div>
       </div>

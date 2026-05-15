@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { declareTimeoutLoss } from "../gameApi.js";
 import { resolveTimeControlConfig } from "./timeControl.js";
-
-const CLOCK_TICK_MS = 250;
-const WARNING_THRESHOLD_MS = 3 * 60 * 1000;
-const DANGER_THRESHOLD_MS = 60 * 1000;
 
 function isTimedRoom(roomState, fallbackTimeControl = {}) {
   return resolveTimeControlConfig(roomState, fallbackTimeControl).timed;
@@ -85,7 +81,7 @@ function hasRunningClock(roomState, timed) {
 
 function formatClock(remainingMs, timed) {
   if (!timed) {
-    return "в€ћ";
+    return "∞";
   }
 
   const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
@@ -99,12 +95,15 @@ function resolveTone(remainingMs, isActive, timed) {
   if (!timed || !isActive) {
     return "idle";
   }
-  if (remainingMs <= DANGER_THRESHOLD_MS) {
+
+  if (remainingMs <= 60 * 1000) {
     return "danger";
   }
-  if (remainingMs <= WARNING_THRESHOLD_MS) {
+
+  if (remainingMs <= 3 * 60 * 1000) {
     return "warning";
   }
+
   return "active";
 }
 
@@ -119,7 +118,6 @@ export function useGameClock({
   isLocalBotGame = false,
   onTimeoutResolved,
 }) {
-  const [nowMs, setNowMs] = useState(() => Date.now());
   const timeoutAttemptKeyRef = useRef("");
 
   const resolvedFallbackTimeControl = useMemo(
@@ -137,62 +135,51 @@ export function useGameClock({
   const gameStatus = String(roomState?.status || "").trim().toLowerCase();
   const clockRunning = hasRunningClock(roomState, timed);
 
-  useEffect(() => {
-    if (!timed || gameStatus !== "active") {
-      return undefined;
-    }
-
-    const timerId = window.setInterval(() => {
-      setNowMs(Date.now());
-    }, CLOCK_TICK_MS);
-
-    return () => window.clearInterval(timerId);
-  }, [gameStatus, timed]);
-
   const playerClock = useMemo(() => {
-    const bottomRemainingMs = getEffectiveRemainingMs(
+    const bottomRemainingMs = getStoredRemainingMs(
       roomState,
       currentUserId,
-      nowMs,
       resolvedTimeControl
     );
-    const topRemainingMs = getEffectiveRemainingMs(
+    const topRemainingMs = getStoredRemainingMs(
       roomState,
       opponentUserId,
-      nowMs,
       resolvedTimeControl
     );
     const activePlayerId = String(roomState?.current_turn_user_id || "").trim();
+    const parsedStartedAtMs = Date.parse(roomState?.current_turn_started_at || "");
+    const startedAtMs = Number.isFinite(parsedStartedAtMs)
+      ? parsedStartedAtMs
+      : null;
+    const topIsActive = clockRunning && activePlayerId === opponentUserId;
+    const bottomIsActive = clockRunning && activePlayerId === currentUserId;
 
     return {
       timed,
       clockRunning,
       activePlayerId,
-      topRemainingMs,
-      bottomRemainingMs,
       top: {
+        displayTime: timed ? "" : "∞",
+        isTimed: timed,
+        remainingMs: topRemainingMs,
+        startedAtMs: topIsActive ? startedAtMs : null,
+        isActive: topIsActive,
         time: formatClock(topRemainingMs, timed),
-        isActive: clockRunning && activePlayerId === opponentUserId,
-        tone: resolveTone(
-          topRemainingMs,
-          clockRunning && activePlayerId === opponentUserId,
-          timed
-        ),
+        tone: resolveTone(topRemainingMs, topIsActive, timed),
       },
       bottom: {
+        displayTime: timed ? "" : "∞",
+        isTimed: timed,
+        remainingMs: bottomRemainingMs,
+        startedAtMs: bottomIsActive ? startedAtMs : null,
+        isActive: bottomIsActive,
         time: formatClock(bottomRemainingMs, timed),
-        isActive: clockRunning && activePlayerId === currentUserId,
-        tone: resolveTone(
-          bottomRemainingMs,
-          clockRunning && activePlayerId === currentUserId,
-          timed
-        ),
+        tone: resolveTone(bottomRemainingMs, bottomIsActive, timed),
       },
     };
   }, [
     clockRunning,
     currentUserId,
-    nowMs,
     opponentUserId,
     roomState,
     resolvedTimeControl,
@@ -214,16 +201,6 @@ export function useGameClock({
       return;
     }
 
-    const activeRemainingMs =
-      playerClock.activePlayerId === currentUserId
-        ? playerClock.bottomRemainingMs
-        : playerClock.topRemainingMs;
-
-    if (activeRemainingMs > 0) {
-      timeoutAttemptKeyRef.current = "";
-      return;
-    }
-
     const timeoutKey = [
       gameId,
       playerClock.activePlayerId,
@@ -235,33 +212,56 @@ export function useGameClock({
       return;
     }
 
-    timeoutAttemptKeyRef.current = timeoutKey;
+    const activeRemainingMs = getEffectiveRemainingMs(
+      roomState,
+      playerClock.activePlayerId,
+      Date.now(),
+      resolvedTimeControl
+    );
 
-    declareTimeoutLoss(gameId, sessionToken)
-      .then((nextState) => {
-        onTimeoutResolved?.(nextState);
-      })
-      .catch((error) => {
-        if (
-          error?.status === 409 &&
-          String(error?.message || "")
-            .toLowerCase()
-            .includes("clock still running")
-        ) {
-          timeoutAttemptKeyRef.current = "";
-        }
-      });
+    function attemptDeclareTimeout() {
+      timeoutAttemptKeyRef.current = timeoutKey;
+
+      declareTimeoutLoss(gameId, sessionToken)
+        .then((nextState) => {
+          onTimeoutResolved?.(nextState);
+        })
+        .catch((error) => {
+          if (
+            error?.status === 409 &&
+            String(error?.message || "")
+              .toLowerCase()
+              .includes("clock still running")
+          ) {
+            timeoutAttemptKeyRef.current = "";
+          }
+        });
+    }
+
+    if (activeRemainingMs <= 0) {
+      attemptDeclareTimeout();
+      return;
+    }
+
+    timeoutAttemptKeyRef.current = "";
+    const timeoutId = window.setTimeout(
+      attemptDeclareTimeout,
+      activeRemainingMs + 50
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [
-    currentUserId,
+    clockRunning,
     gameId,
     gameStatus,
-    clockRunning,
     isLocalBotGame,
     isOnlineGame,
     onTimeoutResolved,
     playerClock.activePlayerId,
-    playerClock.bottomRemainingMs,
-    playerClock.topRemainingMs,
+    resolvedTimeControl,
+    roomState,
     roomState?.current_turn_started_at,
     roomState?.moves?.length,
     sessionToken,

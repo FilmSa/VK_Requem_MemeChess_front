@@ -127,5 +127,9 @@ function createCustomPieces(skinId = DEFAULT_PIECE_SKIN_ID, options = {}) {
   };
 }
 
+function getPieceSkinAssets(skinId = DEFAULT_PIECE_SKIN_ID) {
+  return pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
+}
+
 export const customPieces = createCustomPieces();
-export { createCustomPieces };
+export { createCustomPieces, getPieceSkinAssets };

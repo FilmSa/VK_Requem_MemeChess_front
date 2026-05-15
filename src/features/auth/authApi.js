@@ -226,7 +226,7 @@ export async function uploadAvatar(file, token) {
 
     return normalizeUser(response);
   } catch (error) {
-    throw buildError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°РІР°С‚Р°СЂ.");
+    throw buildError(error, "Не удалось загрузить аватар.");
   }
 }
 

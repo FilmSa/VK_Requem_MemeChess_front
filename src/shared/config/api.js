@@ -42,5 +42,26 @@ export function buildApiUrl(path) {
     return API_BASE_URL;
   }
 
-  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+	return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function resolveApiResourceUrl(value) {
+	const normalizedValue = String(value || "").trim();
+	if (!normalizedValue) {
+		return "";
+	}
+
+	if (
+		/^https?:\/\//i.test(normalizedValue) ||
+		normalizedValue.startsWith("data:") ||
+		normalizedValue.startsWith("blob:")
+	) {
+		return normalizedValue;
+	}
+
+	if (normalizedValue.startsWith("/")) {
+		return buildApiUrl(normalizedValue);
+	}
+
+	return normalizedValue;
 }

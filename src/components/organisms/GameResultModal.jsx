@@ -19,16 +19,10 @@ const OUTCOME_STYLES = {
 };
 
 function renderAvatar(profile, fallbackLabel) {
-  const avatarUrl = String(profile?.avatarUrl || profile?.avatar_url || "").trim();
-  if (avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={String(profile?.name || fallbackLabel || "")}
-        className="h-14 w-14 rounded-[18px] object-cover"
-      />
-    );
-  }
+  const label = String(profile?.name || profile?.username || fallbackLabel || "")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
   return (
     <div
@@ -38,6 +32,7 @@ function renderAvatar(profile, fallbackLabel) {
         color: "var(--color-text)",
       }}
     >
+      {label || "?"}
     </div>
   );
 }
@@ -54,7 +49,6 @@ function PlayerSummary({ label, profile, emphasize = false }) {
         padding: 8
       }}
     >
-      {renderAvatar(profile, playerName || label)}
       <div className="min-w-0">
         <div
           className="text-[20px] uppercase tracking-[0.18em]"

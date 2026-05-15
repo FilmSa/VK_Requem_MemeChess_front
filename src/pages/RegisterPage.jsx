@@ -6,6 +6,11 @@ import AuthCard from "../components/auth/AuthCard.jsx";
 import AuthInput from "../components/auth/AuthInput.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
 import { useNotifications } from "../features/notifications/useNotifications.js";
+import {
+  USERNAME_MAX_LENGTH,
+  normalizeUsernameValue,
+  validateUsername,
+} from "../shared/lib/username.js";
 
 import friendGameIcon from "../../icons/friendgame.svg";
 
@@ -18,25 +23,12 @@ const defaultValues = {
 
 const registerErrorNotificationId = "auth-register-error";
 
-function normalizeNicknameValue(value) {
-  return String(value ?? "").replace(/[^A-Za-z0-9_]/g, "");
-}
-
 function validateForm(form) {
   const errors = {};
-  const normalizedNickname = form.nickname.trim();
+  const nicknameError = validateUsername(form.nickname.trim());
 
-  if (normalizedNickname.length < 3) {
-    errors.nickname =
-      "Имя пользователя должно содержать минимум 3 символа.";
-  }
-
-  if (
-    normalizedNickname.length >= 3 &&
-    !/^[A-Za-z0-9_]+$/.test(normalizedNickname)
-  ) {
-    errors.nickname =
-      "Используйте только латинские буквы, цифры и подчёркивание.";
+  if (nicknameError) {
+    errors.nickname = nicknameError;
   }
 
   if (!form.email.includes("@")) {
@@ -92,7 +84,7 @@ export default function RegisterPage() {
     const { name } = event.target;
     const value =
       name === "nickname"
-        ? normalizeNicknameValue(event.target.value)
+        ? normalizeUsernameValue(event.target.value)
         : event.target.value;
 
     setForm((current) => ({ ...current, [name]: value }));
@@ -155,11 +147,15 @@ export default function RegisterPage() {
                 name="nickname"
                 label="Имя пользователя"
                 type="text"
-                placeholder="Игрок_01"
+                placeholder="Player"
                 value={form.nickname}
                 onChange={handleChange}
                 icon="user"
                 error={serverErrors.username || clientErrors.nickname}
+                maxLength={USERNAME_MAX_LENGTH}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
 
               <AuthInput

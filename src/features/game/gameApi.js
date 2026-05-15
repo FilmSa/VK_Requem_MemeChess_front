@@ -1,4 +1,5 @@
 import { ApiError, apiFetch } from "../../shared/api/client.js";
+import { resolveApiResourceUrl } from "../../shared/config/api.js";
 
 function normalizeParticipant(participant) {
   if (!participant) {
@@ -8,10 +9,47 @@ function normalizeParticipant(participant) {
   return {
     id: participant.id || "",
     username: participant.username || "",
-    avatar_url: participant.avatar_url || "",
+    avatar_url: resolveApiResourceUrl(participant.avatar_url || ""),
     is_guest: Boolean(participant.is_guest),
   };
 }
+
+function normalizeHistoryOpponent(opponent) {
+  if (!opponent) {
+    return null;
+  }
+
+  return {
+    id: opponent.id || "",
+    username: opponent.username || "",
+    avatar_url: resolveApiResourceUrl(opponent.avatar_url || ""),
+  };
+}
+
+function normalizeHistoryEntry(entry) {
+  if (!entry) {
+    return null;
+  }
+
+  return {
+    gameId: entry.game_id || "",
+    status: String(entry.status || "").trim().toLowerCase(),
+    gameMode: String(entry.game_mode || "").trim().toLowerCase(),
+    betAmount: Number(entry.bet_amount ?? 0),
+    currency: entry.currency || "",
+    timeControlId: entry.time_control_id || "",
+    youArePlayer1: Boolean(entry.you_are_player1),
+    opponent: normalizeHistoryOpponent(entry.opponent),
+    winnerId: entry.winner_id || "",
+    finishedAt: entry.finished_at || "",
+    finishedReason: entry.finished_reason || "",
+    fen: entry.fen || "",
+    lastMove: entry.last_move || "",
+    lastMoveNumber: Number(entry.last_move_number ?? 0),
+    createdAt: entry.created_at || "",
+  };
+}
+
 export async function declareTimeoutLoss(gameId, token) {
   try {
     return await apiFetch(`/api/v1/games/${encodeURIComponent(gameId)}/timeout`, {
@@ -109,6 +147,32 @@ export async function getGameParticipants(gameId, token) {
     };
   } catch (error) {
     throw buildGameError(error, "Не удалось загрузить участников партии.");
+  }
+}
+
+export async function getMyGameHistory(token, options = {}) {
+  const limit = Math.max(1, Math.min(Number(options.limit) || 20, 100));
+  const offset = Math.max(0, Number(options.offset) || 0);
+  const searchParams = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  try {
+    const response = await apiFetch(`/api/v1/games/history?${searchParams.toString()}`, {
+      method: "GET",
+      token,
+    });
+
+    return {
+      games: Array.isArray(response?.games)
+        ? response.games.map((entry) => normalizeHistoryEntry(entry)).filter(Boolean)
+        : [],
+      hasMore: Boolean(response?.has_more),
+      nextOffset: Number(response?.next_offset ?? offset + (Array.isArray(response?.games) ? response.games.length : 0)),
+    };
+  } catch (error) {
+    throw buildGameError(error, "Не удалось загрузить историю игр.");
   }
 }
 

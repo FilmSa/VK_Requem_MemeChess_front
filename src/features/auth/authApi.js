@@ -1,4 +1,5 @@
 import { ApiError, apiFetch } from "../../shared/api/client.js";
+import { resolveApiResourceUrl } from "../../shared/config/api.js";
 
 const authBasePath = "/api/v1/auth";
 
@@ -9,7 +10,7 @@ function normalizeUser(user) {
 
   return {
     ...user,
-    avatar_url: user.avatar_url || "",
+    avatar_url: resolveApiResourceUrl(user.avatar_url || ""),
     created_at: user.created_at || "",
     shop_funds: Number(user.shop_funds ?? 0),
     game_funds: Number(user.game_funds ?? 0),
@@ -125,6 +126,20 @@ function buildError(error, fallbackMessage) {
     });
   }
 
+  if (rawMessage.includes("avatar file is too large")) {
+    return new ApiError("Аватар должен быть не больше 5 МБ.", {
+      status: error.status,
+      payload: error.payload,
+    });
+  }
+
+  if (rawMessage.includes("unsupported avatar format")) {
+    return new ApiError("Поддерживаются только PNG, JPG, WEBP и GIF.", {
+      status: error.status,
+      payload: error.payload,
+    });
+  }
+
   return new ApiError(fallbackMessage, {
     status: error.status,
     fields: error.fields,
@@ -181,6 +196,37 @@ export async function getCurrency(token) {
     return normalizeCurrency(response);
   } catch (error) {
     throw buildError(error, "Не удалось загрузить баланс.");
+  }
+}
+
+export async function updateProfile(payload, token) {
+  try {
+    const response = await apiFetch(`${authBasePath}/me`, {
+      method: "PATCH",
+      token,
+      body: payload,
+    });
+
+    return normalizeUser(response);
+  } catch (error) {
+    throw buildError(error, "Не удалось обновить профиль.");
+  }
+}
+
+export async function uploadAvatar(file, token) {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  try {
+    const response = await apiFetch(`${authBasePath}/avatar`, {
+      method: "POST",
+      token,
+      body: formData,
+    });
+
+    return normalizeUser(response);
+  } catch (error) {
+    throw buildError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°РІР°С‚Р°СЂ.");
   }
 }
 

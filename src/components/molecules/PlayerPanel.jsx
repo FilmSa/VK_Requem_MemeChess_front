@@ -6,6 +6,7 @@ export default function PlayerPanel({
   name,
   level,
   avatar,
+  profileHref = "",
   time = "15:00",
   reaction,
   showTimer = true,
@@ -71,6 +72,7 @@ export default function PlayerPanel({
           level={level}
           avatar={avatar}
           reaction={reaction}
+          profileHref={profileHref}
           emojiVolume={emojiVolume}
           onEmojiVolumeChange={onEmojiVolumeChange}
           showEmojiVolumeControl={showEmojiVolumeControl}

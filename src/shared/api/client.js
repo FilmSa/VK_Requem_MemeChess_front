@@ -35,8 +35,15 @@ export async function apiFetch(path, options = {}) {
   };
 
   if (body !== undefined) {
-    requestHeaders["Content-Type"] = "application/json";
-    requestOptions.body = JSON.stringify(body);
+    const isFormData =
+      typeof FormData !== "undefined" && body instanceof FormData;
+
+    if (isFormData) {
+      requestOptions.body = body;
+    } else {
+      requestHeaders["Content-Type"] = "application/json";
+      requestOptions.body = JSON.stringify(body);
+    }
   }
 
   const response = await fetch(buildApiUrl(path), requestOptions);

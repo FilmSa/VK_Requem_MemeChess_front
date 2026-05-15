@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import ChessBoardSection from "../features/chess/ui/ChessBoardSection.jsx";
 import MainMenuPanel from "../features/main-menu/ui/MainMenuPanel.jsx";
+import { useAuth } from "../features/auth/useAuth.js";
 import { useChessGame } from "../features/chess/hooks/useChessGame.js";
 import { useResponsiveWorkspaceLayout } from "../features/chess/hooks/useResponsiveWorkspaceLayout.js";
 import {
@@ -31,6 +32,8 @@ function HomePreviewBoard({
   onLayoutMetricsChange,
   topPlayerTime,
   bottomPlayerTime,
+  bottomPlayerAvatar,
+  bottomPlayerProfileHref,
   animateIntroPieces,
 }) {
   const chessGameState = useChessGame({
@@ -46,12 +49,15 @@ function HomePreviewBoard({
       onLayoutMetricsChange={onLayoutMetricsChange}
       topPlayerTime={topPlayerTime}
       bottomPlayerTime={bottomPlayerTime}
+      bottomPlayerAvatar={bottomPlayerAvatar}
+      bottomPlayerProfileHref={bottomPlayerProfileHref}
       animateIntroPieces={animateIntroPieces}
     />
   );
 }
 
 export default function HomePage() {
+  const { user } = useAuth();
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
   const defaultTimeControl = resolveSelectedTimeControl(DEFAULT_CARD_IDS.new);
@@ -96,6 +102,8 @@ export default function HomePage() {
                 onLayoutMetricsChange={handleBoardMetricsChange}
                 topPlayerTime={previewClock}
                 bottomPlayerTime={previewClock}
+                bottomPlayerAvatar={user?.avatar_url || undefined}
+                bottomPlayerProfileHref={user?.id ? "/profile" : ""}
                 animateIntroPieces={animateIntroPieces}
               />
             </div>

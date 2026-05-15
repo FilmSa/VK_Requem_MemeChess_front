@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link, useLocation } from "react-router-dom";
 import Avatar from "../atoms/Avatar";
 import Text from "../atoms/Text";
 
@@ -125,6 +126,7 @@ export default function UserInfo({
   level,
   avatar,
   reaction,
+  profileHref = "",
   emojiVolume = 0.5,
   onEmojiVolumeChange,
   showEmojiVolumeControl = false,
@@ -132,26 +134,37 @@ export default function UserInfo({
   emojiVolumePopupWidth = null,
 }) {
   const infoRef = useRef(null);
+  const location = useLocation();
   const clampedEmojiVolume = Math.min(1, Math.max(0, Number(emojiVolume) || 0));
   const emojiVolumePercent = Math.round(clampedEmojiVolume * 100);
   const emojiSliderFill = `${emojiVolumePercent}%`;
+  const shouldShowEmojiVolumeControl =
+    showEmojiVolumeControl && location.pathname !== "/";
+  const IdentityWrapper = profileHref ? Link : "div";
 
   return (
     <div
       ref={infoRef}
       className="relative z-[100] mb-[12px] flex items-center gap-[10px] overflow-visible"
     >
-      <div
-        className="relative h-[54px] w-[54px] shrink-0 overflow-visible rounded-full"
-        style={{ background: "var(--player-panel-avatar-bg)" }}
-      >
-        <Avatar src={avatar} className="h-full w-full object-cover" />
-      </div>
-
       <ReactionOverlay anchorRef={infoRef} reaction={reaction} />
 
-      <div className="min-w-0 flex flex-1 flex-col justify-center">
-        <div className="flex min-w-0 items-center gap-[8px]">
+      <IdentityWrapper
+        {...(profileHref ? { to: profileHref } : {})}
+        className="flex min-w-0 flex-1 items-center gap-[10px] no-underline"
+        style={profileHref ? { cursor: "pointer" } : undefined}
+      >
+        <div
+          className="relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[18px]"
+          style={{ background: "var(--player-panel-avatar-bg)" }}
+        >
+          <Avatar
+            src={avatar}
+            className="h-full w-full rounded-[18px] object-cover"
+          />
+        </div>
+
+        <div className="min-w-0 flex flex-1 flex-col justify-center">
           <Text
             className="min-w-0 truncate text-[14px] font-medium leading-[1.2] text-white"
             style={{
@@ -162,72 +175,72 @@ export default function UserInfo({
             {name}
           </Text>
 
-          {showEmojiVolumeControl ? (
-            <div className="group relative flex items-center">
-              <button
-                ref={emojiVolumeButtonRef}
-                type="button"
-                className="flex items-center justify-center border-none bg-transparent p-0 outline-none transition focus:outline-none"
-                style={{
-                  background: "transparent",
-                  outline: "none",
-                  boxShadow: "none",
-                }}
-                title="Громкость эмодзи"
-              >
-                <VolumeIcon muted={clampedEmojiVolume <= 0.001} />
-              </button>
-
-              <div
-                className="pointer-events-none absolute left-full top-1/2 z-[120] ml-[8px] min-w-0 -translate-y-1/2 opacity-0 transition duration-150 delay-[250ms] group-hover:pointer-events-auto group-hover:opacity-100 group-hover:delay-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:delay-0"
-                style={
-                  emojiVolumePopupWidth
-                    ? { width: `${emojiVolumePopupWidth}px` }
-                    : undefined
-                }
-              >
-                <div className="flex w-full min-w-0 items-center gap-[10px] overflow-hidden rounded-tl-[14px] rounded-br-[14px] bg-[#11172f]/95 px-[12px] py-[10px] shadow-[0_14px_32px_rgba(0,0,0,0.38)] backdrop-blur">
-                  <span
-                    className="min-w-0 max-w-[45%] truncate text-[10px] uppercase tracking-[0.12em]"
-                    style={{
-                      color: "var(--color-text-muted)",
-                      fontFamily: '"Unbounded", sans-serif',
-                    }}
-                  >
-                  </span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={clampedEmojiVolume}
-                    onChange={(event) =>
-                      onEmojiVolumeChange?.(event.target.valueAsNumber)
-                    }
-                    aria-label="Громкость эмодзи"
-                    className="h-[4px] min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-transparent"
-                    style={{
-                      background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${emojiSliderFill}, rgba(255,255,255,0.14) ${emojiSliderFill}, rgba(255,255,255,0.14) 100%)`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+          {level ? (
+            <Text
+              className="text-[20px] font-medium leading-[1.2]"
+              style={{
+                fontFamily: '"Unbounded", sans-serif',
+                color: "var(--player-panel-level)",
+              }}
+            >
+              {level}
+            </Text>
           ) : null}
         </div>
+      </IdentityWrapper>
 
-        {level ? (
-          <Text
-            className="text-[20px] font-medium leading-[1.2]"
+      {shouldShowEmojiVolumeControl ? (
+        <div className="group relative flex items-center">
+          <button
+            ref={emojiVolumeButtonRef}
+            type="button"
+            className="flex items-center justify-center border-none bg-transparent p-0 outline-none transition focus:outline-none"
             style={{
-              fontFamily: '"Unbounded", sans-serif',
-              color: "var(--player-panel-level)",
+              background: "transparent",
+              outline: "none",
+              boxShadow: "none",
             }}
+            title="Громкость эмодзи"
           >
-            {level}
-          </Text>
-        ) : null}
-      </div>
+            <VolumeIcon muted={clampedEmojiVolume <= 0.001} />
+          </button>
+
+          <div
+            className="pointer-events-none absolute left-full top-1/2 z-[120] ml-[8px] min-w-0 -translate-y-1/2 opacity-0 transition duration-150 delay-[250ms] group-hover:pointer-events-auto group-hover:opacity-100 group-hover:delay-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-focus-within:delay-0"
+            style={
+              emojiVolumePopupWidth
+                ? { width: `${emojiVolumePopupWidth}px` }
+                : undefined
+            }
+          >
+            <div className="flex w-full min-w-0 items-center gap-[10px] overflow-hidden rounded-tl-[14px] rounded-br-[14px] bg-[#11172f]/95 px-[12px] py-[10px] shadow-[0_14px_32px_rgba(0,0,0,0.38)] backdrop-blur">
+              <span
+                className="min-w-0 max-w-[45%] truncate text-[10px] uppercase tracking-[0.12em]"
+                style={{
+                  color: "var(--color-text-muted)",
+                  fontFamily: '"Unbounded", sans-serif',
+                }}
+              >
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={clampedEmojiVolume}
+                onChange={(event) =>
+                  onEmojiVolumeChange?.(event.target.valueAsNumber)
+                }
+                aria-label="Громкость эмодзи"
+                className="h-[4px] min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-transparent"
+                style={{
+                  background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${emojiSliderFill}, rgba(255,255,255,0.14) ${emojiSliderFill}, rgba(255,255,255,0.14) 100%)`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -95,6 +95,7 @@ export default function AuthInput({
   onChange,
   error,
   icon = "user",
+  ...inputProps
 }) {
   const Icon = iconMap[icon] || UserGlyph;
   const errorId = error ? `${id}-error` : undefined;
@@ -125,6 +126,7 @@ export default function AuthInput({
           aria-invalid={Boolean(error)}
           aria-describedby={errorId}
           placeholder={placeholder}
+          {...inputProps}
           className="h-[58px] w-full rounded-[14px] border-none pl-[42px] pr-4 text-[19px] font-medium outline-none transition-shadow placeholder:text-[17px] shadow-[inset_0_4px_4px_rgba(0,0,0,0.14)]"
           style={{
             background: "var(--auth-input-background)",

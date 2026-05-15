@@ -1171,21 +1171,27 @@ export default function PlayPage() {
             style={{ gap: layout.contentGap }}
           >
             <div className="relative flex h-full min-w-0 flex-1 justify-center overflow-hidden">
-              <ChessBoardSection
-                gameState={chessGameState}
-                sendMove={roomControls.sendMove}
-                boardWidth={layout.boardSize}
-                onLayoutMetricsChange={handleBoardMetricsChange}
-                topPlayerName={activeRoom.opponentName}
-                topPlayerAvatar={
-                  activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
-                }
-                bottomPlayerName={activeRoom.currentUserName}
-                bottomPlayerAvatar={
-                  activeRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
-                }
-                topReaction={topReaction}
-                bottomReaction={bottomReaction}
+                <ChessBoardSection
+                  gameState={chessGameState}
+                  sendMove={roomControls.sendMove}
+                  boardWidth={layout.boardSize}
+                  onLayoutMetricsChange={handleBoardMetricsChange}
+                  topPlayerName={activeRoom.opponentName}
+                  topPlayerAvatar={
+                    activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
+                  }
+                  topPlayerProfileHref={
+                    activeRoom.opponentProfile?.id === user?.id ? "/profile" : ""
+                  }
+                  bottomPlayerName={activeRoom.currentUserName}
+                  bottomPlayerAvatar={
+                    activeRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR
+                  }
+                  bottomPlayerProfileHref={
+                    activeRoom.currentUserProfile?.id === user?.id ? "/profile" : ""
+                  }
+                  topReaction={topReaction}
+                  bottomReaction={bottomReaction}
                 showPlayerTimers={showTimedClocks}
                 topPlayerTime={gameClock.top?.time || "∞"}
                 bottomPlayerTime={gameClock.bottom?.time || "∞"}

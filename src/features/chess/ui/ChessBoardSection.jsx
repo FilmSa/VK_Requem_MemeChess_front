@@ -19,6 +19,8 @@ export default function ChessBoardSection({
   bottomPlayerName = "Вы",
   topPlayerAvatar = DEFAULT_AVATAR,
   bottomPlayerAvatar = DEFAULT_AVATAR,
+  topPlayerProfileHref = "",
+  bottomPlayerProfileHref = "",
   topReaction = null,
   bottomReaction = null,
   topPlayerTime = "15:00",
@@ -90,14 +92,12 @@ export default function ChessBoardSection({
           width: boardWidth,
         }}
       >
-        <div
-          ref={topPanelRef}
-          style={{ marginBottom: TOP_PLAYER_PANEL_GAP }}
-        >
+        <div ref={topPanelRef} style={{ marginBottom: TOP_PLAYER_PANEL_GAP }}>
           <PlayerPanel
             name={topPlayerName}
             level=""
             avatar={topPlayerAvatar || DEFAULT_AVATAR}
+            profileHref={topPlayerProfileHref}
             time={topPlayerTime}
             reaction={topReaction}
             showTimer={showPlayerTimers}
@@ -128,14 +128,12 @@ export default function ChessBoardSection({
           animateIntroPieces={animateIntroPieces}
         />
 
-        <div
-          ref={bottomPanelRef}
-          style={{ marginTop: BOTTOM_PLAYER_PANEL_GAP }}
-        >
+        <div ref={bottomPanelRef} style={{ marginTop: BOTTOM_PLAYER_PANEL_GAP }}>
           <PlayerPanel
             name={bottomPlayerName}
             level=""
             avatar={bottomPlayerAvatar || DEFAULT_AVATAR}
+            profileHref={bottomPlayerProfileHref}
             time={bottomPlayerTime}
             reaction={bottomReaction}
             showTimer={showPlayerTimers}

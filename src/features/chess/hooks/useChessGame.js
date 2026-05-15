@@ -584,6 +584,21 @@ function buildMoveDto(move) {
   return moveDto;
 }
 
+function buildMoveEffectKey(historyLength, move) {
+  const normalizedHistoryLength = Number.isFinite(historyLength)
+    ? Math.max(0, Math.trunc(historyLength))
+    : 0;
+  const normalizedMove = buildMoveDto(move);
+
+  if (!normalizedMove.from || !normalizedMove.to) {
+    return "";
+  }
+
+  return `${normalizedHistoryLength}:${normalizedMove.from}${normalizedMove.to}${
+    normalizedMove.promotion || ""
+  }`;
+}
+
 function buildMoveHistoryDtos(history) {
   return history.map((move) => buildMoveDto(move));
 }
@@ -1037,6 +1052,10 @@ export function useChessGame(options = {}) {
     setGame(gameCopy);
     syncHistoryCursor(gameCopy.history().length, previousHistoryLength);
     clearSelection();
+    lastTriggeredMoveEffectKeyRef.current = buildMoveEffectKey(
+      gameCopy.history().length,
+      move
+    );
     void triggerMoveEffect(move, gameCopy, historyBeforeMove);
 
     return move;
@@ -1350,8 +1369,8 @@ export function useChessGame(options = {}) {
     const historyBeforeMove =
       nextHistoryLength > 0 ? historyAfterMove.slice(0, -1) : historyAfterMove;
     const effectMoveKey =
-      nextHistoryLength === previousHistoryLength + 1 && lastMoveEntry?.move
-        ? `${state?.game_id || "game"}:${nextHistoryLength}:${lastMoveEntry.move}`
+      nextHistoryLength === previousHistoryLength + 1 && latestMoveFromHistory
+        ? buildMoveEffectKey(nextHistoryLength, latestMoveFromHistory)
         : "";
     const pendingPayload = pendingServerSyncPayloadRef.current;
 

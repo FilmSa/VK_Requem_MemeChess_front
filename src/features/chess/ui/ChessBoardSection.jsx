@@ -49,6 +49,8 @@ export default function ChessBoardSection({
     boardOrientation,
     activeEffects,
     promotionState,
+    onPieceDragBegin,
+    onPieceDragEnd,
     onSquareClick,
     onPieceDrop,
     onPromotionSelect,
@@ -119,6 +121,8 @@ export default function ChessBoardSection({
           highlightedSquares={highlightedSquares}
           activeEffects={activeEffects}
           promotionState={promotionState}
+          onPieceDragBegin={(piece, square) => onPieceDragBegin(piece, square)}
+          onPieceDragEnd={(piece, square) => onPieceDragEnd(piece, square)}
           onSquareClick={(square) => onSquareClick(square, sendMove)}
           onPieceDrop={(sourceSquare, targetSquare) =>
             onPieceDrop(sourceSquare, targetSquare, sendMove)

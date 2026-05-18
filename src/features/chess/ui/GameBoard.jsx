@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { createCustomPieces } from "../lib/boardPieces.jsx";
+import { BOARD_MOVE_ANIMATION_DURATION_MS } from "../lib/boardConfig.js";
 import { readStoredPieceSkin, subscribePieceSkinChanges } from "../../../shared/lib/pieceSkin.js";
 import {
   getBoardSkinConfig,
@@ -10,7 +11,15 @@ import {
 import BoardEffectsLayer from "../media/BoardEffectsLayer.jsx";
 import PromotionMenu from "./PromotionMenu.jsx";
 
-const BOARD_MOVE_ANIMATION_DURATION_MS = 920;
+function extractBoardPosition(fen) {
+  const normalizedFen = String(fen || "").trim();
+
+  if (!normalizedFen) {
+    return "start";
+  }
+
+  return normalizedFen.split(/\s+/)[0] || "start";
+}
 
 export default function GameBoard({
   fen,
@@ -21,6 +30,8 @@ export default function GameBoard({
   promotionState,
   onSquareClick,
   onPieceDrop,
+  onPieceDragBegin,
+  onPieceDragEnd,
   onPromotionSelect,
   onPromotionCancel,
   canDragPieces,
@@ -58,6 +69,7 @@ export default function GameBoard({
     () => getBoardSkinConfig(selectedBoardSkin),
     [selectedBoardSkin]
   );
+  const boardPosition = useMemo(() => extractBoardPosition(fen), [fen]);
 
   if (!boardWidth) {
     return null;
@@ -80,7 +92,7 @@ export default function GameBoard({
       >
         <Chessboard
           id="PawnRequiemBoard"
-          position={fen}
+          position={boardPosition}
           boardOrientation={boardOrientation}
           boardWidth={boardWidth}
           animationDuration={BOARD_MOVE_ANIMATION_DURATION_MS}
@@ -91,6 +103,8 @@ export default function GameBoard({
           customSquareStyles={highlightedSquares}
           isDraggablePiece={isPieceDraggable}
           onPromotionCheck={() => false}
+          onPieceDragBegin={onPieceDragBegin}
+          onPieceDragEnd={onPieceDragEnd}
           onSquareClick={onSquareClick}
           onPieceDrop={onPieceDrop}
         />

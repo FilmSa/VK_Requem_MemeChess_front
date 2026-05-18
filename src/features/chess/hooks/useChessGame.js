@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
-import { analyzeMove } from "../lib/analyzerApi.js";
+import { BOARD_MOVE_ANIMATION_DURATION_MS } from "../lib/boardConfig.js";
 import { getGameParams } from "../lib/gameParams";
 import {
-  mapAnalyzerTagsToMemeTags,
-  pickRandomMemeEffect,
+  analyzeMoveForMeme,
+  rebuildOrdinaryMoveCountFromServerMoves,
+} from "../media/moveMemeClassifier.js";
+import {
+  createMemeRotationState,
+  pickNextMemeEffect,
 } from "../media/memeEffects.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
 import {
@@ -14,15 +18,8 @@ import {
 
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
-const RANDOM_MEME_FALLBACK_TAGS = [
-  "ATTACK",
-  "CHECK",
-  "DANGER",
-  "SMART",
-  "DEFOLT",
-];
 const SEQUENCE_ANIMATION_DURATION_MS = 680;
-const BOT_REPLY_VISUAL_DELAY_MS = 900;
+const BOT_REPLY_VISUAL_DELAY_MS = 4000;
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -51,27 +48,6 @@ function parseMoveSequence(move) {
     .filter(Boolean);
 
   return parts.length ? parts : null;
-}
-
-function getOppositeColor(color) {
-  return color === "b" ? "w" : "b";
-}
-
-function setFenTurn(fen, turn) {
-  const normalizedFen = String(fen || "").trim();
-  const normalizedTurn = turn === "b" ? "b" : "w";
-
-  if (!normalizedFen) {
-    return normalizedFen;
-  }
-
-  const fenParts = normalizedFen.split(/\s+/);
-  if (fenParts.length < 2) {
-    return normalizedFen;
-  }
-
-  fenParts[1] = normalizedTurn;
-  return fenParts.join(" ");
 }
 
 function listBoardSquares() {
@@ -397,180 +373,6 @@ function buildKingThreatStyles(chessInstance) {
   };
 }
 
-function buildMoveMemeContext(move, chessAfterMove) {
-  const candidateTags = [];
-  let targetSquare = move.to;
-
-  if (chessAfterMove.isCheckmate()) {
-    candidateTags.push("CHECK", "DANGER");
-    targetSquare = findKingSquare(chessAfterMove) || targetSquare;
-  } else if (chessAfterMove.inCheck()) {
-    candidateTags.push("CHECK", "DANGER");
-    targetSquare = findKingSquare(chessAfterMove) || targetSquare;
-  }
-
-  if (move.promotion) {
-    candidateTags.push("SMART");
-  }
-
-  if (move.captured) {
-    candidateTags.push("ATTACK");
-
-    if (["q", "r"].includes(move.captured)) {
-      candidateTags.push("SMART");
-    }
-  }
-
-  if (move.flags?.includes("k") || move.flags?.includes("q")) {
-    candidateTags.push("SMART");
-  }
-
-  if (candidateTags.length === 0) {
-    candidateTags.push("DEFOLT");
-  }
-
-  return {
-    candidateTags,
-    targetSquare,
-  };
-}
-
-function countPiecesByType(chessInstance, color, type) {
-  if (!chessInstance) {
-    return 0;
-  }
-
-  let count = 0;
-  const board = chessInstance.board();
-
-  for (const rank of board) {
-    for (const piece of rank) {
-      if (piece?.color === color && piece.type === type) {
-        count += 1;
-      }
-    }
-  }
-
-  return count;
-}
-
-function pickRandomArrayItem(items) {
-  if (!Array.isArray(items) || items.length === 0) {
-    return null;
-  }
-
-  return items[Math.floor(Math.random() * items.length)] ?? null;
-}
-
-function resolveSequenceTargetSquare(sequence) {
-  if (!sequence?.length) {
-    return "";
-  }
-
-  const lastStep = sequence[sequence.length - 1];
-  if (lastStep?.to && lastStep.to !== lastStep.from) {
-    return lastStep.to;
-  }
-
-  return lastStep?.from || "";
-}
-
-function buildTurnAdjustedGame(chessInstance, turn) {
-  if (!chessInstance) {
-    return null;
-  }
-
-  return loadGameFromFen(setFenTurn(chessInstance.fen(), turn));
-}
-
-function listThreatenedNonPawnTargets(chessAfterMove, attackerSquare, attackerColor) {
-  if (!chessAfterMove || !attackerSquare) {
-    return [];
-  }
-
-  const attackGame = buildTurnAdjustedGame(chessAfterMove, attackerColor);
-  if (!attackGame) {
-    return [];
-  }
-
-  return attackGame
-    .moves({ square: attackerSquare, verbose: true })
-    .filter((move) => Boolean(move.captured) && move.captured !== "p");
-}
-
-function buildSpecialModeMoveMemeContext({
-  previousGame,
-  chessAfterMove,
-  move,
-  sequence,
-}) {
-  const defenderColor = chessAfterMove.turn();
-  const attackerColor = getOppositeColor(defenderColor);
-  const movedPieceSquare =
-    move?.to || resolveSequenceTargetSquare(sequence) || move?.from || "";
-  const kingSquare =
-    findKingSquare(chessAfterMove, defenderColor) || movedPieceSquare || move?.to || "";
-  const capturedEnemyQueen =
-    previousGame &&
-    countPiecesByType(previousGame, defenderColor, "q") >
-      countPiecesByType(chessAfterMove, defenderColor, "q");
-
-  if (chessAfterMove.isCheckmate()) {
-    return {
-      candidateTags: ["SMART"],
-      targetSquare: kingSquare,
-    };
-  }
-
-  if (capturedEnemyQueen) {
-    return {
-      candidateTags: ["SMART"],
-      targetSquare: movedPieceSquare || kingSquare,
-    };
-  }
-
-  if (chessAfterMove.inCheck()) {
-    return {
-      candidateTags: ["CHECK"],
-      targetSquare: kingSquare,
-    };
-  }
-
-  const threatenedTargets = listThreatenedNonPawnTargets(
-    chessAfterMove,
-    movedPieceSquare,
-    attackerColor
-  );
-
-  if (threatenedTargets.length >= 2) {
-    return {
-      candidateTags: ["ATTACK"],
-      targetSquare: movedPieceSquare || kingSquare,
-    };
-  }
-
-  if (threatenedTargets.length >= 1) {
-    const threatenedTarget = pickRandomArrayItem(threatenedTargets);
-
-    if (Math.random() < 0.5) {
-      return {
-        candidateTags: ["DANGER"],
-        targetSquare: threatenedTarget?.to || movedPieceSquare || kingSquare,
-      };
-    }
-
-    return {
-      candidateTags: ["ATTACK"],
-      targetSquare: movedPieceSquare || threatenedTarget?.to || kingSquare,
-    };
-  }
-
-  return {
-    candidateTags: ["DEFOLT"],
-    targetSquare: movedPieceSquare || kingSquare,
-  };
-}
-
 function buildMoveDto(move) {
   const moveDto = {
     from: String(move?.from || "").toLowerCase(),
@@ -599,8 +401,124 @@ function buildMoveEffectKey(historyLength, move) {
   }`;
 }
 
-function buildMoveHistoryDtos(history) {
-  return history.map((move) => buildMoveDto(move));
+function buildServerMoveEffectKey(historyLength, moveEntry, fallbackMove = null) {
+  const moveEffectKey = buildMoveEffectKey(historyLength, fallbackMove);
+  if (moveEffectKey) {
+    return moveEffectKey;
+  }
+
+  const rawMove = String(moveEntry?.move || "").trim().toLowerCase();
+  if (!rawMove) {
+    return "";
+  }
+
+  const normalizedHistoryLength = Number.isFinite(historyLength)
+    ? Math.max(0, Math.trunc(historyLength))
+    : 0;
+  return `${normalizedHistoryLength}:${rawMove}`;
+}
+
+function buildRawMoveString(moveRequest) {
+  const source = String(moveRequest?.from || "").trim().toLowerCase();
+  const target = String(moveRequest?.to || "").trim().toLowerCase();
+  const promotion = normalizePromotionPiece(moveRequest?.promotion);
+
+  if (!/^[a-h][1-8]$/.test(source) || !/^[a-h][1-8]$/.test(target)) {
+    return "";
+  }
+
+  return `${source}${target}${promotion || ""}`;
+}
+
+function findPreviewCastleRookMove(chessInstance, color, from, to) {
+  if (!chessInstance || !color || !from || !to || from[1] !== to[1]) {
+    return null;
+  }
+
+  const rank = from[1];
+  const targetFile = to[0];
+  const sourceFileCode = from.charCodeAt(0);
+  const rookTargetSquare = targetFile === "g" ? `f${rank}` : targetFile === "c" ? `d${rank}` : "";
+
+  if (!rookTargetSquare) {
+    return null;
+  }
+
+  const rookSquares = BOARD_SQUARES.filter((square) => {
+    if (square === from || square[1] !== rank) {
+      return false;
+    }
+
+    const piece = chessInstance.get(square);
+    return piece?.type === "r" && piece.color === color;
+  }).sort((left, right) => left.charCodeAt(0) - right.charCodeAt(0));
+
+  const rookSourceSquare =
+    targetFile === "g"
+      ? rookSquares.find((square) => square.charCodeAt(0) > sourceFileCode)
+      : [...rookSquares].reverse().find((square) => square.charCodeAt(0) < sourceFileCode);
+
+  if (!rookSourceSquare) {
+    return null;
+  }
+
+  return {
+    from: rookSourceSquare,
+    to: rookTargetSquare,
+  };
+}
+
+function buildAuthoritativePreviewFen(baseFen, moveRequest) {
+  const rawMove = String(moveRequest?.raw || "").trim().toLowerCase() || buildRawMoveString(moveRequest);
+  const sequence = parseMoveSequence(rawMove);
+  const previewGame = loadGameFromFen(baseFen);
+
+  if (!previewGame || !sequence?.length) {
+    return "";
+  }
+
+  for (const step of sequence) {
+    if (!step?.from || !step?.to || step.from === step.to) {
+      return "";
+    }
+
+    const movingPiece = previewGame.get(step.from);
+    if (!movingPiece) {
+      return "";
+    }
+
+    const castleRookMove =
+      sequence.length === 1 && movingPiece.type === "k"
+        ? findPreviewCastleRookMove(previewGame, movingPiece.color, step.from, step.to)
+        : null;
+
+    previewGame.remove(step.to);
+    previewGame.remove(step.from);
+
+    if (
+      !previewGame.put(
+        { type: step.promotion || movingPiece.type, color: movingPiece.color },
+        step.to
+      )
+    ) {
+      return "";
+    }
+
+    if (castleRookMove && castleRookMove.from !== castleRookMove.to) {
+      const rookPiece = previewGame.get(castleRookMove.from);
+      if (!rookPiece || rookPiece.type !== "r" || rookPiece.color !== movingPiece.color) {
+        return "";
+      }
+
+      previewGame.remove(castleRookMove.to);
+      previewGame.remove(castleRookMove.from);
+      if (!previewGame.put({ type: "r", color: movingPiece.color }, castleRookMove.to)) {
+        return "";
+      }
+    }
+  }
+
+  return previewGame.fen();
 }
 
 export function useChessGame(options = {}) {
@@ -608,8 +526,10 @@ export function useChessGame(options = {}) {
   const playerColor = options.playerColor || params.playerColor || "w";
   const allowBothColors = Boolean(options.allowBothColors);
   const gameMode = String(options.gameMode || "").trim().toLowerCase();
+  const syncKey = String(options.syncKey || "").trim();
   const usesServerAuthoritativeRules =
     Boolean(options.forceServerAuthoritative) || isServerAuthoritativeMode(gameMode);
+  const isSpecialAuthoritativeMode = isServerAuthoritativeMode(gameMode);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
   const currentUserId = String(options.currentUserId || "").trim();
@@ -634,22 +554,45 @@ export function useChessGame(options = {}) {
   const [historyCursor, setHistoryCursor] = useState(0);
   const [promotionState, setPromotionState] = useState(null);
   const [sequenceAnimationFen, setSequenceAnimationFen] = useState("");
+  const [authoritativePreviewFen, setAuthoritativePreviewFen] = useState("");
+  const [visibleServerMoves, setVisibleServerMoves] = useState(() => serverMoves);
+  const [visibleServerLegalMoves, setVisibleServerLegalMoves] = useState(
+    () => serverLegalMoves
+  );
   const [isMemeModeEnabled, setIsMemeModeEnabled] = useState(() =>
     typeof options.memeModeEnabled === "boolean"
       ? options.memeModeEnabled
       : readStoredMemeMode()
   );
+  const [isBoardAnimationLocked, setIsBoardAnimationLocked] = useState(false);
+  const boardInteractionLocked =
+    interactionLocked ||
+    isBoardAnimationLocked ||
+    (usesServerAuthoritativeRules &&
+      (Boolean(authoritativePreviewFen) ||
+        serverMoves.length !== visibleServerMoves.length));
 
   const { activeEffects, triggerEffect } = useBoardEffectsController();
   const gameRef = useRef(game);
   const historyCursorRef = useRef(historyCursor);
+  const promotionStateRef = useRef(promotionState);
   const memeModeEnabledRef = useRef(isMemeModeEnabled);
-  const serverMovesRef = useRef(serverMoves);
-  const lastSyncedMoveCountRef = useRef(serverMoves.length);
+  const serverMovesRef = useRef(visibleServerMoves);
+  const lastSyncedMoveCountRef = useRef(visibleServerMoves.length);
   const sequenceAnimationTimerRef = useRef(null);
   const pendingServerSyncTimerRef = useRef(null);
   const pendingServerSyncPayloadRef = useRef(null);
   const lastTriggeredMoveEffectKeyRef = useRef("");
+  const botReplyNotBeforeRef = useRef(0);
+  const boardAnimationLockTimerRef = useRef(null);
+  const outgoingAnimationNotBeforeRef = useRef(0);
+  const memeRotationStateRef = useRef(createMemeRotationState());
+  const ordinaryMoveCountRef = useRef(
+    rebuildOrdinaryMoveCountFromServerMoves({
+      serverMoves,
+      initialFen,
+    })
+  );
 
   useEffect(() => {
     gameRef.current = game;
@@ -660,12 +603,16 @@ export function useChessGame(options = {}) {
   }, [historyCursor]);
 
   useEffect(() => {
+    promotionStateRef.current = promotionState;
+  }, [promotionState]);
+
+  useEffect(() => {
     memeModeEnabledRef.current = isMemeModeEnabled;
   }, [isMemeModeEnabled]);
 
   useEffect(() => {
-    serverMovesRef.current = serverMoves;
-  }, [serverMoves]);
+    serverMovesRef.current = visibleServerMoves;
+  }, [visibleServerMoves]);
 
   useEffect(() => {
     return () => {
@@ -675,17 +622,47 @@ export function useChessGame(options = {}) {
       if (pendingServerSyncTimerRef.current) {
         window.clearTimeout(pendingServerSyncTimerRef.current);
       }
+      if (boardAnimationLockTimerRef.current) {
+        window.clearTimeout(boardAnimationLockTimerRef.current);
+      }
     };
   }, []);
 
   useEffect(() => {
     pendingServerSyncPayloadRef.current = null;
     lastTriggeredMoveEffectKeyRef.current = "";
+    lastSyncedMoveCountRef.current = serverMoves.length;
+    botReplyNotBeforeRef.current = 0;
+    memeRotationStateRef.current = createMemeRotationState();
+    ordinaryMoveCountRef.current = rebuildOrdinaryMoveCountFromServerMoves({
+      serverMoves,
+      initialFen,
+    });
+    clearBoardAnimationLock();
+    setAuthoritativePreviewFen("");
+    setVisibleServerMoves(serverMoves);
+    setVisibleServerLegalMoves(serverLegalMoves);
     if (pendingServerSyncTimerRef.current) {
       window.clearTimeout(pendingServerSyncTimerRef.current);
       pendingServerSyncTimerRef.current = null;
     }
-  }, [initialFen, gameMode]);
+    clearSequenceAnimation();
+    clearSelection();
+
+    const resetGame = buildGameFromServerState(
+      {
+        moves: serverMoves,
+        fen: serverMoves[serverMoves.length - 1]?.fen || initialFen,
+        initial_fen: initialFen,
+        game_mode: gameMode,
+      },
+      null,
+      { gameMode }
+    );
+
+    setGame(resetGame || loadGameFromFen(initialFen) || new Chess());
+    setHistoryCursor(serverMoves.length);
+  }, [gameMode, initialFen, syncKey, usesServerAuthoritativeRules, isBotGame]);
 
   useEffect(() => {
     if (typeof options.memeModeEnabled === "boolean") {
@@ -700,10 +677,10 @@ export function useChessGame(options = {}) {
   }, []);
 
   useEffect(() => {
-    if (interactionLocked) {
+    if (boardInteractionLocked) {
       clearSelection();
     }
-  }, [interactionLocked]);
+  }, [boardInteractionLocked]);
 
   function syncHistoryCursor(nextHistoryLength, previousHistoryLength) {
     setHistoryCursor((currentCursor) => {
@@ -737,6 +714,44 @@ export function useChessGame(options = {}) {
     setSequenceAnimationFen("");
   }
 
+  function clearBoardAnimationLock() {
+    outgoingAnimationNotBeforeRef.current = 0;
+    if (boardAnimationLockTimerRef.current) {
+      window.clearTimeout(boardAnimationLockTimerRef.current);
+      boardAnimationLockTimerRef.current = null;
+    }
+    setIsBoardAnimationLocked(false);
+  }
+
+  function armBoardAnimationLock(durationMs = BOARD_MOVE_ANIMATION_DURATION_MS, options = {}) {
+    const safeDurationMs = Math.max(0, Number(durationMs) || 0);
+    const markOutgoing = Boolean(options.markOutgoing);
+    const deadline = Date.now() + safeDurationMs;
+
+    if (markOutgoing) {
+      outgoingAnimationNotBeforeRef.current = deadline;
+    }
+
+    if (boardAnimationLockTimerRef.current) {
+      window.clearTimeout(boardAnimationLockTimerRef.current);
+      boardAnimationLockTimerRef.current = null;
+    }
+
+    if (!safeDurationMs) {
+      setIsBoardAnimationLocked(false);
+      return;
+    }
+
+    setIsBoardAnimationLocked(true);
+    boardAnimationLockTimerRef.current = window.setTimeout(() => {
+      boardAnimationLockTimerRef.current = null;
+      if (outgoingAnimationNotBeforeRef.current <= Date.now()) {
+        outgoingAnimationNotBeforeRef.current = 0;
+      }
+      setIsBoardAnimationLocked(false);
+    }, safeDurationMs);
+  }
+
   function buildSequenceIntermediateFen(baseFen, sequence) {
     if (!sequence?.length || sequence.length < 2) {
       return "";
@@ -750,63 +765,56 @@ export function useChessGame(options = {}) {
     return previewGame.fen();
   }
 
-  async function triggerMoveEffect(move, chessAfterMove, historyBeforeMove = []) {
+  function triggerResolvedMoveEffect({
+    move = null,
+    chessAfterMove = null,
+    previousGame = null,
+    sequence = null,
+  }) {
+    if (!chessAfterMove || !previousGame) {
+      return;
+    }
+
+    const analysis = analyzeMoveForMeme({
+      previousGame,
+      nextGame: chessAfterMove,
+      move,
+      sequence,
+      initialFen,
+      ordinaryMoveCount: ordinaryMoveCountRef.current,
+    });
+    const lastSequenceStep =
+      Array.isArray(sequence) && sequence.length > 0
+        ? sequence[sequence.length - 1]
+        : null;
+    ordinaryMoveCountRef.current = analysis.nextOrdinaryMoveCount;
+
     if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE || !memeModeEnabledRef.current) {
       return;
     }
 
-    const localContext = buildMoveMemeContext(
-      move,
-      chessAfterMove
-    );
-    let candidateTags = localContext.candidateTags;
-    let shouldUseRandomFallback = false;
-    let randomFallbackReason = "";
-
-    try {
-      const analysisResult = await analyzeMove({
-        moves: buildMoveHistoryDtos(historyBeforeMove),
-        move: buildMoveDto(move),
-        depth: 3,
-        timeoutMs: 1500,
-      });
-
-      if (!analysisResult) {
-        shouldUseRandomFallback = true;
-        randomFallbackReason = "empty-analysis-result";
-      }
-
-      const analyzerTags = mapAnalyzerTagsToMemeTags(
-        analysisResult?.tags,
-        analysisResult?.quality
-      );
-
-      if (analyzerTags.length > 0) {
-        candidateTags = analyzerTags;
-      }
-    } catch {
-      shouldUseRandomFallback = true;
-      randomFallbackReason = "analysis-request-failed";
+    if (!analysis.category || !analysis.targetSquare) {
+      return;
     }
 
-    const memeEffect = pickRandomMemeEffect(
-      shouldUseRandomFallback ? RANDOM_MEME_FALLBACK_TAGS : candidateTags
+    const memeEffect = pickNextMemeEffect(
+      analysis.category,
+      memeRotationStateRef.current
     );
 
-    if (shouldUseRandomFallback && memeEffect) {
-      console.info("[meme-fallback] Meme selected without backend analysis", {
-        reason: randomFallbackReason || "unknown",
-        move: buildMoveDto(move),
-        selectedMemeId: memeEffect.id,
-        selectedMemeTag: memeEffect.tag,
-      });
+    if (!memeEffect) {
+      return;
     }
 
-    triggerEffect(memeEffect || "1", {
-      square: localContext.targetSquare,
-      from: move.from,
-      to: move.to,
-      piece: move.piece,
+    triggerEffect(memeEffect, {
+      square: analysis.targetSquare,
+      from: move?.from || sequence?.[0]?.from || null,
+      to: move?.to || lastSequenceStep?.to || analysis.targetSquare,
+      piece:
+        move?.piece ||
+        chessAfterMove.get(analysis.targetSquare)?.type ||
+        previousGame.get(move?.from || sequence?.[0]?.from || "")?.type ||
+        null,
     });
   }
 
@@ -814,43 +822,18 @@ export function useChessGame(options = {}) {
     move,
     chessAfterMove,
     previousGame = null,
-    historyBeforeMove = [],
     sequence = null,
   }) {
-    if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE || !memeModeEnabledRef.current || !chessAfterMove) {
+    if (!chessAfterMove) {
       return;
     }
 
-    if (isServerAuthoritativeMode(gameMode)) {
-      const localContext = buildSpecialModeMoveMemeContext({
-        previousGame,
-        chessAfterMove,
-        move,
-        sequence,
-      });
-      const memeEffect = pickRandomMemeEffect(localContext.candidateTags);
-      const resolvedToSquare =
-        move?.to || resolveSequenceTargetSquare(sequence) || localContext.targetSquare || null;
-      const movedPieceSquare =
-        move?.to || resolveSequenceTargetSquare(sequence) || move?.from || "";
-
-      triggerEffect(memeEffect || "1", {
-        square: localContext.targetSquare,
-        from: move?.from || sequence?.[0]?.from || null,
-        to: resolvedToSquare,
-        piece:
-          move?.piece ||
-          chessAfterMove.get(movedPieceSquare)?.type ||
-          null,
-      });
-      return;
-    }
-
-    if (!move) {
-      return;
-    }
-
-    void triggerMoveEffect(move, chessAfterMove, historyBeforeMove);
+    triggerResolvedMoveEffect({
+      move,
+      chessAfterMove,
+      previousGame,
+      sequence,
+    });
   }
 
   function isPlayersTurn(chessInstance = gameRef.current) {
@@ -873,7 +856,7 @@ export function useChessGame(options = {}) {
 
   function getLegalMoves(square, chessInstance = gameRef.current) {
     if (usesServerAuthoritativeRules) {
-      return serverLegalMoves
+      return visibleServerLegalMoves
         .map((move) => parseMoveSequence(move))
         .filter((sequence) => sequence?.[0]?.from === square)
         .map((sequence) => {
@@ -1026,14 +1009,14 @@ export function useChessGame(options = {}) {
     return cloneGameInstance(gameRef.current);
   }
 
-  function applyMove({ from, to, promotion }) {
+  function applyMove({ from, to, promotion }, options = {}) {
     if (usesServerAuthoritativeRules) {
       return null;
     }
 
-    const historyBeforeMove = gameRef.current.history({ verbose: true });
     const previousHistoryLength = gameRef.current.history().length;
     const gameCopy = cloneGameFromHistory();
+    const previousGame = loadGameFromFen(gameCopy.fen()) || cloneGameFromHistory();
     const moveRequest = {
       from,
       to,
@@ -1052,11 +1035,18 @@ export function useChessGame(options = {}) {
     setGame(gameCopy);
     syncHistoryCursor(gameCopy.history().length, previousHistoryLength);
     clearSelection();
+    armBoardAnimationLock(BOARD_MOVE_ANIMATION_DURATION_MS, {
+      markOutgoing: options.markOutgoing !== false,
+    });
     lastTriggeredMoveEffectKeyRef.current = buildMoveEffectKey(
       gameCopy.history().length,
       move
     );
-    void triggerMoveEffect(move, gameCopy, historyBeforeMove);
+    triggerResolvedMoveEffect({
+      move,
+      chessAfterMove: gameCopy,
+      previousGame,
+    });
 
     return move;
   }
@@ -1106,6 +1096,15 @@ export function useChessGame(options = {}) {
       );
 
       if (sent) {
+        if (isBotGame) {
+          botReplyNotBeforeRef.current = Date.now() + BOT_REPLY_VISUAL_DELAY_MS;
+        }
+        setAuthoritativePreviewFen(
+          buildAuthoritativePreviewFen(gameRef.current.fen(), moveRequest)
+        );
+        armBoardAnimationLock(BOARD_MOVE_ANIMATION_DURATION_MS, {
+          markOutgoing: true,
+        });
         clearSelection();
       }
 
@@ -1138,12 +1137,37 @@ export function useChessGame(options = {}) {
     setPromotionState(null);
   }
 
+  function onPieceDragBegin(_pieceCode, sourceSquare) {
+    const currentGame = gameRef.current;
+    const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
+    const piece = currentGame.get(sourceSquare);
+
+    if (promotionStateRef.current || boardInteractionLocked || isViewingHistory) {
+      return;
+    }
+
+    if (!canControlPiece(piece, currentGame)) {
+      return;
+    }
+
+    setSelectedSquare(sourceSquare);
+    buildHighlights(sourceSquare, currentGame);
+  }
+
+  function onPieceDragEnd() {
+    if (promotionStateRef.current) {
+      return;
+    }
+
+    clearSelection();
+  }
+
   function onSquareClick(square, sendMove) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
     const clickedPiece = currentGame.get(square);
 
-    if (promotionState || interactionLocked) {
+    if (promotionState || boardInteractionLocked) {
       return;
     }
 
@@ -1233,7 +1257,7 @@ export function useChessGame(options = {}) {
     const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
     const piece = currentGame.get(sourceSquare);
 
-    if (promotionState || interactionLocked) {
+    if (promotionState || boardInteractionLocked) {
       return false;
     }
 
@@ -1268,7 +1292,7 @@ export function useChessGame(options = {}) {
       return false;
     }
 
-    return completeMove(
+    const moveAccepted = completeMove(
       {
         from: sourceSquare,
         to: targetSquare,
@@ -1277,6 +1301,14 @@ export function useChessGame(options = {}) {
       },
       sendMove
     );
+
+    if (moveAccepted) {
+      // react-chessboard skips move animation for accepted manual drops.
+      // Keep every outgoing drag move on the external-position path instead.
+      return false;
+    }
+
+    return false;
   }
 
   function onPromotionSelect(promotion, sendMove) {
@@ -1306,7 +1338,7 @@ export function useChessGame(options = {}) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
 
-    if (promotionState || isViewingHistory || interactionLocked) {
+    if (promotionState || isViewingHistory || boardInteractionLocked) {
       return false;
     }
 
@@ -1317,7 +1349,7 @@ export function useChessGame(options = {}) {
     const currentGame = gameRef.current;
     const isViewingHistory = historyCursorRef.current !== getCurrentHistoryLength();
 
-    if (promotionState || isViewingHistory || interactionLocked) {
+    if (promotionState || isViewingHistory || boardInteractionLocked) {
       return false;
     }
 
@@ -1333,13 +1365,17 @@ export function useChessGame(options = {}) {
       from: move.from,
       to: move.to,
       promotion: move.promotion,
-    });
+    }, { markOutgoing: false });
 
     return Boolean(appliedMove);
   }
 
   function syncFromServerState(state) {
     const previousHistoryLength = lastSyncedMoveCountRef.current;
+    const nextServerMoves = Array.isArray(state?.moves) ? state.moves : [];
+    const nextServerLegalMoves = Array.isArray(state?.legal_moves)
+      ? state.legal_moves.filter((move) => typeof move === "string" && move.trim())
+      : [];
     const nextGame = buildGameFromServerState(state, gameRef.current, {
       gameMode,
     });
@@ -1347,18 +1383,13 @@ export function useChessGame(options = {}) {
       return false;
     }
 
-    const nextHistoryLength = Array.isArray(state?.moves)
-      ? state.moves.length
-      : nextGame.history().length;
+    const nextHistoryLength = nextServerMoves.length || nextGame.history().length;
     const isLatestView = historyCursorRef.current >= previousHistoryLength;
-    const lastMoveEntry =
-      nextHistoryLength > 0 && Array.isArray(state?.moves)
-        ? state.moves[nextHistoryLength - 1]
-        : null;
+    const lastMoveEntry = nextHistoryLength > 0 ? nextServerMoves[nextHistoryLength - 1] : null;
     const lastSequence = parseMoveSequence(lastMoveEntry?.move);
     const previousFen =
       nextHistoryLength > 1
-        ? state?.moves?.[nextHistoryLength - 2]?.fen
+        ? nextServerMoves[nextHistoryLength - 2]?.fen
         : state?.initial_fen || initialFen;
     const previousGame = loadGameFromFen(previousFen);
     const historyAfterMove = nextGame.history({ verbose: true });
@@ -1366,12 +1397,22 @@ export function useChessGame(options = {}) {
       historyAfterMove.length >= nextHistoryLength
         ? historyAfterMove[nextHistoryLength - 1]
         : historyAfterMove[historyAfterMove.length - 1] || null;
-    const historyBeforeMove =
-      nextHistoryLength > 0 ? historyAfterMove.slice(0, -1) : historyAfterMove;
     const effectMoveKey =
-      nextHistoryLength === previousHistoryLength + 1 && latestMoveFromHistory
-        ? buildMoveEffectKey(nextHistoryLength, latestMoveFromHistory)
+      nextHistoryLength === previousHistoryLength + 1
+        ? buildServerMoveEffectKey(
+            nextHistoryLength,
+            lastMoveEntry,
+            latestMoveFromHistory
+          )
         : "";
+    const ordinaryMoveCountBeforeLatest = rebuildOrdinaryMoveCountFromServerMoves({
+      serverMoves: nextServerMoves.slice(0, -1),
+      initialFen: state?.initial_fen || initialFen,
+    });
+    const ordinaryMoveCountAfterSync = rebuildOrdinaryMoveCountFromServerMoves({
+      serverMoves: nextServerMoves,
+      initialFen: state?.initial_fen || initialFen,
+    });
     const pendingPayload = pendingServerSyncPayloadRef.current;
 
     if (
@@ -1390,10 +1431,23 @@ export function useChessGame(options = {}) {
       Boolean(effectMoveKey) &&
       effectMoveKey !== lastTriggeredMoveEffectKeyRef.current;
 
-    const commitServerState = () => {
+    const commitServerState = ({
+      clearBotReplyDeadline = false,
+      animateBoard = false,
+    } = {}) => {
+      setAuthoritativePreviewFen("");
+      if (clearBotReplyDeadline) {
+        botReplyNotBeforeRef.current = 0;
+      }
       lastSyncedMoveCountRef.current = nextHistoryLength;
+      setVisibleServerMoves(nextServerMoves);
+      setVisibleServerLegalMoves(nextServerLegalMoves);
       setGame(nextGame);
       syncHistoryCursor(nextHistoryLength, previousHistoryLength);
+
+      let boardAnimationDurationMs = animateBoard
+        ? BOARD_MOVE_ANIMATION_DURATION_MS
+        : 0;
 
       if (
         usesServerAuthoritativeRules &&
@@ -1406,6 +1460,10 @@ export function useChessGame(options = {}) {
         if (intermediateFen && intermediateFen !== nextGame.fen()) {
           clearSequenceAnimation();
           setSequenceAnimationFen(intermediateFen);
+          boardAnimationDurationMs = Math.max(
+            boardAnimationDurationMs,
+            SEQUENCE_ANIMATION_DURATION_MS + BOARD_MOVE_ANIMATION_DURATION_MS
+          );
           sequenceAnimationTimerRef.current = window.setTimeout(() => {
             sequenceAnimationTimerRef.current = null;
             setSequenceAnimationFen("");
@@ -1420,29 +1478,47 @@ export function useChessGame(options = {}) {
       clearSelection();
 
       if (shouldTriggerEffect) {
+        ordinaryMoveCountRef.current = ordinaryMoveCountBeforeLatest;
         lastTriggeredMoveEffectKeyRef.current = effectMoveKey;
         triggerClientMoveEffect({
           move: latestMoveFromHistory,
           chessAfterMove: nextGame,
           previousGame,
-          historyBeforeMove,
           sequence: lastSequence,
         });
+      } else {
+        ordinaryMoveCountRef.current = ordinaryMoveCountAfterSync;
+      }
+
+      if (boardAnimationDurationMs > 0) {
+        armBoardAnimationLock(boardAnimationDurationMs);
       }
     };
 
     const lastMoveUserId = String(
       lastMoveEntry?.user_id || lastMoveEntry?.userId || ""
     ).trim();
-    const movedByOpponent =
-      isBotGame &&
+    const stateMovedByOpponent =
       Boolean(currentUserId) &&
-      nextHistoryLength === previousHistoryLength + 1 &&
+      nextHistoryLength > previousHistoryLength &&
       ((lastMoveUserId && lastMoveUserId !== currentUserId) ||
         String(state?.current_turn_user_id || state?.currentTurnUserId || "").trim() ===
           currentUserId);
 
-    if (movedByOpponent && isLatestView) {
+    const remainingOutgoingAnimationMs =
+      stateMovedByOpponent && isLatestView
+        ? Math.max(0, outgoingAnimationNotBeforeRef.current - Date.now())
+        : 0;
+    const remainingBotReplyDelayMs =
+      isBotGame && stateMovedByOpponent && isLatestView && botReplyNotBeforeRef.current > 0
+        ? Math.max(0, botReplyNotBeforeRef.current - Date.now())
+        : 0;
+    const remainingDelayMs = Math.max(
+      remainingOutgoingAnimationMs,
+      remainingBotReplyDelayMs
+    );
+
+    if (stateMovedByOpponent && isLatestView && remainingDelayMs > 0) {
       pendingServerSyncPayloadRef.current = {
         effectMoveKey,
         historyLength: nextHistoryLength,
@@ -1450,13 +1526,19 @@ export function useChessGame(options = {}) {
       pendingServerSyncTimerRef.current = window.setTimeout(() => {
         pendingServerSyncTimerRef.current = null;
         pendingServerSyncPayloadRef.current = null;
-        commitServerState();
-      }, BOT_REPLY_VISUAL_DELAY_MS);
+        commitServerState({
+          clearBotReplyDeadline: true,
+          animateBoard: true,
+        });
+      }, remainingDelayMs);
       return true;
     }
 
     pendingServerSyncPayloadRef.current = null;
-    commitServerState();
+    commitServerState({
+      clearBotReplyDeadline: isBotGame && stateMovedByOpponent,
+      animateBoard: stateMovedByOpponent && isLatestView,
+    });
     return true;
   }
 
@@ -1464,28 +1546,27 @@ export function useChessGame(options = {}) {
     ? []
     : game.history({ verbose: true });
   const history = usesServerAuthoritativeRules
-    ? serverMoves.map((move) => move?.move || "")
+    ? visibleServerMoves.map((move) => move?.move || "")
     : verboseHistory.map((move) =>
         `${move.from}${move.to}${move.promotion || ""}`.toLowerCase()
       );
   const activeHistoryPly = Math.min(historyCursor, history.length);
   const baseDisplayedGame = usesServerAuthoritativeRules
-    ? buildServerHistoryGame(historyCursor, serverMoves, initialFen, game.fen())
+    ? buildServerHistoryGame(historyCursor, visibleServerMoves, initialFen, game.fen())
     : buildGameToPly(verboseHistory, historyCursor);
+  const previewDisplayedGame =
+    usesServerAuthoritativeRules &&
+    authoritativePreviewFen &&
+    activeHistoryPly === history.length
+      ? loadGameFromFen(authoritativePreviewFen)
+      : null;
   const displayedGame =
     usesServerAuthoritativeRules &&
     sequenceAnimationFen &&
     activeHistoryPly === history.length
-      ? loadGameFromFen(sequenceAnimationFen) || baseDisplayedGame
-      : baseDisplayedGame;
-  const recentMoveOverlay = usesServerAuthoritativeRules
-    ? buildServerMoveOverlay({
-        serverMoves,
-        initialFen,
-        activeHistoryPly,
-        historyLength: history.length,
-      })
-    : { arrows: [], styles: {} };
+      ? loadGameFromFen(sequenceAnimationFen) || previewDisplayedGame || baseDisplayedGame
+      : previewDisplayedGame || baseDisplayedGame;
+  const recentMoveOverlay = { arrows: [], styles: {} };
   const effectiveHighlightedSquares = mergeSquareStyles(
     mergeSquareStyles(
       mergeSquareStyles(highlightedSquares, recentMoveOverlay.styles),
@@ -1528,6 +1609,8 @@ export function useChessGame(options = {}) {
     activeEffects,
     promotionState,
     effect: triggerEffect,
+    onPieceDragBegin,
+    onPieceDragEnd,
     onSquareClick,
     onPieceDrop,
     onPromotionSelect,

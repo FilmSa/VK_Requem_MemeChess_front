@@ -11,7 +11,7 @@ const LOCAL_BOT_USER_ID = "local-bot";
 const LOCAL_GUEST_USER_ID = "local-player";
 const LOCAL_BOT_NAME = "MemeBot";
 const LOCAL_PLAYER_NAME = "Игрок";
-const BOT_THINK_DELAY_MS = 280;
+const BOT_THINK_DELAY_MS = 4000;
 
 function normalizeBotDifficulty(value) {
   const normalized = String(value || "").trim().toLowerCase();

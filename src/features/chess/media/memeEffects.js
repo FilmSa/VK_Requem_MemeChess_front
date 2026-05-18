@@ -1,167 +1,103 @@
-import { withAssetBase } from "../../../shared/lib/assets.js";
-import { MEME_MANIFEST } from "./generated/memeManifest.js";
+import { getMemeCategoryConfig } from "./memeConfig.js";
 
-const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".ogg"]);
-const IMAGE_EXTENSIONS = new Set([".gif", ".png", ".jpg", ".jpeg", ".svg"]);
-const DEFAULT_TAG = "DEFOLT";
+const GLOBAL_RECENT_REPEAT_WINDOW = 3;
 
-const TAG_ALIASES = {
-  ATTACK: "ATTACK",
-  CHECK: "CHECK",
-  DANGER: "DANGER",
-  DEFAULT: DEFAULT_TAG,
-  DEFOLT: DEFAULT_TAG,
-  SMART: "SMART",
-};
+function shuffleItems(items) {
+  const nextItems = [...items];
 
-const TAG_DURATIONS = {
-  ATTACK: 4200,
-  CHECK: 5200,
-  DANGER: 5600,
-  SMART: 4600,
-  [DEFAULT_TAG]: 3600,
-};
-
-const ANALYZER_TAG_TO_MEME_TAGS = {
-  attack: ["ATTACK"],
-  blunder: ["DANGER"],
-  castling: ["SMART"],
-  castling_attack: ["SMART", "ATTACK"],
-  castling_check: ["SMART", "CHECK"],
-  check: ["CHECK"],
-  checkmate: ["CHECK", "DANGER"],
-  conversion: ["SMART"],
-  double_check: ["CHECK", "DANGER"],
-  forced_mate: ["DANGER", "CHECK"],
-  fork: ["SMART", "ATTACK"],
-  hanging_piece: ["ATTACK", "DANGER"],
-  inaccuracy: ["DANGER"],
-  mate_threat: ["DANGER"],
-  mistake: ["DANGER"],
-  missed_opportunity: ["DANGER"],
-  opening: ["SMART"],
-  opening_caro_kann_defense: ["SMART"],
-  opening_french_defense: ["SMART"],
-  opening_italian_game: ["SMART"],
-  opening_kings_indian_defense: ["SMART"],
-  opening_open_game: ["SMART"],
-  opening_queens_gambit: ["SMART"],
-  opening_ruy_lopez: ["SMART"],
-  opening_sicilian_defense: ["SMART"],
-  perpetual_check: ["CHECK", "DANGER"],
-  pin_to_king: ["SMART", "ATTACK"],
-  relative_pin: ["SMART"],
-  win_material: ["ATTACK", "SMART"],
-};
-
-function getFileExtension(assetPath) {
-  return assetPath.slice(assetPath.lastIndexOf(".")).toLowerCase();
-}
-
-function isVideoAsset(assetPath) {
-  return VIDEO_EXTENSIONS.has(getFileExtension(assetPath));
-}
-
-function isImageAsset(assetPath) {
-  return IMAGE_EXTENSIONS.has(getFileExtension(assetPath));
-}
-
-function normalizeTag(tag) {
-  const normalizedTag = String(tag || "").trim().toUpperCase();
-  return TAG_ALIASES[normalizedTag] || "";
-}
-
-function pickRandomItem(items) {
-  if (!Array.isArray(items) || items.length === 0) {
-    return null;
+  for (let index = nextItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [nextItems[index], nextItems[swapIndex]] = [
+      nextItems[swapIndex],
+      nextItems[index],
+    ];
   }
 
-  return items[Math.floor(Math.random() * items.length)] ?? null;
+  return nextItems;
 }
 
-function resolveAvailableTags(candidateTags) {
-  const seenTags = new Set();
+function createDeck(categoryConfig, lastMemeId = "") {
+  const shuffledMemes = shuffleItems(categoryConfig?.memes || []);
 
-  candidateTags.forEach((tag) => {
-    const normalizedTag = normalizeTag(tag);
-    if (!normalizedTag || seenTags.has(normalizedTag)) {
-      return;
+  if (shuffledMemes.length > 1 && shuffledMemes[0]?.id === lastMemeId) {
+    const swapIndex = shuffledMemes.findIndex((meme) => meme.id !== lastMemeId);
+    if (swapIndex > 0) {
+      [shuffledMemes[0], shuffledMemes[swapIndex]] = [
+        shuffledMemes[swapIndex],
+        shuffledMemes[0],
+      ];
     }
-
-    const assets = MEME_MANIFEST[normalizedTag];
-    if (Array.isArray(assets) && assets.length > 0) {
-      seenTags.add(normalizedTag);
-    }
-  });
-
-  if (seenTags.size > 0) {
-    return [...seenTags];
   }
 
-  const defaultAssets = MEME_MANIFEST[DEFAULT_TAG];
-  if (Array.isArray(defaultAssets) && defaultAssets.length > 0) {
-    return [DEFAULT_TAG];
-  }
-
-  return [];
+  return shuffledMemes;
 }
 
-export function pickRandomMemeEffect(candidateTags = []) {
-  const availableTags = resolveAvailableTags(candidateTags);
-  const selectedTag = pickRandomItem(availableTags);
-
-  if (!selectedTag) {
-    return null;
-  }
-
-  const assetPath = pickRandomItem(MEME_MANIFEST[selectedTag]);
-  if (!assetPath) {
-    return null;
-  }
-
-  const mediaType = isVideoAsset(assetPath)
-    ? "video"
-    : isImageAsset(assetPath)
-    ? "image"
-    : "";
-
-  if (!mediaType) {
-    return null;
-  }
-
+export function createMemeRotationState() {
   return {
-    id: `meme:${selectedTag}:${assetPath}`,
-    name: `${selectedTag} meme`,
-    tag: selectedTag,
-    asset: withAssetBase(assetPath),
-    sound: mediaType === "video" ? withAssetBase(assetPath) : null,
-    volume: mediaType === "video" ? 0.5 : 0,
-    duration: TAG_DURATIONS[selectedTag] ?? TAG_DURATIONS[DEFAULT_TAG],
-    mediaType,
+    decksByCategory: new Map(),
+    lastMemeIdByCategory: new Map(),
+    lastGlobalMemeId: "",
+    recentRepeatKeys: [],
   };
 }
 
-export function mapAnalyzerTagsToMemeTags(tags = [], quality = "") {
-  const candidateTags = [];
+function pickDeckIndex(deck, rotationState) {
+  const recentRepeatKeys = Array.isArray(rotationState?.recentRepeatKeys)
+    ? rotationState.recentRepeatKeys
+    : [];
+  const lastGlobalMemeId = String(rotationState?.lastGlobalMemeId || "").trim();
+  const preferredIndex = deck.findIndex(
+    (meme) =>
+      meme?.id !== lastGlobalMemeId &&
+      !recentRepeatKeys.includes(String(meme?.repeatKey || ""))
+  );
 
-  tags.forEach((tag) => {
-    const normalizedTag = String(tag || "").trim().toLowerCase();
-    const mappedTags = ANALYZER_TAG_TO_MEME_TAGS[normalizedTag];
-
-    if (Array.isArray(mappedTags)) {
-      candidateTags.push(...mappedTags);
-    }
-  });
-
-  const normalizedQuality = String(quality || "").trim().toLowerCase();
-
-  if (["blunder", "mistake", "inaccuracy"].includes(normalizedQuality)) {
-    candidateTags.push("DANGER");
+  if (preferredIndex >= 0) {
+    return preferredIndex;
   }
 
-  if (normalizedQuality === "best" || normalizedQuality === "excellent") {
-    candidateTags.push("SMART");
+  const nonImmediateRepeatIndex = deck.findIndex(
+    (meme) => meme?.id !== lastGlobalMemeId
+  );
+
+  return nonImmediateRepeatIndex >= 0 ? nonImmediateRepeatIndex : 0;
+}
+
+export function pickNextMemeEffect(categoryKey, rotationState) {
+  const categoryConfig = getMemeCategoryConfig(categoryKey);
+
+  if (!categoryConfig || !rotationState) {
+    return null;
   }
 
-  return [...new Set(candidateTags)];
+  const normalizedCategoryKey = categoryConfig.key;
+  let deck = rotationState.decksByCategory.get(normalizedCategoryKey);
+
+  if (!Array.isArray(deck) || deck.length === 0) {
+    deck = createDeck(
+      categoryConfig,
+      rotationState.lastMemeIdByCategory.get(normalizedCategoryKey) || ""
+    );
+  }
+
+  const nextMemeIndex = pickDeckIndex(deck, rotationState);
+  const [nextMeme] =
+    nextMemeIndex >= 0 ? deck.splice(nextMemeIndex, 1) : [null];
+  rotationState.decksByCategory.set(normalizedCategoryKey, deck);
+
+  if (nextMeme?.id) {
+    rotationState.lastMemeIdByCategory.set(normalizedCategoryKey, nextMeme.id);
+    rotationState.lastGlobalMemeId = nextMeme.id;
+  }
+
+  if (nextMeme?.repeatKey) {
+    rotationState.recentRepeatKeys = [
+      ...rotationState.recentRepeatKeys.filter(
+        (repeatKey) => repeatKey !== nextMeme.repeatKey
+      ),
+      nextMeme.repeatKey,
+    ].slice(-GLOBAL_RECENT_REPEAT_WINDOW);
+  }
+
+  return nextMeme;
 }

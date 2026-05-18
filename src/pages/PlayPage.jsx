@@ -496,6 +496,7 @@ export default function PlayPage() {
   const showTimedClocks = Boolean(gameClock.timed);
 
   const chessGameState = useChessGame({
+    syncKey: gameId,
     playerColor: activeRoom.playerColor,
     gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
     currentUserId,
@@ -505,7 +506,7 @@ export default function PlayPage() {
     initialFen: roomState?.initial_fen || "",
     interactionLocked: isGameFinished,
     extraHighlightedSquares,
-    forceServerAuthoritative: activeRoom.isLocalBotGame,
+    forceServerAuthoritative: activeRoom.isBotGame,
   });
 
   const emojiOwnerId =
@@ -735,7 +736,7 @@ export default function PlayPage() {
   }
 
   const socketClient = useGameSocket({
-    onRemoteMove: chessGameState.applyRemoteMove,
+    onRemoteMove: undefined,
     onStateChange: socketOptions?.onStateChange,
     onJoined: socketOptions?.onJoined,
     onOpen: socketOptions?.onOpen,

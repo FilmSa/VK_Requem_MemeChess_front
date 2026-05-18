@@ -6,6 +6,7 @@ import {
 } from "../../../shared/lib/memeEffectsVolume.js";
 
 const MEDIA_METADATA_TIMEOUT_MS = 2000;
+const MAX_EFFECT_DURATION_MS = 4000;
 const mediaDurationCache = new Map();
 
 function resolveEffectConfig(effectSource) {
@@ -87,11 +88,15 @@ function loadMediaDurationMs(src, elementTag, fallbackDuration) {
 }
 
 async function resolveEffectDurationMs(effectInstance, fallbackDuration) {
+  const cappedFallbackDuration = Math.min(
+    MAX_EFFECT_DURATION_MS,
+    Math.max(0, Number(fallbackDuration) || 0)
+  );
   const durationCandidates = [];
 
   if (effectInstance?.mediaType === "video" && effectInstance.asset) {
     durationCandidates.push(
-      loadMediaDurationMs(effectInstance.asset, "video", fallbackDuration)
+      loadMediaDurationMs(effectInstance.asset, "video", cappedFallbackDuration)
     );
   }
 
@@ -100,16 +105,19 @@ async function resolveEffectDurationMs(effectInstance, fallbackDuration) {
     effectInstance.sound !== effectInstance.asset
   ) {
     durationCandidates.push(
-      loadMediaDurationMs(effectInstance.sound, "audio", fallbackDuration)
+      loadMediaDurationMs(effectInstance.sound, "audio", cappedFallbackDuration)
     );
   }
 
   if (!durationCandidates.length) {
-    return fallbackDuration;
+    return cappedFallbackDuration;
   }
 
   const resolvedDurations = await Promise.all(durationCandidates);
-  return Math.max(fallbackDuration, ...resolvedDurations);
+  return Math.min(
+    MAX_EFFECT_DURATION_MS,
+    Math.max(cappedFallbackDuration, ...resolvedDurations)
+  );
 }
 
 export function useBoardEffectsController() {
@@ -252,7 +260,10 @@ export function useBoardEffectsController() {
       asset: config.asset,
       sound: config.sound,
       mediaType: config.mediaType,
-      duration: options.duration ?? config.duration ?? 1500,
+      duration: Math.min(
+        MAX_EFFECT_DURATION_MS,
+        Math.max(0, Number(options.duration ?? config.duration ?? 1500) || 0)
+      ),
       square: options.square ?? null,
       from: options.from ?? null,
       to: options.to ?? null,

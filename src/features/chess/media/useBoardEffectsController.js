@@ -6,7 +6,7 @@ import {
 } from "../../../shared/lib/memeEffectsVolume.js";
 
 const MEDIA_METADATA_TIMEOUT_MS = 2000;
-const MAX_EFFECT_DURATION_MS = 4000;
+const MAX_EFFECT_DURATION_MS = 6000;
 const mediaDurationCache = new Map();
 
 function resolveEffectConfig(effectSource) {

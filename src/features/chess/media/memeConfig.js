@@ -16,27 +16,27 @@ const CATEGORY_DEFINITIONS = Object.freeze({
   [MEME_CATEGORIES.FORK_PIN]: {
     id: "fork-pin",
     name: "Fork, pin, or attack",
-    duration: 4000,
+    duration: 6000,
   },
   [MEME_CATEGORIES.IMPORTANT_CAPTURE]: {
     id: "important-capture",
     name: "Important capture",
-    duration: 4000,
+    duration: 6000,
   },
   [MEME_CATEGORIES.CHECK]: {
     id: "check",
     name: "Check",
-    duration: 4000,
+    duration: 6000,
   },
   [MEME_CATEGORIES.SACRIFICE]: {
     id: "sacrifice",
     name: "Sacrifice",
-    duration: 4000,
+    duration: 6000,
   },
   [MEME_CATEGORIES.DEVELOPMENT]: {
     id: "development",
     name: "Development",
-    duration: 4000,
+    duration: 6000,
   },
 });
 

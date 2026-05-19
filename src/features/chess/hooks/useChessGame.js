@@ -518,7 +518,14 @@ function buildAuthoritativePreviewFen(baseFen, moveRequest) {
     }
   }
 
-  return previewGame.fen();
+  const [placement, turn = "w", , , , fullmove = "1"] = previewGame.fen().split(/\s+/);
+  const nextTurn = turn === "w" ? "b" : "w";
+  const nextFullmove =
+    turn === "b"
+      ? String(Math.max(1, Number.parseInt(fullmove, 10) + 1 || 1))
+      : fullmove;
+
+  return `${placement} ${nextTurn} - - 0 ${nextFullmove}`;
 }
 
 export function useChessGame(options = {}) {
@@ -572,7 +579,7 @@ export function useChessGame(options = {}) {
       (Boolean(authoritativePreviewFen) ||
         serverMoves.length !== visibleServerMoves.length));
 
-  const { activeEffects, effectLayerVolume, triggerEffect } =
+  const { activeEffects, effectLayerVolume, triggerEffect, removeEffect } =
     useBoardEffectsController();
   const gameRef = useRef(game);
   const historyCursorRef = useRef(historyCursor);
@@ -773,7 +780,7 @@ export function useChessGame(options = {}) {
     sequence = null,
   }) {
     if (!chessAfterMove || !previousGame) {
-      return;
+      return false;
     }
 
     const analysis = analyzeMoveForMeme({
@@ -791,11 +798,11 @@ export function useChessGame(options = {}) {
     ordinaryMoveCountRef.current = analysis.nextOrdinaryMoveCount;
 
     if (!DEBUG_SHOW_EFFECT_ON_ANY_MOVE || !memeModeEnabledRef.current) {
-      return;
+      return false;
     }
 
     if (!analysis.category || !analysis.targetSquare) {
-      return;
+      return false;
     }
 
     const memeEffect = pickNextMemeEffect(
@@ -804,10 +811,10 @@ export function useChessGame(options = {}) {
     );
 
     if (!memeEffect) {
-      return;
+      return false;
     }
 
-    triggerEffect(memeEffect, {
+    const instanceId = triggerEffect(memeEffect, {
       square: analysis.targetSquare,
       from: move?.from || sequence?.[0]?.from || null,
       to: move?.to || lastSequenceStep?.to || analysis.targetSquare,
@@ -817,6 +824,8 @@ export function useChessGame(options = {}) {
         previousGame.get(move?.from || sequence?.[0]?.from || "")?.type ||
         null,
     });
+
+    return Boolean(instanceId);
   }
 
   function triggerClientMoveEffect({
@@ -826,10 +835,10 @@ export function useChessGame(options = {}) {
     sequence = null,
   }) {
     if (!chessAfterMove) {
-      return;
+      return false;
     }
 
-    triggerResolvedMoveEffect({
+    return triggerResolvedMoveEffect({
       move,
       chessAfterMove,
       previousGame,
@@ -1085,9 +1094,9 @@ export function useChessGame(options = {}) {
   function previewAuthoritativeMoveEffect(moveRequest) {
     const previousFen = gameRef.current.fen();
     const previewFen = buildAuthoritativePreviewFen(previousFen, moveRequest);
+    const rawMove = moveRequest?.raw || buildRawMoveString(moveRequest);
     const previewSequence = parseMoveSequence(
-      String(moveRequest?.raw || "").trim().toLowerCase() ||
-        buildRawMoveString(moveRequest)
+      String(rawMove).trim().toLowerCase()
     );
     const previousGame = loadGameFromFen(previousFen);
     const previewGame = loadGameFromFen(previewFen);
@@ -1096,16 +1105,19 @@ export function useChessGame(options = {}) {
       return previewFen;
     }
 
-    lastTriggeredMoveEffectKeyRef.current = buildServerMoveEffectKey(
+    const effectMoveKey = buildServerMoveEffectKey(
       lastSyncedMoveCountRef.current + 1,
-      { move: moveRequest?.raw || buildRawMoveString(moveRequest) },
+      { move: rawMove },
       null
     );
-    triggerResolvedMoveEffect({
+    const didTrigger = triggerResolvedMoveEffect({
       chessAfterMove: previewGame,
       previousGame,
       sequence: previewSequence,
     });
+    if (didTrigger) {
+      lastTriggeredMoveEffectKeyRef.current = effectMoveKey;
+    }
 
     return previewFen;
   }
@@ -1635,6 +1647,7 @@ export function useChessGame(options = {}) {
     boardOrientation,
     activeEffects,
     effectLayerVolume,
+    removeEffect,
     promotionState,
     effect: triggerEffect,
     onPieceDragBegin,

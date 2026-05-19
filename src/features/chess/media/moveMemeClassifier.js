@@ -2,6 +2,14 @@ import { Chess } from "chess.js";
 import { MEME_CATEGORIES } from "./memeConfig.js";
 
 const IMPORTANT_PIECE_TYPES = new Set(["n", "b", "r", "q"]);
+const PIECE_VALUES = {
+  p: 1,
+  n: 3,
+  b: 3,
+  r: 5,
+  q: 9,
+  k: 100,
+};
 const SLIDING_DIRECTIONS = {
   b: [
     [1, 1],
@@ -26,17 +34,31 @@ const SLIDING_DIRECTIONS = {
     [0, -1],
   ],
 };
-const PIECE_VALUES = {
-  p: 1,
-  n: 3,
-  b: 3,
-  r: 5,
-  q: 9,
-  k: 100,
-};
+
+function listBoardSquares() {
+  const squares = [];
+
+  for (let rank = 1; rank <= 8; rank += 1) {
+    for (let fileIndex = 0; fileIndex < 8; fileIndex += 1) {
+      squares.push(`${String.fromCharCode(97 + fileIndex)}${rank}`);
+    }
+  }
+
+  return squares;
+}
+
+const BOARD_SQUARES = listBoardSquares();
 
 function getOppositeColor(color) {
   return color === "b" ? "w" : "b";
+}
+
+function getPieceValue(pieceType) {
+  return PIECE_VALUES[String(pieceType || "").toLowerCase()] ?? 0;
+}
+
+function isImportantPieceType(pieceType) {
+  return IMPORTANT_PIECE_TYPES.has(String(pieceType || "").toLowerCase());
 }
 
 function loadGameFromFen(fen) {
@@ -78,26 +100,48 @@ function parseMoveSequence(move) {
   return steps.length > 0 ? steps : null;
 }
 
-function listBoardSquares() {
-  const squares = [];
+function resolveActorInfo({ move = null, sequence = null, previousGame = null, nextGame = null }) {
+  const normalizedSequence = Array.isArray(sequence) ? sequence.filter(Boolean) : [];
+  const firstStep = normalizedSequence[0] || null;
+  const lastStep = normalizedSequence[normalizedSequence.length - 1] || null;
+  const fromSquare = move?.from || firstStep?.from || "";
+  const targetSquare = move?.to || lastStep?.to || fromSquare || "";
+  const previousPiece = fromSquare ? previousGame?.get(fromSquare) : null;
+  const nextPiece = targetSquare ? nextGame?.get(targetSquare) : null;
 
-  for (let rank = 1; rank <= 8; rank += 1) {
-    for (let fileIndex = 0; fileIndex < 8; fileIndex += 1) {
-      squares.push(`${String.fromCharCode(97 + fileIndex)}${rank}`);
+  return {
+    fromSquare,
+    targetSquare,
+    movedPieceType:
+      nextPiece?.type || move?.piece || move?.promotion || previousPiece?.type || "",
+    movedPieceColor: nextPiece?.color || previousPiece?.color || "",
+  };
+}
+
+function collectCapturedPieces(previousGame, nextGame, movedPieceColor) {
+  if (!previousGame || !nextGame || !movedPieceColor) {
+    return [];
+  }
+
+  const enemyColor = getOppositeColor(movedPieceColor);
+  const capturedPieces = [];
+
+  for (const square of BOARD_SQUARES) {
+    const beforePiece = previousGame.get(square);
+    const afterPiece = nextGame.get(square);
+
+    if (
+      beforePiece?.color === enemyColor &&
+      (!afterPiece || afterPiece.color !== enemyColor || afterPiece.type !== beforePiece.type)
+    ) {
+      capturedPieces.push({
+        ...beforePiece,
+        square,
+      });
     }
   }
 
-  return squares;
-}
-
-const BOARD_SQUARES = listBoardSquares();
-
-function isImportantPieceType(pieceType) {
-  return IMPORTANT_PIECE_TYPES.has(String(pieceType || "").toLowerCase());
-}
-
-function getPieceValue(pieceType) {
-  return PIECE_VALUES[String(pieceType || "").toLowerCase()] ?? 0;
+  return capturedPieces;
 }
 
 function findKingSquare(chessInstance, color) {
@@ -130,76 +174,6 @@ function scanLine(startSquare, [fileDelta, rankDelta]) {
 
     squares.push(`${String.fromCharCode(fileCode)}${rank}`);
   }
-}
-
-function resolveActorInfo({ move = null, sequence = null, previousGame = null, nextGame = null }) {
-  const normalizedSequence = Array.isArray(sequence) ? sequence.filter(Boolean) : [];
-  const firstStep = normalizedSequence[0] || null;
-  const lastStep = normalizedSequence[normalizedSequence.length - 1] || null;
-  const fromSquare = move?.from || firstStep?.from || "";
-  const toSquare = move?.to || lastStep?.to || fromSquare || "";
-  const previousPiece = fromSquare ? previousGame?.get(fromSquare) : null;
-  const nextPiece = toSquare ? nextGame?.get(toSquare) : null;
-
-  return {
-    fromSquare,
-    targetSquare: toSquare || fromSquare,
-    movedPieceType:
-      move?.piece || nextPiece?.type || previousPiece?.type || move?.promotion || "",
-    movedPieceColor: nextPiece?.color || previousPiece?.color || "",
-  };
-}
-
-function collectCapturedPieces(previousGame, nextGame, movedPieceColor) {
-  if (!previousGame || !nextGame || !movedPieceColor) {
-    return [];
-  }
-
-  const enemyColor = getOppositeColor(movedPieceColor);
-  const capturedPieces = [];
-
-  for (const square of BOARD_SQUARES) {
-    const beforePiece = previousGame.get(square);
-    const afterPiece = nextGame.get(square);
-
-    if (
-      beforePiece?.color === enemyColor &&
-      (!afterPiece || afterPiece.color !== enemyColor || afterPiece.type !== beforePiece.type)
-    ) {
-      capturedPieces.push({
-        ...beforePiece,
-        square,
-      });
-    }
-  }
-
-  return capturedPieces;
-}
-
-function collectAttackedEnemyPieces(nextGame, actorSquare, actorColor) {
-  if (!nextGame || !actorSquare || !actorColor) {
-    return [];
-  }
-
-  const enemyColor = getOppositeColor(actorColor);
-
-  return BOARD_SQUARES.map((square) => {
-    const piece = nextGame.get(square);
-
-    if (!piece || piece.color !== enemyColor) {
-      return null;
-    }
-
-    const attackers = nextGame.attackers(square, actorColor);
-    if (!Array.isArray(attackers) || !attackers.includes(actorSquare)) {
-      return null;
-    }
-
-    return {
-      ...piece,
-      square,
-    };
-  }).filter(Boolean);
 }
 
 function createsPin(nextGame, actorSquare, actorColor, movedPieceType) {
@@ -242,96 +216,112 @@ function createsPin(nextGame, actorSquare, actorColor, movedPieceType) {
   return false;
 }
 
-function isSacrificeMove(nextGame, actorSquare, actorColor, movedPieceType) {
-  if (
-    !nextGame ||
-    !actorSquare ||
-    !actorColor ||
-    !isImportantPieceType(movedPieceType)
-  ) {
-    return false;
+function collectAttackedImportantPieces(nextGame, actorSquare, actorColor) {
+  if (!nextGame || !actorSquare || !actorColor) {
+    return [];
   }
 
   const enemyColor = getOppositeColor(actorColor);
-  const enemyAttackers = nextGame.attackers(actorSquare, enemyColor);
+  const attackedPieces = [];
 
-  if (!Array.isArray(enemyAttackers) || enemyAttackers.length === 0) {
-    return false;
+  for (const square of BOARD_SQUARES) {
+    const piece = nextGame.get(square);
+
+    if (!piece || piece.color !== enemyColor || !isImportantPieceType(piece.type)) {
+      continue;
+    }
+
+    const attackers = nextGame.attackers(square, actorColor);
+    if (Array.isArray(attackers) && attackers.includes(actorSquare)) {
+      attackedPieces.push({
+        ...piece,
+        square,
+      });
+    }
   }
 
-  const friendlyDefenders = (nextGame.attackers(actorSquare, actorColor) || []).filter(
-    (square) => square !== actorSquare
-  );
-  const movedPieceValue = getPieceValue(movedPieceType);
-  const cheapestEnemyAttackerValue = Math.min(
-    ...enemyAttackers.map((square) => getPieceValue(nextGame.get(square)?.type))
-  );
-  const cheapestFriendlyDefenderValue =
+  return attackedPieces;
+}
+
+function getExchangePressure(nextGame, actorSquare, actorColor) {
+  if (!nextGame || !actorSquare || !actorColor) {
+    return {
+      enemyAttackers: [],
+      friendlyDefenders: [],
+      minEnemyAttackerValue: Number.POSITIVE_INFINITY,
+      minFriendlyDefenderValue: Number.POSITIVE_INFINITY,
+    };
+  }
+
+  const enemyColor = getOppositeColor(actorColor);
+  const enemyAttackers = Array.isArray(nextGame.attackers(actorSquare, enemyColor))
+    ? nextGame.attackers(actorSquare, enemyColor)
+    : [];
+  const friendlyDefenders = Array.isArray(nextGame.attackers(actorSquare, actorColor))
+    ? nextGame.attackers(actorSquare, actorColor).filter((square) => square !== actorSquare)
+    : [];
+
+  const minEnemyAttackerValue =
+    enemyAttackers.length > 0
+      ? Math.min(
+          ...enemyAttackers.map((square) => getPieceValue(nextGame.get(square)?.type))
+        )
+      : Number.POSITIVE_INFINITY;
+  const minFriendlyDefenderValue =
     friendlyDefenders.length > 0
       ? Math.min(
           ...friendlyDefenders.map((square) => getPieceValue(nextGame.get(square)?.type))
         )
       : Number.POSITIVE_INFINITY;
 
-  return (
-    friendlyDefenders.length === 0 ||
-    enemyAttackers.length > friendlyDefenders.length ||
-    (cheapestEnemyAttackerValue <= movedPieceValue &&
-      cheapestEnemyAttackerValue < cheapestFriendlyDefenderValue)
-  );
+  return {
+    enemyAttackers,
+    friendlyDefenders,
+    minEnemyAttackerValue,
+    minFriendlyDefenderValue,
+  };
 }
 
-function isPawnCaptureSacrifice({
-  nextGame,
-  movedPieceSquare,
-  movedPieceColor,
-  movedPieceType,
-  capturedPieces,
-}) {
-  if (
-    !nextGame ||
-    !movedPieceSquare ||
-    !movedPieceColor ||
-    !isImportantPieceType(movedPieceType)
-  ) {
+function movedFromInitialSquare(initialGame, previousGame, actorInfo) {
+  if (!initialGame || !previousGame || !actorInfo?.fromSquare) {
     return false;
-  }
-
-  if (!capturedPieces.some((piece) => piece.type === "p")) {
-    return false;
-  }
-
-  const enemyColor = getOppositeColor(movedPieceColor);
-  const enemyAttackers = nextGame.attackers(movedPieceSquare, enemyColor);
-
-  return Array.isArray(enemyAttackers) && enemyAttackers.length > 0;
-}
-
-function isDevelopmentMove({
-  actorInfo,
-  capturedPieces,
-  previousGame,
-  initialGame,
-}) {
-  if (capturedPieces.some((piece) => piece.type === "p")) {
-    return true;
-  }
-
-  if (!initialGame || !previousGame || !isImportantPieceType(actorInfo.movedPieceType)) {
-    if (actorInfo.movedPieceType !== "p") {
-      return false;
-    }
   }
 
   const initialPiece = initialGame.get(actorInfo.fromSquare);
   const previousPiece = previousGame.get(actorInfo.fromSquare);
 
   return (
-    Boolean(actorInfo.fromSquare) &&
     initialPiece?.type === actorInfo.movedPieceType &&
     initialPiece.color === actorInfo.movedPieceColor &&
     previousPiece?.type === actorInfo.movedPieceType &&
     previousPiece.color === actorInfo.movedPieceColor
+  );
+}
+
+function isExposedImportantPiece({
+  movedPieceType,
+  capturedTotalValue,
+  exchangePressure,
+}) {
+  if (!isImportantPieceType(movedPieceType)) {
+    return false;
+  }
+
+  if (exchangePressure.enemyAttackers.length === 0) {
+    return false;
+  }
+
+  const movedPieceValue = getPieceValue(movedPieceType);
+
+  if (capturedTotalValue > movedPieceValue) {
+    return false;
+  }
+
+  return (
+    exchangePressure.friendlyDefenders.length === 0 ||
+    exchangePressure.enemyAttackers.length > exchangePressure.friendlyDefenders.length ||
+    exchangePressure.minEnemyAttackerValue <= movedPieceValue ||
+    exchangePressure.minEnemyAttackerValue < exchangePressure.minFriendlyDefenderValue
   );
 }
 
@@ -341,6 +331,7 @@ export function analyzeMoveForMeme({
   move = null,
   sequence = null,
   initialFen = "",
+  initialGame = null,
   ordinaryMoveCount = 0,
 }) {
   if (!previousGame || !nextGame) {
@@ -363,19 +354,33 @@ export function analyzeMoveForMeme({
   if (!movedPieceSquare || !movedPieceColor) {
     return {
       category: null,
-      targetSquare: "",
+      targetSquare: actorInfo.targetSquare || actorInfo.fromSquare || "",
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };
   }
 
   const enemyColor = getOppositeColor(movedPieceColor);
-  const initialGame = loadGameFromFen(initialFen);
+  const resolvedInitialGame = initialGame || loadGameFromFen(initialFen);
   const capturedPieces = collectCapturedPieces(previousGame, nextGame, movedPieceColor);
+  const capturedImportantPieces = capturedPieces.filter((piece) =>
+    isImportantPieceType(piece.type)
+  );
+  const capturedTotalValue = capturedPieces.reduce(
+    (sum, piece) => sum + getPieceValue(piece.type),
+    0
+  );
+  const exchangePressure = getExchangePressure(
+    nextGame,
+    movedPieceSquare,
+    movedPieceColor
+  );
+  const movedPieceValue = getPieceValue(actorInfo.movedPieceType);
+  const favorableTrade =
+    capturedImportantPieces.length > 0 ||
+    (exchangePressure.enemyAttackers.length > 0 &&
+      capturedTotalValue > movedPieceValue);
 
-  if (
-    nextGame.isCheckmate() ||
-    capturedPieces.some((piece) => isImportantPieceType(piece.type))
-  ) {
+  if (nextGame.isCheckmate() || favorableTrade) {
     return {
       category: MEME_CATEGORIES.IMPORTANT_CAPTURE,
       targetSquare: movedPieceSquare,
@@ -386,18 +391,16 @@ export function analyzeMoveForMeme({
   if (nextGame.inCheck()) {
     return {
       category: MEME_CATEGORIES.CHECK,
-      targetSquare: findKingSquare(nextGame, enemyColor),
+      targetSquare: findKingSquare(nextGame, enemyColor) || movedPieceSquare,
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };
   }
 
   if (
-    isPawnCaptureSacrifice({
-      nextGame,
-      movedPieceSquare,
-      movedPieceColor,
+    isExposedImportantPiece({
       movedPieceType: actorInfo.movedPieceType,
-      capturedPieces,
+      capturedTotalValue,
+      exchangePressure,
     })
   ) {
     return {
@@ -407,18 +410,20 @@ export function analyzeMoveForMeme({
     };
   }
 
-  const attackedEnemyPieces = collectAttackedEnemyPieces(
+  const attackedImportantPieces = collectAttackedImportantPieces(
     nextGame,
     movedPieceSquare,
     movedPieceColor
   );
-  const attackedImportantPieces = attackedEnemyPieces.filter((piece) =>
-    isImportantPieceType(piece.type)
-  );
 
   if (
     attackedImportantPieces.length > 0 ||
-    createsPin(nextGame, movedPieceSquare, movedPieceColor, actorInfo.movedPieceType)
+    createsPin(
+      nextGame,
+      movedPieceSquare,
+      movedPieceColor,
+      actorInfo.movedPieceType
+    )
   ) {
     return {
       category: MEME_CATEGORIES.FORK_PIN,
@@ -428,27 +433,9 @@ export function analyzeMoveForMeme({
   }
 
   if (
-    isSacrificeMove(
-      nextGame,
-      movedPieceSquare,
-      movedPieceColor,
-      actorInfo.movedPieceType
-    )
-  ) {
-    return {
-      category: MEME_CATEGORIES.SACRIFICE,
-      targetSquare: movedPieceSquare,
-      nextOrdinaryMoveCount: ordinaryMoveCount,
-    };
-  }
-
-  if (
-    isDevelopmentMove({
-      actorInfo,
-      capturedPieces,
-      previousGame,
-      initialGame,
-    })
+    capturedPieces.some((piece) => piece.type === "p") ||
+    (isImportantPieceType(actorInfo.movedPieceType) &&
+      movedFromInitialSquare(resolvedInitialGame, previousGame, actorInfo))
   ) {
     return {
       category: MEME_CATEGORIES.DEVELOPMENT,
@@ -477,6 +464,7 @@ export function rebuildOrdinaryMoveCountFromServerMoves({
 
   let ordinaryMoveCount = 0;
   let previousFen = initialFen;
+  const initialGame = loadGameFromFen(initialFen);
 
   serverMoves.forEach((moveEntry) => {
     const previousGame = loadGameFromFen(previousFen);
@@ -492,6 +480,7 @@ export function rebuildOrdinaryMoveCountFromServerMoves({
       nextGame,
       sequence: parseMoveSequence(moveEntry?.move),
       initialFen,
+      initialGame,
       ordinaryMoveCount,
     });
 

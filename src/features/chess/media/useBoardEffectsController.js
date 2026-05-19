@@ -114,10 +114,15 @@ async function resolveEffectDurationMs(effectInstance, fallbackDuration) {
   }
 
   const resolvedDurations = await Promise.all(durationCandidates);
-  return Math.min(
-    MAX_EFFECT_DURATION_MS,
-    Math.max(cappedFallbackDuration, ...resolvedDurations)
-  );
+  const normalizedDurations = resolvedDurations
+    .map((duration) => Math.max(0, Number(duration) || 0))
+    .filter((duration) => duration > 0);
+
+  if (!normalizedDurations.length) {
+    return cappedFallbackDuration;
+  }
+
+  return Math.min(MAX_EFFECT_DURATION_MS, Math.max(...normalizedDurations));
 }
 
 export function useBoardEffectsController() {

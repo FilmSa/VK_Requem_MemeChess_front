@@ -28,6 +28,7 @@ export default function GameBoard({
   highlightedSquares,
   activeEffects,
   effectLayerVolume = 1,
+  onEffectDone,
   promotionState,
   onSquareClick,
   onPieceDrop,
@@ -115,6 +116,7 @@ export default function GameBoard({
           boardWidth={boardWidth}
           boardOrientation={boardOrientation}
           layerVolume={effectLayerVolume}
+          onEffectDone={onEffectDone}
         />
 
         <PromotionMenu

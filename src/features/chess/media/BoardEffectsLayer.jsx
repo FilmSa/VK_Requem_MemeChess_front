@@ -41,7 +41,7 @@ function squareToCoords(square, boardOrientation, boardWidth) {
   };
 }
 
-function EffectVideo({ effect, layerVolume }) {
+function EffectVideo({ effect, layerVolume, onDone }) {
   const videoRef = useRef(null);
   const useInlineMediaAudio = Boolean(effect?.useInlineMediaAudio);
 
@@ -67,6 +67,14 @@ function EffectVideo({ effect, layerVolume }) {
     videoElement.play().catch(() => {});
   }, [effect?.instanceId]);
 
+  function handleEnded() {
+    if (!useInlineMediaAudio || typeof onDone !== "function") {
+      return;
+    }
+
+    onDone(effect?.instanceId);
+  }
+
   return (
     <video
       ref={videoRef}
@@ -75,6 +83,8 @@ function EffectVideo({ effect, layerVolume }) {
       muted={!useInlineMediaAudio}
       playsInline
       preload="auto"
+      onEnded={handleEnded}
+      onError={handleEnded}
       style={{
         width: "100%",
         height: "100%",
@@ -86,9 +96,15 @@ function EffectVideo({ effect, layerVolume }) {
   );
 }
 
-function renderEffectMedia(effect, layerVolume) {
+function renderEffectMedia(effect, layerVolume, onDone) {
   if (effect.mediaType === "video") {
-    return <EffectVideo effect={effect} layerVolume={layerVolume} />;
+    return (
+      <EffectVideo
+        effect={effect}
+        layerVolume={layerVolume}
+        onDone={onDone}
+      />
+    );
   }
 
   return (
@@ -112,6 +128,7 @@ export default function BoardEffectsLayer({
   boardWidth,
   boardOrientation,
   layerVolume = 1,
+  onEffectDone,
 }) {
   if (!Array.isArray(activeEffects) || activeEffects.length === 0) {
     return null;
@@ -144,7 +161,7 @@ export default function BoardEffectsLayer({
               justifyContent: "center",
             }}
           >
-            {renderEffectMedia(effect, layerVolume)}
+            {renderEffectMedia(effect, layerVolume, onEffectDone)}
           </div>
         );
       })}

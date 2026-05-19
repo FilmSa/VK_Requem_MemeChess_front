@@ -572,7 +572,8 @@ export function useChessGame(options = {}) {
       (Boolean(authoritativePreviewFen) ||
         serverMoves.length !== visibleServerMoves.length));
 
-  const { activeEffects, triggerEffect } = useBoardEffectsController();
+  const { activeEffects, effectLayerVolume, triggerEffect } =
+    useBoardEffectsController();
   const gameRef = useRef(game);
   const historyCursorRef = useRef(historyCursor);
   const promotionStateRef = useRef(promotionState);
@@ -1081,6 +1082,34 @@ export function useChessGame(options = {}) {
     return sendMove?.(payload);
   }
 
+  function previewAuthoritativeMoveEffect(moveRequest) {
+    const previousFen = gameRef.current.fen();
+    const previewFen = buildAuthoritativePreviewFen(previousFen, moveRequest);
+    const previewSequence = parseMoveSequence(
+      String(moveRequest?.raw || "").trim().toLowerCase() ||
+        buildRawMoveString(moveRequest)
+    );
+    const previousGame = loadGameFromFen(previousFen);
+    const previewGame = loadGameFromFen(previewFen);
+
+    if (!previousGame || !previewGame || !previewSequence?.length) {
+      return previewFen;
+    }
+
+    lastTriggeredMoveEffectKeyRef.current = buildServerMoveEffectKey(
+      lastSyncedMoveCountRef.current + 1,
+      { move: moveRequest?.raw || buildRawMoveString(moveRequest) },
+      null
+    );
+    triggerResolvedMoveEffect({
+      chessAfterMove: previewGame,
+      previousGame,
+      sequence: previewSequence,
+    });
+
+    return previewFen;
+  }
+
   function completeMove(moveRequest, sendMove) {
     if (usesServerAuthoritativeRules) {
       const sent = Boolean(
@@ -1099,9 +1128,7 @@ export function useChessGame(options = {}) {
         if (isBotGame) {
           botReplyNotBeforeRef.current = Date.now() + BOT_REPLY_VISUAL_DELAY_MS;
         }
-        setAuthoritativePreviewFen(
-          buildAuthoritativePreviewFen(gameRef.current.fen(), moveRequest)
-        );
+        setAuthoritativePreviewFen(previewAuthoritativeMoveEffect(moveRequest));
         armBoardAnimationLock(BOARD_MOVE_ANIMATION_DURATION_MS, {
           markOutgoing: true,
         });
@@ -1607,6 +1634,7 @@ export function useChessGame(options = {}) {
     customArrows: recentMoveOverlay.arrows,
     boardOrientation,
     activeEffects,
+    effectLayerVolume,
     promotionState,
     effect: triggerEffect,
     onPieceDragBegin,

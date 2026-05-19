@@ -48,6 +48,7 @@ export default function ChessBoardSection({
     highlightedSquares,
     boardOrientation,
     activeEffects,
+    effectLayerVolume,
     promotionState,
     onPieceDragBegin,
     onPieceDragEnd,
@@ -120,6 +121,7 @@ export default function ChessBoardSection({
           boardOrientation={boardOrientation}
           highlightedSquares={highlightedSquares}
           activeEffects={activeEffects}
+          effectLayerVolume={effectLayerVolume}
           promotionState={promotionState}
           onPieceDragBegin={(piece, square) => onPieceDragBegin(piece, square)}
           onPieceDragEnd={(piece, square) => onPieceDragEnd(piece, square)}

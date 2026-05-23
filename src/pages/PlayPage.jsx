@@ -276,6 +276,25 @@ function buildResignHighlight(square) {
   };
 }
 
+function areSquareHighlightsEqual(currentHighlights, nextHighlights) {
+  const currentKeys = Object.keys(currentHighlights || {});
+  const nextKeys = Object.keys(nextHighlights || {});
+
+  if (currentKeys.length !== nextKeys.length) {
+    return false;
+  }
+
+  return currentKeys.every((key) => {
+    const currentStyle = currentHighlights?.[key] || null;
+    const nextStyle = nextHighlights?.[key] || null;
+
+    return (
+      currentStyle?.background === nextStyle?.background &&
+      currentStyle?.boxShadow === nextStyle?.boxShadow
+    );
+  });
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -1033,7 +1052,9 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (!isGameFinished || finishedReason !== "resign") {
-      setExtraHighlightedSquares({});
+      setExtraHighlightedSquares((currentHighlights) =>
+        Object.keys(currentHighlights).length === 0 ? currentHighlights : {}
+      );
       return;
     }
 
@@ -1045,7 +1066,13 @@ export default function PlayPage() {
       findKingSquareByColor(chessGameState.game, loserColor) ||
       findKingSquareByColor(chessGameState.displayedGame, loserColor);
 
-    setExtraHighlightedSquares(buildResignHighlight(kingSquare));
+    const nextHighlights = buildResignHighlight(kingSquare);
+
+    setExtraHighlightedSquares((currentHighlights) =>
+      areSquareHighlightsEqual(currentHighlights, nextHighlights)
+        ? currentHighlights
+        : nextHighlights
+    );
   }, [
     chessGameState.displayedGame,
     chessGameState.game,

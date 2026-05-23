@@ -44,6 +44,7 @@ function formatCount(count) {
 
 export default function MoveHistoryMolecule({
   history = [],
+  historyEntries = [],
   activePly = history.length,
 }) {
   const listRef = useRef(null);
@@ -74,6 +75,9 @@ export default function MoveHistoryMolecule({
   const pairs = groupMoves(history);
   const activePairIndex = activePly > 0 ? Math.ceil(activePly / 2) - 1 : -1;
   const activeMoveIsBlack = activePly % 2 === 0 && activePly > 0;
+  const activeHistoryEntry =
+    activePly > 0 ? historyEntries[activePly - 1] || null : null;
+  const activeMemeId = String(activeHistoryEntry?.memeId || "").trim();
 
   return (
     <div
@@ -205,14 +209,14 @@ export default function MoveHistoryMolecule({
       )}
 
       <div
-        className="flex items-center justify-center px-[12px] py-[9px] text-[16px]"
+        className="flex flex-col items-center justify-center gap-[2px] px-[12px] py-[9px] text-[16px]"
         style={{
           borderTop: "1px solid var(--main-menu-divider)",
           color: "var(--color-text-muted)",
           fontFamily: '"JetBrains Mono", monospace',
         }}
       >
-        {formatCount(history.length)}
+        <span>{formatCount(history.length)}</span>      
       </div>
     </div>
   );

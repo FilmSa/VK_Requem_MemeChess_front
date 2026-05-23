@@ -131,6 +131,18 @@ export const MEME_CATEGORY_CONFIG = Object.freeze(
   )
 );
 
+export const MEME_BY_ID = Object.freeze(
+  Object.fromEntries(
+    Object.values(MEME_CATEGORY_CONFIG)
+      .flatMap((categoryConfig) => categoryConfig.memes)
+      .map((meme) => [meme.id, meme])
+  )
+);
+
 export function getMemeCategoryConfig(categoryKey) {
   return MEME_CATEGORY_CONFIG[String(categoryKey || "").trim().toUpperCase()] || null;
+}
+
+export function getMemeById(memeId) {
+  return MEME_BY_ID[String(memeId || "").trim()] || null;
 }

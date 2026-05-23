@@ -40,6 +40,9 @@ export default function GameBoard({
   isPieceDraggable,
   overlayContent = null,
   animateIntroPieces = false,
+  whitePieceSkinId = "",
+  blackPieceSkinId = "",
+  boardSkinId = "",
 }) {
   const [selectedPieceSkin, setSelectedPieceSkin] = useState(
     () => readStoredPieceSkin()
@@ -62,14 +65,20 @@ export default function GameBoard({
 
   const customPieces = useMemo(
     () =>
-      createCustomPieces(selectedPieceSkin, {
-        animateIntro: animateIntroPieces,
-      }),
-    [animateIntroPieces, selectedPieceSkin]
+      createCustomPieces(
+        {
+          whiteSkinId: whitePieceSkinId || selectedPieceSkin,
+          blackSkinId: blackPieceSkinId || selectedPieceSkin,
+        },
+        {
+          animateIntro: animateIntroPieces,
+        }
+      ),
+    [animateIntroPieces, blackPieceSkinId, selectedPieceSkin, whitePieceSkinId]
   );
   const boardSkinConfig = useMemo(
-    () => getBoardSkinConfig(selectedBoardSkin),
-    [selectedBoardSkin]
+    () => getBoardSkinConfig(boardSkinId || selectedBoardSkin),
+    [boardSkinId, selectedBoardSkin]
   );
   const boardPosition = useMemo(() => extractBoardPosition(fen), [fen]);
 

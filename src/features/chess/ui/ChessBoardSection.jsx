@@ -36,6 +36,9 @@ export default function ChessBoardSection({
   onTopPlayerEmojiVolumeChange,
   boardOverlay = null,
   animateIntroPieces = false,
+  whitePieceSkinId = "",
+  blackPieceSkinId = "",
+  boardSkinId = "",
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -137,6 +140,9 @@ export default function ChessBoardSection({
           isPieceDraggable={isPieceDraggable}
           overlayContent={boardOverlay}
           animateIntroPieces={animateIntroPieces}
+          whitePieceSkinId={whitePieceSkinId}
+          blackPieceSkinId={blackPieceSkinId}
+          boardSkinId={boardSkinId}
         />
 
         <div ref={bottomPanelRef} style={{ marginTop: BOTTOM_PLAYER_PANEL_GAP }}>

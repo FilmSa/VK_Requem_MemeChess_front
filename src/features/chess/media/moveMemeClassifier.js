@@ -243,6 +243,10 @@ function collectAttackedImportantPieces(nextGame, actorSquare, actorColor) {
   return attackedPieces;
 }
 
+function createsFork(attackedImportantPieces = []) {
+  return attackedImportantPieces.length >= 2;
+}
+
 function getExchangePressure(nextGame, actorSquare, actorColor) {
   if (!nextGame || !actorSquare || !actorColor) {
     return {
@@ -376,22 +380,20 @@ export function analyzeMoveForMeme({
   );
   const movedPieceValue = getPieceValue(actorInfo.movedPieceType);
   const favorableTrade =
-    capturedImportantPieces.length > 0 ||
-    (exchangePressure.enemyAttackers.length > 0 &&
-      capturedTotalValue > movedPieceValue);
+    capturedImportantPieces.length > 0;
 
-  if (nextGame.isCheckmate() || favorableTrade) {
+  if (nextGame.isCheckmate() || nextGame.inCheck()) {
     return {
-      category: MEME_CATEGORIES.IMPORTANT_CAPTURE,
-      targetSquare: movedPieceSquare,
+      category: MEME_CATEGORIES.CHECK,
+      targetSquare: findKingSquare(nextGame, enemyColor) || movedPieceSquare,
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };
   }
 
-  if (nextGame.inCheck()) {
+  if (favorableTrade) {
     return {
-      category: MEME_CATEGORIES.CHECK,
-      targetSquare: findKingSquare(nextGame, enemyColor) || movedPieceSquare,
+      category: MEME_CATEGORIES.IMPORTANT_CAPTURE,
+      targetSquare: movedPieceSquare,
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };
   }
@@ -417,7 +419,7 @@ export function analyzeMoveForMeme({
   );
 
   if (
-    attackedImportantPieces.length > 0 ||
+    createsFork(attackedImportantPieces) ||
     createsPin(
       nextGame,
       movedPieceSquare,
@@ -433,9 +435,8 @@ export function analyzeMoveForMeme({
   }
 
   if (
-    capturedPieces.some((piece) => piece.type === "p") ||
-    (isImportantPieceType(actorInfo.movedPieceType) &&
-      movedFromInitialSquare(resolvedInitialGame, previousGame, actorInfo))
+    isImportantPieceType(actorInfo.movedPieceType) &&
+    movedFromInitialSquare(resolvedInitialGame, previousGame, actorInfo)
   ) {
     return {
       category: MEME_CATEGORIES.DEVELOPMENT,
@@ -447,8 +448,7 @@ export function analyzeMoveForMeme({
   const nextOrdinaryMoveCount = ordinaryMoveCount + 1;
 
   return {
-    category:
-      nextOrdinaryMoveCount % 3 === 0 ? MEME_CATEGORIES.DEVELOPMENT : null,
+    category: MEME_CATEGORIES.DEVELOPMENT,
     targetSquare: movedPieceSquare,
     nextOrdinaryMoveCount,
   };

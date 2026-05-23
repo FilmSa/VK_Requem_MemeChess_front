@@ -8,6 +8,8 @@ import {
 } from "../media/moveMemeClassifier.js";
 import {
   createMemeRotationState,
+  getMemeEffectById,
+  pickDeterministicMemeEffect,
   pickNextMemeEffect,
 } from "../media/memeEffects.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
@@ -19,7 +21,6 @@ import {
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
 const SEQUENCE_ANIMATION_DURATION_MS = 680;
-const BOT_REPLY_VISUAL_DELAY_MS = 4000;
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -66,6 +67,10 @@ const BOARD_SQUARES = listBoardSquares();
 
 function isServerAuthoritativeMode(gameMode) {
   return gameMode === "fischer" || gameMode === "evolution";
+}
+
+function shouldPreferServerMoveMemeMetadata(gameMode) {
+  return gameMode === "classic" || gameMode === "meme";
 }
 
 function loadGameFromFen(fen) {
@@ -160,6 +165,75 @@ function buildServerHistoryGame(historyCursor, serverMoves, initialFen, fallback
     loadGameFromFen(initialFen) ||
     new Chess()
   );
+}
+
+function buildResolvedServerHistoryEntries({
+  serverMoves,
+  initialFen,
+  gameMode,
+  gameId,
+}) {
+  if (!Array.isArray(serverMoves) || serverMoves.length === 0) {
+    return [];
+  }
+
+  const preferServerMetadata = shouldPreferServerMoveMemeMetadata(gameMode);
+  const initialGame = loadGameFromFen(initialFen);
+  const resolvedEntries = [];
+  let previousFen = initialFen;
+  let ordinaryMoveCount = 0;
+
+  serverMoves.forEach((moveEntry, index) => {
+    const moveValue = String(moveEntry?.move || "").trim().toLowerCase();
+    const previousGame = loadGameFromFen(previousFen);
+    const nextGame = loadGameFromFen(moveEntry?.fen);
+    const derivedAnalysis =
+      previousGame && nextGame
+        ? analyzeMoveForMeme({
+            previousGame,
+            nextGame,
+            sequence: parseMoveSequence(moveValue),
+            initialFen,
+            initialGame,
+            ordinaryMoveCount,
+          })
+        : null;
+
+    if (derivedAnalysis) {
+      ordinaryMoveCount = derivedAnalysis.nextOrdinaryMoveCount;
+    }
+
+    const serverMemeId = String(
+      moveEntry?.meme_id || moveEntry?.memeId || ""
+    ).trim();
+    const serverMemeCategory = String(
+      moveEntry?.meme_category || moveEntry?.memeCategory || ""
+    ).trim();
+    const derivedCategory = String(derivedAnalysis?.category || "").trim();
+    const resolvedCategory = preferServerMetadata
+      ? serverMemeCategory || derivedCategory
+      : derivedCategory || serverMemeCategory;
+
+    let resolvedMemeId = preferServerMetadata ? serverMemeId : "";
+    if (!resolvedMemeId && resolvedCategory) {
+      const resolvedMeme = pickDeterministicMemeEffect(resolvedCategory, {
+        gameId,
+        moveKey: moveValue,
+        moveNumber: index + 1,
+        previousEntries: resolvedEntries,
+      });
+      resolvedMemeId = resolvedMeme?.id || "";
+    }
+
+    resolvedEntries.push({
+      move: moveValue,
+      memeId: resolvedMemeId,
+      memeCategory: resolvedCategory,
+    });
+    previousFen = moveEntry?.fen || previousFen;
+  });
+
+  return resolvedEntries;
 }
 
 function buildGameToPly(history, plyCount) {
@@ -537,6 +611,8 @@ export function useChessGame(options = {}) {
   const usesServerAuthoritativeRules =
     Boolean(options.forceServerAuthoritative) || isServerAuthoritativeMode(gameMode);
   const isSpecialAuthoritativeMode = isServerAuthoritativeMode(gameMode);
+  const preferServerMoveMemeMetadata = shouldPreferServerMoveMemeMetadata(gameMode);
+  const preferStateMoveEffects = Boolean(options.preferStateMoveEffects);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
   const currentUserId = String(options.currentUserId || "").trim();
@@ -591,7 +667,6 @@ export function useChessGame(options = {}) {
   const pendingServerSyncTimerRef = useRef(null);
   const pendingServerSyncPayloadRef = useRef(null);
   const lastTriggeredMoveEffectKeyRef = useRef("");
-  const botReplyNotBeforeRef = useRef(0);
   const boardAnimationLockTimerRef = useRef(null);
   const outgoingAnimationNotBeforeRef = useRef(0);
   const memeRotationStateRef = useRef(createMemeRotationState());
@@ -640,7 +715,6 @@ export function useChessGame(options = {}) {
     pendingServerSyncPayloadRef.current = null;
     lastTriggeredMoveEffectKeyRef.current = "";
     lastSyncedMoveCountRef.current = serverMoves.length;
-    botReplyNotBeforeRef.current = 0;
     memeRotationStateRef.current = createMemeRotationState();
     ordinaryMoveCountRef.current = rebuildOrdinaryMoveCountFromServerMoves({
       serverMoves,
@@ -823,6 +897,32 @@ export function useChessGame(options = {}) {
         chessAfterMove.get(analysis.targetSquare)?.type ||
         previousGame.get(move?.from || sequence?.[0]?.from || "")?.type ||
         null,
+    });
+
+    return Boolean(instanceId);
+  }
+
+  function triggerMemeEffectById(memeId, effectContext = {}) {
+    if (!memeModeEnabledRef.current) {
+      return false;
+    }
+
+    const memeEffect = getMemeEffectById(memeId);
+    const targetSquare =
+      effectContext.square ||
+      effectContext.to ||
+      effectContext.from ||
+      "";
+
+    if (!memeEffect || !targetSquare) {
+      return false;
+    }
+
+    const instanceId = triggerEffect(memeEffect, {
+      square: targetSquare,
+      from: effectContext.from || null,
+      to: effectContext.to || targetSquare,
+      piece: effectContext.piece || null,
     });
 
     return Boolean(instanceId);
@@ -1048,15 +1148,17 @@ export function useChessGame(options = {}) {
     armBoardAnimationLock(BOARD_MOVE_ANIMATION_DURATION_MS, {
       markOutgoing: options.markOutgoing !== false,
     });
-    lastTriggeredMoveEffectKeyRef.current = buildMoveEffectKey(
-      gameCopy.history().length,
-      move
-    );
-    triggerResolvedMoveEffect({
-      move,
-      chessAfterMove: gameCopy,
-      previousGame,
-    });
+    if (!preferStateMoveEffects) {
+      lastTriggeredMoveEffectKeyRef.current = buildMoveEffectKey(
+        gameCopy.history().length,
+        move
+      );
+      triggerResolvedMoveEffect({
+        move,
+        chessAfterMove: gameCopy,
+        previousGame,
+      });
+    }
 
     return move;
   }
@@ -1094,6 +1196,10 @@ export function useChessGame(options = {}) {
   function previewAuthoritativeMoveEffect(moveRequest) {
     const previousFen = gameRef.current.fen();
     const previewFen = buildAuthoritativePreviewFen(previousFen, moveRequest);
+    if (preferStateMoveEffects) {
+      return previewFen;
+    }
+
     const rawMove = moveRequest?.raw || buildRawMoveString(moveRequest);
     const previewSequence = parseMoveSequence(
       String(rawMove).trim().toLowerCase()
@@ -1137,9 +1243,6 @@ export function useChessGame(options = {}) {
       );
 
       if (sent) {
-        if (isBotGame) {
-          botReplyNotBeforeRef.current = Date.now() + BOT_REPLY_VISUAL_DELAY_MS;
-        }
         setAuthoritativePreviewFen(previewAuthoritativeMoveEffect(moveRequest));
         armBoardAnimationLock(BOARD_MOVE_ANIMATION_DURATION_MS, {
           markOutgoing: true,
@@ -1423,6 +1526,7 @@ export function useChessGame(options = {}) {
     }
 
     const nextHistoryLength = nextServerMoves.length || nextGame.history().length;
+    const appendedMoveCount = Math.max(0, nextHistoryLength - previousHistoryLength);
     const isLatestView = historyCursorRef.current >= previousHistoryLength;
     const lastMoveEntry = nextHistoryLength > 0 ? nextServerMoves[nextHistoryLength - 1] : null;
     const lastSequence = parseMoveSequence(lastMoveEntry?.move);
@@ -1437,7 +1541,7 @@ export function useChessGame(options = {}) {
         ? historyAfterMove[nextHistoryLength - 1]
         : historyAfterMove[historyAfterMove.length - 1] || null;
     const effectMoveKey =
-      nextHistoryLength === previousHistoryLength + 1
+      appendedMoveCount > 0
         ? buildServerMoveEffectKey(
             nextHistoryLength,
             lastMoveEntry,
@@ -1452,6 +1556,53 @@ export function useChessGame(options = {}) {
       serverMoves: nextServerMoves,
       initialFen: state?.initial_fen || initialFen,
     });
+    const latestMovePreviewAnalysis =
+      previousGame && nextGame && (latestMoveFromHistory || lastSequence?.length)
+        ? analyzeMoveForMeme({
+            previousGame,
+            nextGame,
+            move: latestMoveFromHistory,
+            sequence: lastSequence,
+            initialFen: state?.initial_fen || initialFen,
+            ordinaryMoveCount: ordinaryMoveCountBeforeLatest,
+          })
+        : null;
+    const previousResolvedHistoryEntries = buildResolvedServerHistoryEntries({
+      serverMoves: nextServerMoves.slice(0, -1),
+      initialFen: state?.initial_fen || initialFen,
+      gameMode,
+      gameId: syncKey,
+    });
+    const latestMoveMemeId = String(
+      lastMoveEntry?.meme_id || lastMoveEntry?.memeId || ""
+    ).trim();
+    const latestMoveMemeCategory = String(
+      lastMoveEntry?.meme_category || lastMoveEntry?.memeCategory || ""
+    ).trim();
+    const latestResolvedMemeCategory = preferServerMoveMemeMetadata
+      ? latestMoveMemeCategory || latestMovePreviewAnalysis?.category || ""
+      : latestMovePreviewAnalysis?.category || latestMoveMemeCategory || "";
+    const latestEffectSquare =
+      latestMovePreviewAnalysis?.targetSquare ||
+      latestMoveFromHistory?.to ||
+      lastSequence?.[lastSequence.length - 1]?.to ||
+      "";
+    const latestEffectFromSquare =
+      latestMoveFromHistory?.from || lastSequence?.[0]?.from || "";
+    const latestEffectContext = {
+      square: latestEffectSquare,
+      from: latestEffectFromSquare || null,
+      to:
+        latestMoveFromHistory?.to ||
+        lastSequence?.[lastSequence.length - 1]?.to ||
+        latestEffectSquare ||
+        null,
+      piece:
+        latestMoveFromHistory?.piece ||
+        (latestEffectSquare ? nextGame.get(latestEffectSquare)?.type : null) ||
+        (latestEffectFromSquare ? previousGame?.get(latestEffectFromSquare)?.type : null) ||
+        null,
+    };
     const pendingPayload = pendingServerSyncPayloadRef.current;
 
     if (
@@ -1467,17 +1618,12 @@ export function useChessGame(options = {}) {
       pendingServerSyncTimerRef.current = null;
     }
     const shouldTriggerEffect =
+      appendedMoveCount > 0 &&
       Boolean(effectMoveKey) &&
       effectMoveKey !== lastTriggeredMoveEffectKeyRef.current;
 
-    const commitServerState = ({
-      clearBotReplyDeadline = false,
-      animateBoard = false,
-    } = {}) => {
+    const commitServerState = ({ animateBoard = false } = {}) => {
       setAuthoritativePreviewFen("");
-      if (clearBotReplyDeadline) {
-        botReplyNotBeforeRef.current = 0;
-      }
       lastSyncedMoveCountRef.current = nextHistoryLength;
       setVisibleServerMoves(nextServerMoves);
       setVisibleServerLegalMoves(nextServerLegalMoves);
@@ -1517,17 +1663,49 @@ export function useChessGame(options = {}) {
       clearSelection();
 
       if (shouldTriggerEffect) {
-        ordinaryMoveCountRef.current = ordinaryMoveCountBeforeLatest;
-        lastTriggeredMoveEffectKeyRef.current = effectMoveKey;
-        triggerClientMoveEffect({
-          move: latestMoveFromHistory,
-          chessAfterMove: nextGame,
-          previousGame,
-          sequence: lastSequence,
-        });
-      } else {
-        ordinaryMoveCountRef.current = ordinaryMoveCountAfterSync;
+        let didTriggerServerEffect = false;
+
+        if (preferServerMoveMemeMetadata && latestMoveMemeId) {
+          didTriggerServerEffect = triggerMemeEffectById(
+            latestMoveMemeId,
+            latestEffectContext
+          );
+        }
+
+        if (!didTriggerServerEffect) {
+          ordinaryMoveCountRef.current = ordinaryMoveCountBeforeLatest;
+          const fallbackMeme = latestResolvedMemeCategory
+            ? pickDeterministicMemeEffect(latestResolvedMemeCategory, {
+              gameId: syncKey,
+              moveKey: String(lastMoveEntry?.move || "").trim().toLowerCase(),
+              moveNumber: nextHistoryLength,
+              previousEntries: previousResolvedHistoryEntries,
+            })
+            : null;
+
+          if (fallbackMeme?.id) {
+            didTriggerServerEffect = triggerMemeEffectById(
+              fallbackMeme.id,
+              latestEffectContext
+            );
+          }
+
+          if (!didTriggerServerEffect) {
+            didTriggerServerEffect = triggerClientMoveEffect({
+              move: latestMoveFromHistory,
+              chessAfterMove: nextGame,
+              previousGame,
+              sequence: lastSequence,
+            });
+          }
+        }
+
+        if (didTriggerServerEffect) {
+          lastTriggeredMoveEffectKeyRef.current = effectMoveKey;
+        }
       }
+
+      ordinaryMoveCountRef.current = ordinaryMoveCountAfterSync;
 
       if (boardAnimationDurationMs > 0) {
         armBoardAnimationLock(boardAnimationDurationMs);
@@ -1548,14 +1726,7 @@ export function useChessGame(options = {}) {
       stateMovedByOpponent && isLatestView
         ? Math.max(0, outgoingAnimationNotBeforeRef.current - Date.now())
         : 0;
-    const remainingBotReplyDelayMs =
-      isBotGame && stateMovedByOpponent && isLatestView && botReplyNotBeforeRef.current > 0
-        ? Math.max(0, botReplyNotBeforeRef.current - Date.now())
-        : 0;
-    const remainingDelayMs = Math.max(
-      remainingOutgoingAnimationMs,
-      remainingBotReplyDelayMs
-    );
+    const remainingDelayMs = remainingOutgoingAnimationMs;
 
     if (stateMovedByOpponent && isLatestView && remainingDelayMs > 0) {
       pendingServerSyncPayloadRef.current = {
@@ -1566,7 +1737,6 @@ export function useChessGame(options = {}) {
         pendingServerSyncTimerRef.current = null;
         pendingServerSyncPayloadRef.current = null;
         commitServerState({
-          clearBotReplyDeadline: true,
           animateBoard: true,
         });
       }, remainingDelayMs);
@@ -1575,7 +1745,6 @@ export function useChessGame(options = {}) {
 
     pendingServerSyncPayloadRef.current = null;
     commitServerState({
-      clearBotReplyDeadline: isBotGame && stateMovedByOpponent,
       animateBoard: stateMovedByOpponent && isLatestView,
     });
     return true;
@@ -1589,7 +1758,29 @@ export function useChessGame(options = {}) {
     : verboseHistory.map((move) =>
         `${move.from}${move.to}${move.promotion || ""}`.toLowerCase()
       );
+  const historyEntries = usesServerAuthoritativeRules
+    ? buildResolvedServerHistoryEntries({
+        serverMoves: visibleServerMoves,
+        initialFen,
+        gameMode,
+        gameId: syncKey,
+      })
+    : history.map((moveValue, index) => {
+        const serverMoveEntry = visibleServerMoves[index];
+
+        return {
+          move: moveValue,
+          memeId: String(
+            serverMoveEntry?.meme_id || serverMoveEntry?.memeId || ""
+          ).trim(),
+          memeCategory: String(
+            serverMoveEntry?.meme_category || serverMoveEntry?.memeCategory || ""
+          ).trim(),
+        };
+      });
   const activeHistoryPly = Math.min(historyCursor, history.length);
+  const activeHistoryEntry =
+    activeHistoryPly > 0 ? historyEntries[activeHistoryPly - 1] || null : null;
   const baseDisplayedGame = usesServerAuthoritativeRules
     ? buildServerHistoryGame(historyCursor, visibleServerMoves, initialFen, game.fen())
     : buildGameToPly(verboseHistory, historyCursor);
@@ -1639,9 +1830,12 @@ export function useChessGame(options = {}) {
   return {
     game,
     history,
+    historyEntries,
     displayedGame,
+    activeHistoryEntry,
     activeHistoryPly,
     moveCount: history.length,
+    syncedMoveCount: visibleServerMoves.length,
     highlightedSquares: effectiveHighlightedSquares,
     customArrows: recentMoveOverlay.arrows,
     boardOrientation,

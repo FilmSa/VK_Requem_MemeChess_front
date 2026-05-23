@@ -1,5 +1,6 @@
 import { ApiError, apiFetch } from "../../shared/api/client.js";
 import { resolveApiResourceUrl } from "../../shared/config/api.js";
+import { normalizePieceSkinSlug } from "../../shared/constants/customizationCatalog.js";
 
 const GAME_HISTORY_CACHE_TTL_MS = 60 * 1000;
 const gameHistoryCache = new Map();
@@ -13,6 +14,7 @@ function normalizeParticipant(participant) {
     id: participant.id || "",
     username: participant.username || "",
     avatar_url: resolveApiResourceUrl(participant.avatar_url || ""),
+    piece_skin_slug: normalizePieceSkinSlug(participant.piece_skin_slug) || "",
     is_guest: Boolean(participant.is_guest),
   };
 }

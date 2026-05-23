@@ -32,6 +32,11 @@ import {
   readStoredEmojiVolume,
   subscribeEmojiVolumeChanges,
 } from "../shared/lib/emojiVolume.js";
+import {
+  DEFAULT_PIECE_SKIN_SLUG,
+  normalizePieceSkinSlug,
+} from "../shared/constants/customizationCatalog.js";
+import { readStoredPieceSkin } from "../shared/lib/pieceSkin.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -469,6 +474,27 @@ export default function PlayPage() {
   const currentUserId = String(activeRoom.currentUserId || user?.id || "").trim();
   const opponentColor = getOpponentColor(activeRoom.playerColor);
   const roomState = activeRoom.roomState;
+  const currentPieceSkinSlug =
+    normalizePieceSkinSlug(activeRoom.currentUserProfile?.piece_skin_slug) ||
+    readStoredPieceSkin() ||
+    DEFAULT_PIECE_SKIN_SLUG;
+  const opponentPieceSkinSlug =
+    normalizePieceSkinSlug(activeRoom.opponentProfile?.piece_skin_slug) ||
+    DEFAULT_PIECE_SKIN_SLUG;
+  const currentSideColor =
+    roomState?.player1_id && roomState.player1_id === currentUserId
+      ? "w"
+      : roomState?.player2_id && roomState.player2_id === currentUserId
+        ? "b"
+        : activeRoom.playerColor || "w";
+  const whitePieceSkinId =
+    currentSideColor === "w"
+      ? currentPieceSkinSlug
+      : opponentPieceSkinSlug;
+  const blackPieceSkinId =
+    currentSideColor === "b"
+      ? currentPieceSkinSlug
+      : opponentPieceSkinSlug;
   const resolvedOpponentUserId =
     String(activeRoom.opponentUserId || "").trim() ||
     (currentUserId && roomState?.player1_id === currentUserId
@@ -506,6 +532,7 @@ export default function PlayPage() {
     initialFen: roomState?.initial_fen || "",
     interactionLocked: isGameFinished,
     extraHighlightedSquares,
+    preferStateMoveEffects: true,
     forceServerAuthoritative: activeRoom.isBotGame,
   });
 
@@ -1179,6 +1206,8 @@ export default function PlayPage() {
                   sendMove={roomControls.sendMove}
                   boardWidth={layout.boardSize}
                   onLayoutMetricsChange={handleBoardMetricsChange}
+                  whitePieceSkinId={whitePieceSkinId}
+                  blackPieceSkinId={blackPieceSkinId}
                   topPlayerName={activeRoom.opponentName}
                   topPlayerAvatar={
                     activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
@@ -1244,6 +1273,7 @@ export default function PlayPage() {
                 onEmojiSelect={handleEmojiSelect}
                 emojiCooldownActive={emojiCooldownActive}
                 history={chessGameState.history}
+                historyEntries={chessGameState.historyEntries}
                 activeHistoryPly={chessGameState.activeHistoryPly}
                 canViewPrevious={chessGameState.canViewPrevious}
                 canViewNext={chessGameState.canViewNext}

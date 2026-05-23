@@ -36,6 +36,7 @@ export default function GameSettingsPanel({
   onEmojiSelect,
   emojiCooldownActive = false,
   history = [],
+  historyEntries = [],
   activeHistoryPly = history.length,
   canViewPrevious = false,
   canViewNext = false,
@@ -78,7 +79,11 @@ export default function GameSettingsPanel({
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[12px] pb-[12px] pt-[10px]">
             <div className="flex-shrink-0 overflow-hidden">
-              <MoveHistoryMolecule history={history} activePly={activeHistoryPly} />
+              <MoveHistoryMolecule
+                history={history}
+                historyEntries={historyEntries}
+                activePly={activeHistoryPly}
+              />
             </div>
 
             <div className="mt-[16px]">

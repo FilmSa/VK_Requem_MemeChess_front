@@ -459,6 +459,56 @@ function buildGameResultPresentation({
   return null;
 }
 
+function deriveTerminalResultFromGame(chessInstance, player1Id, player2Id) {
+  if (!chessInstance || typeof chessInstance.isGameOver !== "function") {
+    return null;
+  }
+
+  if (!chessInstance.isGameOver()) {
+    return null;
+  }
+
+  if (chessInstance.isCheckmate()) {
+    const loserId = chessInstance.turn() === "w" ? player1Id : player2Id;
+    const winnerId = loserId === player1Id ? player2Id : player1Id;
+
+    return {
+      finishedReason: "checkmate",
+      winnerId: String(winnerId || "").trim(),
+    };
+  }
+
+  if (chessInstance.isStalemate()) {
+    return {
+      finishedReason: "stalemate",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isInsufficientMaterial()) {
+    return {
+      finishedReason: "insufficient_material",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isThreefoldRepetition()) {
+    return {
+      finishedReason: "threefold_repetition",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isDraw()) {
+    return {
+      finishedReason: "draw",
+      winnerId: "",
+    };
+  }
+
+  return null;
+}
+
 export default function PlayPage() {
   const reliableNavigate = useReliableNavigate();
   const [searchParams] = useSearchParams();
@@ -519,13 +569,6 @@ export default function PlayPage() {
     (currentUserId && roomState?.player1_id === currentUserId
       ? String(roomState?.player2_id || "").trim()
       : String(roomState?.player1_id || "").trim());
-  const isGameFinished = roomState?.status === "finished";
-  const finishedReason = String(
-    roomState?.finished_reason || finishedEventResult?.finishedReason || ""
-  ).trim();
-  const winnerId = String(
-    roomState?.winner_id || finishedEventResult?.winnerId || ""
-  ).trim();
   const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
   const gameClock = useGameClock({
     gameId,
@@ -550,11 +593,40 @@ export default function PlayPage() {
     serverLegalMoves: roomState?.legal_moves || [],
     serverMoves: roomState?.moves || [],
     initialFen: roomState?.initial_fen || "",
-    interactionLocked: isGameFinished,
+    interactionLocked: roomState?.status === "finished",
     extraHighlightedSquares,
     preferStateMoveEffects: true,
     forceServerAuthoritative: activeRoom.isBotGame,
   });
+  const liveBoardTerminalResult = useMemo(() => {
+    if (!roomState || chessGameState.isViewingHistory) {
+      return null;
+    }
+
+    return deriveTerminalResultFromGame(
+      chessGameState.displayedGame,
+      String(roomState.player1_id || "").trim(),
+      String(roomState.player2_id || "").trim()
+    );
+  }, [
+    chessGameState.displayedGame,
+    chessGameState.isViewingHistory,
+    roomState,
+  ]);
+  const isGameFinished =
+    roomState?.status === "finished" || Boolean(liveBoardTerminalResult);
+  const finishedReason = String(
+    roomState?.finished_reason ||
+      liveBoardTerminalResult?.finishedReason ||
+      finishedEventResult?.finishedReason ||
+      ""
+  ).trim();
+  const winnerId = String(
+    roomState?.winner_id ||
+      liveBoardTerminalResult?.winnerId ||
+      finishedEventResult?.winnerId ||
+      ""
+  ).trim();
 
   const emojiOwnerId =
     activeRoom.currentUserProfile?.id || activeRoom.currentUserId || user?.id;

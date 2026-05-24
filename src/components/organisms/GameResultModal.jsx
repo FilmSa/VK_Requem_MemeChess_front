@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DEFAULT_AVATAR } from "../../features/chess/lib/boardConfig.js";
 
 const FRAME_WIDTH = 622;
@@ -13,6 +14,7 @@ const RIGHT_PLAYER_LEFT = FRAME_WIDTH - PLAYER_LEFT - PLAYER_WIDTH;
 const BUTTON_ROW_LEFT = PLAYER_LEFT;
 const BUTTON_ROW_BOTTOM = 21;
 const BUTTON_GAP = 14;
+const MODAL_LAUNCH_DURATION_MS = 560;
 
 const OUTCOME_STYLES = {
   win: {
@@ -85,6 +87,7 @@ function PlayerBlock({
       <div style={{ position: "relative", width: PLAYER_WIDTH }}>
         {showCrown ? (
           <div
+            className="game-result-modal__crown"
             aria-hidden="true"
             style={{
               position: "absolute",
@@ -93,7 +96,6 @@ function PlayerBlock({
               zIndex: 2,
               width: 48,
               height: 48,
-              transform: "translateX(-50%)",
               backgroundColor: "#ffd400",
               WebkitMaskImage: "url('/icons/crown.svg')",
               maskImage: "url('/icons/crown.svg')",
@@ -109,6 +111,7 @@ function PlayerBlock({
         ) : null}
 
         <div
+          className="game-result-modal__avatar"
           style={{
             width: PLAYER_WIDTH,
             height: PLAYER_WIDTH,
@@ -198,14 +201,38 @@ export default function GameResultModal({
   secondaryActionLabel = "Посмотреть доску",
   onSecondaryAction,
 }) {
+  const [showWinnerCrown, setShowWinnerCrown] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowWinnerCrown(false);
+      return undefined;
+    }
+
+    if (outcome !== "win" && outcome !== "loss") {
+      setShowWinnerCrown(false);
+      return undefined;
+    }
+
+    setShowWinnerCrown(false);
+
+    const timerId = window.setTimeout(() => {
+      setShowWinnerCrown(true);
+    }, MODAL_LAUNCH_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [isOpen, outcome]);
+
   if (!isOpen) {
     return null;
   }
 
   const palette = OUTCOME_STYLES[outcome] || OUTCOME_STYLES.draw;
   const centerText = reasonLabel || subtitle || score || "";
-  const currentPlayerWon = outcome === "win";
-  const opponentPlayerWon = outcome === "loss";
+  const currentPlayerWon = outcome === "win" && showWinnerCrown;
+  const opponentPlayerWon = outcome === "loss" && showWinnerCrown;
   const scale = getModalScale(boardSize);
 
   return (

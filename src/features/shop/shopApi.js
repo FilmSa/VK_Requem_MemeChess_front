@@ -140,7 +140,7 @@ export async function getShopCatalog(token, options = {}) {
 
       throw buildError(
         error,
-        "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РєР°С‚Р°Р»РѕРі РјР°РіР°Р·РёРЅР°."
+        "ошибка."
       );
     } finally {
       const activeEntry = shopCatalogCache.get(cacheKey);
@@ -184,7 +184,7 @@ export async function convertToCrowns(amount, token) {
   } catch (error) {
     throw buildError(
       error,
-      "РќРµ СѓРґР°Р»РѕСЃСЊ РєРѕРЅРІРµСЂС‚РёСЂРѕРІР°С‚СЊ СЂРµР№С‚РёРЅРі РІ РєРѕСЂРѕРЅС‹."
+      "Что-то пошло не так."
     );
   }
 }
@@ -200,6 +200,6 @@ export async function buyShopItem(slug, token) {
     invalidateShopCatalogCache(token);
     return normalizeCurrency(response);
   } catch (error) {
-    throw buildError(error, "РќРµ СѓРґР°Р»РѕСЃСЊ РєСѓРїРёС‚СЊ РїСЂРµРґРјРµС‚.");
+    throw buildError(error, "Чето пошло не так((.");
   }
 }

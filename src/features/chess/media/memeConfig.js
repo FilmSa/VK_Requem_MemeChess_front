@@ -1,8 +1,10 @@
 import { withAssetBase } from "../../../shared/lib/assets.js";
-import { MEME_MANIFEST } from "./generated/memeManifest.js";
+import {
+  MEME_ASSET_VERSION,
+  MEME_CATALOG_BY_CATEGORY,
+} from "./generated/memeCatalog.js";
 
-const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".ogg"]);
-const IMAGE_EXTENSIONS = new Set([".gif", ".png", ".jpg", ".jpeg", ".svg"]);
+export { MEME_ASSET_VERSION };
 
 export const MEME_CATEGORIES = Object.freeze({
   FORK_PIN: "FORKPIN",
@@ -40,74 +42,29 @@ const CATEGORY_DEFINITIONS = Object.freeze({
   },
 });
 
-function getFileExtension(assetPath) {
-  const lastDotIndex = assetPath.lastIndexOf(".");
-  return lastDotIndex >= 0 ? assetPath.slice(lastDotIndex).toLowerCase() : "";
-}
-
-function getMediaType(assetPath) {
-  const extension = getFileExtension(assetPath);
-
-  if (VIDEO_EXTENSIONS.has(extension)) {
-    return "video";
-  }
-
-  if (IMAGE_EXTENSIONS.has(extension)) {
-    return "image";
-  }
-
-  return "";
-}
-
-function getBaseName(assetPath) {
-  const normalizedPath = String(assetPath || "").replace(/\\/g, "/");
-  const fileName = normalizedPath.split("/").pop() || "";
-  const extension = getFileExtension(fileName);
-
-  if (!extension) {
-    return fileName;
-  }
-
-  return fileName.slice(0, Math.max(0, fileName.length - extension.length));
-}
-
-function createSlug(value, fallback) {
-  const normalized = String(value || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return normalized || fallback;
-}
-
 function buildCategoryMemes(categoryKey, definition) {
-  const assets = Array.isArray(MEME_MANIFEST[categoryKey])
-    ? MEME_MANIFEST[categoryKey]
+  const entries = Array.isArray(MEME_CATALOG_BY_CATEGORY[categoryKey])
+    ? MEME_CATALOG_BY_CATEGORY[categoryKey]
     : [];
-  const usedSlugs = new Map();
 
-  return assets
-    .map((assetPath, index) => {
-      const mediaType = getMediaType(assetPath);
-      if (!mediaType) {
+  return entries
+    .map((entry, index) => {
+      const mediaType = String(entry?.mediaType || "").trim().toLowerCase();
+      const asset = String(entry?.asset || "").trim();
+      const id = String(entry?.id || "").trim();
+      const repeatKey = String(entry?.repeatKey || id).trim();
+
+      if (!id || !asset || (mediaType !== "video" && mediaType !== "image")) {
         return null;
       }
 
-      const baseSlug = createSlug(getBaseName(assetPath), `asset-${index + 1}`);
-      const duplicateCount = usedSlugs.get(baseSlug) || 0;
-      usedSlugs.set(baseSlug, duplicateCount + 1);
-      const slug =
-        duplicateCount > 0 ? `${baseSlug}-${duplicateCount + 1}` : baseSlug;
-      const id = `meme-${definition.id}-${slug}`;
-      const resolvedAsset = withAssetBase(assetPath);
+      const resolvedAsset = withAssetBase(asset);
 
       return {
         id,
         name: `${definition.name} meme ${index + 1}`,
         category: categoryKey,
-        repeatKey: baseSlug,
+        repeatKey,
         asset: resolvedAsset,
         sound: mediaType === "video" ? resolvedAsset : null,
         volume: mediaType === "video" ? 0.5 : 0,
@@ -131,12 +88,16 @@ export const MEME_CATEGORY_CONFIG = Object.freeze(
   )
 );
 
+export const ALL_MEME_EFFECTS = Object.freeze(
+  Object.values(MEME_CATEGORY_CONFIG).flatMap((categoryConfig) => categoryConfig.memes)
+);
+
+export const ALL_MEME_ASSET_URLS = Object.freeze(
+  [...new Set(ALL_MEME_EFFECTS.flatMap((meme) => [meme.asset, meme.sound]).filter(Boolean))]
+);
+
 export const MEME_BY_ID = Object.freeze(
-  Object.fromEntries(
-    Object.values(MEME_CATEGORY_CONFIG)
-      .flatMap((categoryConfig) => categoryConfig.memes)
-      .map((meme) => [meme.id, meme])
-  )
+  Object.fromEntries(ALL_MEME_EFFECTS.map((meme) => [meme.id, meme]))
 );
 
 export function getMemeCategoryConfig(categoryKey) {

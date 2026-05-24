@@ -105,7 +105,7 @@ export default function SidebarProfileCard({
           <a
             href={buildAppHref("/login")}
             onClick={stopPropagation}
-            className="min-w-0 flex-1 rounded-[16px] px-[10px] py-[10px] text-center text-[13px] font-semibold no-underline transition hover:brightness-105"
+            className="min-w-0 flex-1 rounded-[16px] px-[10px] py-[10px] text-center text-[13px] font-semibold no-underline transition duration-150 hover:-translate-y-[2px] hover:brightness-105 focus-visible:-translate-y-[2px]"
             style={{
               background: "var(--sidebar-primary-button-bg)",
               color: "var(--sidebar-primary-button-text)",
@@ -152,7 +152,7 @@ export default function SidebarProfileCard({
           onFocus={() => {
             void onPreloadProfile?.();
           }}
-          className="flex min-w-0 items-center gap-3 no-underline"
+          className="flex min-w-0 items-center gap-3 no-underline transition-transform duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px]"
           style={{ background: "transparent", border: 0, padding: 0, textAlign: "left" }}
         >
           <img
@@ -180,7 +180,7 @@ export default function SidebarProfileCard({
                 event.stopPropagation();
                 onLogout();
               }}
-              className="flex h-[32px] w-fit items-center justify-center rounded-[12px] border px-[12px] text-[12px] font-semibold transition hover:brightness-110"
+              className="flex h-[32px] w-fit items-center justify-center rounded-[12px] border px-[12px] text-[12px] font-semibold transition duration-150 hover:-translate-y-[2px] hover:brightness-110 focus-visible:-translate-y-[2px]"
               style={{
                 borderColor: "var(--sidebar-secondary-button-border)",
                 background: "var(--sidebar-secondary-button-bg)",

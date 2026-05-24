@@ -19,7 +19,7 @@ export default function MainMenuTabButton({
   return (
     <ButtonBase
       onClick={onClick}
-      className={`relative flex h-[80px] flex-1 items-center justify-center gap-[10px] border-none px-[14px] ${
+      className={`relative flex h-[80px] flex-1 items-center justify-center gap-[10px] border-none px-[14px] transition-transform duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px] ${
         isRightTab ? "rounded-tl-[40px]" : !isActive ? "rounded-br-[40px]" : ""
       }`}
       style={{

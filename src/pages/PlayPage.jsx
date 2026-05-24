@@ -388,14 +388,14 @@ function buildGameResultPresentation({
           outcome: "win",
           title: "Победа",
           subtitle: "Победа матом.",
-          reasonLabel: "Мат",
+          reasonLabel: "Шах и мат",
           score: "1 - 0",
         }
       : {
           outcome: "loss",
           title: "Поражение",
           subtitle: "Поражение матом.",
-          reasonLabel: "Мат",
+          reasonLabel: "Шах и мат",
           score: "0 - 1",
         };
   }
@@ -542,6 +542,7 @@ export default function PlayPage() {
 
   const chessGameState = useChessGame({
     syncKey: gameId,
+    preloadMemeAssets: Boolean(gameId),
     playerColor: activeRoom.playerColor,
     gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
     currentUserId,
@@ -1270,6 +1271,7 @@ export default function PlayPage() {
                     subtitle={resultPresentation?.subtitle}
                     reasonLabel={resultPresentation?.reasonLabel}
                     score={resultPresentation?.score}
+                    boardSize={layout.boardSize}
                     currentPlayer={{
                       name: activeRoom.currentUserName,
                       avatar_url: activeRoom.currentUserProfile?.avatar_url || "",
@@ -1340,6 +1342,7 @@ export default function PlayPage() {
         subtitle={resultPresentation?.subtitle}
         reasonLabel={resultPresentation?.reasonLabel}
         score={resultPresentation?.score}
+        boardSize={layout.boardSize}
         currentPlayer={{
           name: activeRoom.currentUserName,
           avatar_url: activeRoom.currentUserProfile?.avatar_url || "",

@@ -12,6 +12,7 @@ import {
   pickDeterministicMemeEffect,
   pickNextMemeEffect,
 } from "../media/memeEffects.js";
+import { preloadAllMemeAssets } from "../media/memePreload.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
 import {
   readStoredMemeMode,
@@ -206,9 +207,9 @@ function buildResolvedServerHistoryEntries({
     const serverMemeId = String(
       moveEntry?.meme_id || moveEntry?.memeId || ""
     ).trim();
-    const serverMemeCategory = String(
-      moveEntry?.meme_category || moveEntry?.memeCategory || ""
-    ).trim();
+    const serverMemeCategory =
+      String(moveEntry?.meme_category || moveEntry?.memeCategory || "").trim() ||
+      String(getMemeEffectById(serverMemeId)?.category || "").trim();
     const derivedCategory = String(derivedAnalysis?.category || "").trim();
     const resolvedCategory = preferServerMetadata
       ? serverMemeCategory || derivedCategory
@@ -613,6 +614,7 @@ export function useChessGame(options = {}) {
   const isSpecialAuthoritativeMode = isServerAuthoritativeMode(gameMode);
   const preferServerMoveMemeMetadata = shouldPreferServerMoveMemeMetadata(gameMode);
   const preferStateMoveEffects = Boolean(options.preferStateMoveEffects);
+  const shouldPreloadMemeAssets = Boolean(options.preloadMemeAssets);
   const boardOrientation = playerColor === "b" ? "black" : "white";
   const interactionLocked = Boolean(options.interactionLocked);
   const currentUserId = String(options.currentUserId || "").trim();
@@ -696,6 +698,14 @@ export function useChessGame(options = {}) {
   useEffect(() => {
     serverMovesRef.current = visibleServerMoves;
   }, [visibleServerMoves]);
+
+  useEffect(() => {
+    if (!shouldPreloadMemeAssets) {
+      return;
+    }
+
+    void preloadAllMemeAssets();
+  }, [shouldPreloadMemeAssets]);
 
   useEffect(() => {
     return () => {
@@ -1576,9 +1586,9 @@ export function useChessGame(options = {}) {
     const latestMoveMemeId = String(
       lastMoveEntry?.meme_id || lastMoveEntry?.memeId || ""
     ).trim();
-    const latestMoveMemeCategory = String(
-      lastMoveEntry?.meme_category || lastMoveEntry?.memeCategory || ""
-    ).trim();
+    const latestMoveMemeCategory =
+      String(lastMoveEntry?.meme_category || lastMoveEntry?.memeCategory || "").trim() ||
+      String(getMemeEffectById(latestMoveMemeId)?.category || "").trim();
     const latestResolvedMemeCategory = preferServerMoveMemeMetadata
       ? latestMoveMemeCategory || latestMovePreviewAnalysis?.category || ""
       : latestMovePreviewAnalysis?.category || latestMoveMemeCategory || "";
@@ -1773,9 +1783,15 @@ export function useChessGame(options = {}) {
           memeId: String(
             serverMoveEntry?.meme_id || serverMoveEntry?.memeId || ""
           ).trim(),
-          memeCategory: String(
-            serverMoveEntry?.meme_category || serverMoveEntry?.memeCategory || ""
-          ).trim(),
+          memeCategory:
+            String(
+              serverMoveEntry?.meme_category || serverMoveEntry?.memeCategory || ""
+            ).trim() ||
+            String(
+              getMemeEffectById(
+                String(serverMoveEntry?.meme_id || serverMoveEntry?.memeId || "").trim()
+              )?.category || ""
+            ).trim(),
         };
       });
   const activeHistoryPly = Math.min(historyCursor, history.length);

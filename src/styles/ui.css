@@ -458,3 +458,29 @@
   border: 2px solid var(--game-history-scroll-border);
   border-radius: 999px;
 }
+
+.game-result-modal__launch {
+  animation: game-result-modal-drop 560ms cubic-bezier(0.18, 0.88, 0.22, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes game-result-modal-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-120px);
+  }
+
+  62% {
+    opacity: 1;
+    transform: translateY(12px);
+  }
+
+  80% {
+    transform: translateY(-6px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

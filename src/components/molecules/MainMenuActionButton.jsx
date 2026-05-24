@@ -22,7 +22,7 @@ export default function MainMenuActionButton({
     <ButtonBase
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-between rounded-br-[20px] rounded-tl-[20px] border-none px-[20px] py-[10px] shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-70 ${backgroundClassName} ${className}`}
+      className={`flex items-center justify-between rounded-br-[20px] rounded-tl-[20px] border-none px-[20px] py-[10px] shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] transition-transform duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:focus-visible:translate-y-0 ${backgroundClassName} ${className}`}
       style={backgroundStyle}
     >
       <Text style={actionTextStyle}>{label}</Text>

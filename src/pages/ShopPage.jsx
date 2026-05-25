@@ -10,6 +10,8 @@ import { useNotifications } from "../features/notifications/useNotifications.js"
 import { buyShopItem, getShopCatalog } from "../features/shop/shopApi.js";
 import { withAssetBase } from "../shared/lib/assets.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 
 export default function ShopPage() {
   const navigate = useNavigate();
@@ -120,6 +122,60 @@ export default function ShopPage() {
     } finally {
       setBuyingSlug("");
     }
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__currency-row">
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>360</span>
+          </div>
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>3228</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__content">
+          {catalogError ? (
+            <p style={{ color: "#ff8a8a", fontSize: 14 }}>{catalogError}</p>
+          ) : null}
+
+          <div style={{ marginBottom: 16 }}>
+            <h2 className="mobile-page__section-title">Скины</h2>
+            <ShopSkinsSection
+              items={pieceShopItems}
+              onBuy={handleRequestBuy}
+              buyingSlug={buyingSlug}
+              isLoading={isLoading}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <h2 className="mobile-page__section-title">Эмоции</h2>
+            <ShopEmotionsSection
+              items={emoteShopItems}
+              onBuy={handleRequestBuy}
+              buyingSlug={buyingSlug}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
   }
 
   return (

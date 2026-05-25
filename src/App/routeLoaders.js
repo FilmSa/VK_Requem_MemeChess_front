@@ -28,6 +28,9 @@ export const preloadShopPage = memoizeLoader(() => import("../pages/ShopPage.jsx
 export const preloadTournamentsPage = memoizeLoader(() =>
   import("../pages/TournamentsPage.jsx")
 );
+export const preloadFavoritesPage = memoizeLoader(() =>
+  import("../pages/FavoritesPage.jsx")
+);
 
 export function resolveRoutePreloader(pathname = "/") {
   if (pathname === "/" || pathname === "") {
@@ -40,6 +43,10 @@ export function resolveRoutePreloader(pathname = "/") {
 
   if (pathname === "/shop") {
     return preloadShopPage;
+  }
+
+  if (pathname === "/favorites") {
+    return preloadFavoritesPage;
   }
 
   if (pathname === "/profile") {

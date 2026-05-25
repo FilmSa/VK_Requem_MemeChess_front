@@ -32,6 +32,12 @@ import {
   readStoredEmojiVolume,
   subscribeEmojiVolumeChanges,
 } from "../shared/lib/emojiVolume.js";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import QuickAccessMolecule from "../components/molecules/QuickAccessMolecule.jsx";
+import MoveHistoryMolecule from "../components/molecules/MoveHistoryMolecule.jsx";
+import MoveNavigationMolecule from "../components/molecules/MoveNavigationMolecule.jsx";
+import GameActionsMolecule from "../components/molecules/GameActionsMolecule.jsx";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -1160,6 +1166,102 @@ export default function PlayPage() {
           </Link>
         }
       />
+    );
+  }
+
+  const isMobile = useIsMobile();
+  const mobileBoardSize = typeof window !== "undefined"
+    ? Math.min(window.innerWidth - 24, 380)
+    : 350;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <div className="mobile-play-container">
+          <div className="mobile-play-board-area">
+            <ChessBoardSection
+              gameState={chessGameState}
+              sendMove={roomControls.sendMove}
+              boardWidth={mobileBoardSize}
+              topPlayerName={activeRoom.opponentName}
+              topPlayerAvatar={activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR}
+              topPlayerProfileHref={activeRoom.opponentProfile?.id === user?.id ? "/profile" : ""}
+              bottomPlayerName={activeRoom.currentUserName}
+              bottomPlayerAvatar={activeRoom.currentUserProfile?.avatar_url || DEFAULT_AVATAR}
+              bottomPlayerProfileHref={activeRoom.currentUserProfile?.id === user?.id ? "/profile" : ""}
+              topReaction={topReaction}
+              bottomReaction={bottomReaction}
+              topPlayerTimer={gameClock.top}
+              bottomPlayerTimer={gameClock.bottom}
+              showPlayerTimers={showTimedClocks}
+              topPlayerTime={gameClock.top?.time || "∞"}
+              bottomPlayerTime={gameClock.bottom?.time || "∞"}
+              topPlayerTimerTone={gameClock.top?.tone || "idle"}
+              bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
+              topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
+              bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
+              topPlayerEmojiVolume={emojiVolume}
+              onTopPlayerEmojiVolumeChange={handleEmojiVolumeChange}
+              boardOverlay={
+                <GameResultModal
+                  isOpen={Boolean(resultPresentation && isResultModalOpen)}
+                  outcome={resultPresentation?.outcome}
+                  title={resultPresentation?.title}
+                  subtitle={resultPresentation?.subtitle}
+                  reasonLabel={resultPresentation?.reasonLabel}
+                  score={resultPresentation?.score}
+                  currentPlayer={{ name: activeRoom.currentUserName, avatar_url: activeRoom.currentUserProfile?.avatar_url || "" }}
+                  opponentPlayer={{ name: activeRoom.opponentName, avatar_url: activeRoom.opponentProfile?.avatar_url || "" }}
+                  onPrimaryAction={handleResultPrimaryAction}
+                  onSecondaryAction={handleCloseResultModal}
+                />
+              }
+            />
+          </div>
+
+          <div className="mobile-play-controls">
+            <div className="mobile-play-controls__section">
+              <QuickAccessMolecule
+                items={emojiQuickAccessItems}
+                onItemClick={handleEmojiSelect}
+                disabled={emojiCooldownActive}
+              />
+            </div>
+
+            <div className="mobile-play-controls__section">
+              <h4 className="mobile-play-controls__title">Нотация</h4>
+              <MoveHistoryMolecule history={chessGameState.history} activePly={chessGameState.activeHistoryPly} />
+            </div>
+
+            <div className="mobile-play-controls__section">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <GameActionsMolecule
+                  onResign={handleResign}
+                  onResignConfirm={handleResignConfirm}
+                  onResignCancel={handleResignCancel}
+                  onDraw={handleDrawOffer}
+                  onDrawAccept={handleDrawAccept}
+                  onDrawDecline={handleDrawDecline}
+                  drawOfferState={drawControls}
+                  isResignConfirmMode={isResignConfirmMode}
+                  disabled={(!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess)) || !roomState}
+                  resignDisabled={isGameFinished}
+                  drawDisabled={isGameFinished || Boolean(drawOfferedBy) || activeRoom.isBotGame}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <MobileBottomNav />
+      </div>
     );
   }
 

@@ -27,6 +27,7 @@ export default function AppSidebar() {
   const { user, isAuthenticated, logout } = useAuth();
   const isPlaySection =
     location.pathname === "/" || location.pathname.startsWith("/play");
+  const isShop = location.pathname === "/shop" || location.pathname.startsWith("/shop");
 
   async function handleLogout() {
     await logout();
@@ -34,12 +35,12 @@ export default function AppSidebar() {
 
   return (
     <aside
-      className="relative z-[200] flex h-full w-[247px] min-w-[247px] max-w-[247px] shrink-0 flex-col overflow-hidden px-[20px] py-[20px]"
+      className={`app-sidebar ${isShop ? "app-sidebar--fullscreen" : ""} relative z-[200] flex md:h-full h-auto md:w-[247px] w-full min-w-0 md:min-w-[247px] max-w-none md:max-w-[247px] shrink-0 flex-col overflow-hidden`}
       style={{ background: "var(--sidebar-background)" }}
     >
       <Logo />
 
-      <div className="flex flex-1 flex-col justify-between pt-[28px]">
+      <div className="app-sidebar__body gap-0 pt-[28px]">
         <nav className="flex flex-col gap-[10px]">
           {menuItems.map((item) => (
             <MenuButton
@@ -57,7 +58,7 @@ export default function AppSidebar() {
           ))}
         </nav>
 
-        <div className="flex flex-col gap-[14px]">
+        <div className="app-sidebar__profile p-0 flex flex-col gap-[14px]">
           <SidebarProfileCard
             user={user}
             isAuthenticated={isAuthenticated}

@@ -27,6 +27,8 @@ import {
 } from "../shared/lib/username.js";
 import { useReliableNavigate } from "../shared/router/useReliableNavigate.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 const ratingIcon = withAssetBase("/icons/rock.svg");
@@ -1012,6 +1014,156 @@ export default function ProfilePage() {
     }
 
     navigate(`/play?game=${encodeURIComponent(entry.gameId)}`);
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    const fallbackImg = withAssetBase("/images/default-avatar.png");
+    const avatarSrc = user?.avatar_url || fallbackImg;
+    const username = user?.username || "Игрок";
+    const level = user?.level || "—";
+    const rank = user?.rank || "DungeonMaster III";
+    const worldPosition = user?.world_position || "#—";
+    const shopFunds = user?.shop_funds ?? 360;
+    const gameFunds = user?.game_funds ?? 3228;
+    const totalWins = user?.total_wins ?? 148;
+    const totalLosses = user?.total_losses ?? 212;
+    const totalGames = totalWins + totalLosses;
+    const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+    const xpCurrent = user?.xp_current ?? 5720;
+    const xpMax = user?.xp_max ?? 10000;
+    const xpPercent = xpMax > 0 ? Math.min(100, Math.round((xpCurrent / xpMax) * 100)) : 0;
+    const classicRating = user?.rating_classic ?? 1840;
+    const rapidRating = user?.rating_rapid ?? 1720;
+    const blitzRating = user?.rating_blitz ?? 1590;
+    const classicChange = user?.rating_classic_change ?? "+24";
+    const rapidChange = user?.rating_rapid_change ?? "+10";
+    const blitzChange = user?.rating_blitz_change ?? "-8";
+
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__currency-row">
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>{shopFunds}</span>
+          </div>
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>{gameFunds}</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__content">
+          <div className="profile-header">
+            <div className="profile-header__avatar">
+              <img src={avatarSrc} alt="" className="profile-header__avatar-img" />
+              <div className="profile-header__level">{level} LVL</div>
+            </div>
+            <div className="profile-header__info">
+              <h2 className="profile-header__name">{username}</h2>
+              <p className="profile-header__rank">Ранг: <strong>{rank}</strong></p>
+              <p className="profile-header__rank">{worldPosition} в мире</p>
+            </div>
+          </div>
+
+          <div className="profile-xp">
+            <div className="profile-xp__header">
+              <span>XP</span>
+              <span>{xpCurrent.toLocaleString("ru-RU")} / {xpMax.toLocaleString("ru-RU")}</span>
+            </div>
+            <div className="profile-xp__bar">
+              <div className="profile-xp__fill" style={{ width: `${xpPercent}%` }} />
+            </div>
+          </div>
+
+          <div className="profile-currency-row">
+            <div className="mobile-page__currency-pill mobile-page__currency-pill--gold" style={{ justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>{shopFunds}</span>
+            </div>
+            <div className="mobile-page__currency-pill mobile-page__currency-pill--purple" style={{ justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>{gameFunds}</span>
+            </div>
+          </div>
+
+          <div className="profile-stats-grid">
+            <div className="profile-stat-tile">
+              <div className="profile-stat-tile__value">{totalWins}</div>
+              <div className="profile-stat-tile__label">Победы</div>
+            </div>
+            <div className="profile-stat-tile">
+              <div className="profile-stat-tile__value">{totalLosses}</div>
+              <div className="profile-stat-tile__label">Поражения</div>
+            </div>
+            <div className="profile-stat-tile">
+              <div className="profile-stat-tile__value">{winRate}%</div>
+              <div className="profile-stat-tile__label">Винрейт</div>
+            </div>
+          </div>
+
+          <div className="profile-rating-grid">
+            <div className="profile-rating-tile">
+              <div className="profile-rating-tile__mode">Классика</div>
+              <div className="profile-rating-tile__value">{classicRating}</div>
+              <div className="profile-rating-tile__change profile-rating-tile__change--up">▲{classicChange}</div>
+            </div>
+            <div className="profile-rating-tile">
+              <div className="profile-rating-tile__mode">Рапид</div>
+              <div className="profile-rating-tile__value">{rapidRating}</div>
+              <div className="profile-rating-tile__change profile-rating-tile__change--up">▲{rapidChange}</div>
+            </div>
+            <div className="profile-rating-tile">
+              <div className="profile-rating-tile__mode">Блиц</div>
+              <div className="profile-rating-tile__value">{blitzRating}</div>
+              <div className="profile-rating-tile__change profile-rating-tile__change--down">▼{blitzChange}</div>
+            </div>
+          </div>
+
+          <div className="profile-last-games">
+            <h3 className="profile-last-games__title">Последние партии</h3>
+            {historyEntries.length === 0 ? (
+              <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>
+                Пока нет сыгранных партий.
+              </p>
+            ) : (
+              historyEntries.slice(0, 5).map((entry) => {
+                const opponentName = entry.opponent?.username || "Соперник";
+                const modeLabel = resolveGameModeLabel(entry.gameMode || entry.game_mode);
+                const timeLabel = entry.timeControlLabel || "";
+                const isWin = entry.winner_id === user?.id;
+                return (
+                  <button
+                    key={entry.gameId}
+                    type="button"
+                    className="profile-history-card"
+                    onClick={() => openGame(entry)}
+                  >
+                    <div className="profile-history-card__info">
+                      <div className="profile-history-card__opponent">{opponentName}</div>
+                      <div className="profile-history-card__meta">{modeLabel} · {timeLabel}</div>
+                    </div>
+                    <div className={`profile-history-card__result ${isWin ? "profile-history-card__result--win" : "profile-history-card__result--loss"}`}>
+                      {isWin ? `+${entry.rating_change || ""}` : "Поражение"}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
   }
 
   return (

@@ -26,4 +26,7 @@ function resolveBasePath() {
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: resolveBasePath(),
+  server: {
+    host: '127.0.0.1'  //  IPv4 включает. 
+  },
 });

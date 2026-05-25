@@ -15,6 +15,8 @@ import {
 import { buildStandardInitialFen } from "../features/chess/lib/chess960.js";
 import { preloadShopCatalog } from "../features/shop/shopApi.js";
 import { preloadMyGameHistory } from "../features/game/gameApi.js";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 
 const PROFILE_HISTORY_WARMUP_LIMIT = 10;
 
@@ -123,6 +125,41 @@ export default function HomePage() {
       window.clearTimeout(timeoutId);
     };
   }, [token]);
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__currency-row">
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>360</span>
+          </div>
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>3228</span>
+          </div>
+        </div>
+
+        <div className="mobile-page__panel-wrap">
+          <MainMenuPanel
+            style={{ width: "100%", height: "100%" }}
+            onPreviewStateChange={setPreviewState}
+          />
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="app-page h-screen w-screen overflow-hidden">

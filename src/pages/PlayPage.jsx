@@ -1207,8 +1207,6 @@ export default function PlayPage() {
               bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
               topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
               bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
-              topPlayerEmojiVolume={emojiVolume}
-              onTopPlayerEmojiVolumeChange={handleEmojiVolumeChange}
               boardOverlay={
                 <GameResultModal
                   isOpen={Boolean(resultPresentation && isResultModalOpen)}
@@ -1232,6 +1230,17 @@ export default function PlayPage() {
                 items={emojiQuickAccessItems}
                 onItemClick={handleEmojiSelect}
                 disabled={emojiCooldownActive}
+              />
+            </div>
+
+            <div className="mobile-play-controls__section">
+              <MoveNavigationMolecule
+                canViewPrevious={chessGameState.canViewPrevious}
+                canViewNext={chessGameState.canViewNext}
+                onPreviousMove={chessGameState.viewPreviousMove}
+                onNextMove={chessGameState.viewNextMove}
+                memeEffectsVolume={memeEffectsVolume}
+                onMemeEffectsVolumeChange={handleMemeEffectsVolumeChange}
               />
             </div>
 

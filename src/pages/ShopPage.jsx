@@ -125,6 +125,8 @@ export default function ShopPage() {
   }
 
   const isMobile = useIsMobile();
+  const shopFunds = isAuthenticated ? isAuthenticated.shop_funds : 0;
+  const gameFunds = isAuthenticated ? isAuthenticated.game_funds : 0;
 
   if (isMobile) {
     return (
@@ -138,12 +140,12 @@ export default function ShopPage() {
 
         <div className="mobile-page__currency-row">
           <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>360</span>
+            <img src="/icons/crown.svg" className="h-[18px] w-[18px]" alt="" />
+            <span>{shopFunds}</span>
           </div>
           <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>3228</span>
+            <img src="/icons/rock.svg" className="h-[18px] w-[18px]" alt="" />
+            <span>{gameFunds}</span>
           </div>
         </div>
 
@@ -172,6 +174,17 @@ export default function ShopPage() {
             />
           </div>
         </div>
+
+        <PurchaseConfirmModal
+          isOpen={Boolean(purchaseCandidate)}
+          item={purchaseCandidate}
+          isSubmitting={Boolean(
+            purchaseCandidate?.slug && buyingSlug === purchaseCandidate.slug
+          )}
+          errorMessage={purchaseError}
+          onClose={handleClosePurchaseModal}
+          onConfirm={handleConfirmBuy}
+        />
 
         <MobileBottomNav />
       </div>

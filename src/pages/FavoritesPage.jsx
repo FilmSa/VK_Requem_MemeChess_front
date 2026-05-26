@@ -2,9 +2,13 @@ import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 import { withAssetBase } from "../shared/lib/assets.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import { useAuth } from "../features/auth/useAuth.js";
 
 export default function FavoritesPage() {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const shopFunds = user?.shop_funds ?? 0;
+  const gameFunds = user?.game_funds ?? 0;
 
   if (isMobile) {
     return (
@@ -18,11 +22,11 @@ export default function FavoritesPage() {
         <div className="mobile-page__currency-row">
           <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>360</span>
+            <span>{shopFunds}</span>
           </div>
           <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>3228</span>
+            <span>{gameFunds}</span>
           </div>
         </div>
         <div className="mobile-page__content">

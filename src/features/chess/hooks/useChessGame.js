@@ -14,6 +14,7 @@ import {
 } from "../media/memeEffects.js";
 import { preloadAllMemeAssets } from "../media/memePreload.js";
 import { useBoardEffectsController } from "../media/useBoardEffectsController.js";
+import { MEME_CATEGORIES } from "../media/memeConfig.js";
 import {
   readStoredMemeMode,
   subscribeMemeModeChanges,
@@ -22,6 +23,15 @@ import {
 const DEBUG_SHOW_EFFECT_ON_ANY_MOVE = true;
 const PROMOTION_PIECE_ORDER = ["q", "r", "b", "n"];
 const SEQUENCE_ANIMATION_DURATION_MS = 680;
+const IMPORTANT_PIECE_TYPES = new Set(["n", "b", "r", "q"]);
+const PIECE_VALUES = Object.freeze({
+  p: 1,
+  n: 3,
+  b: 3,
+  r: 5,
+  q: 9,
+  k: 100,
+});
 
 function normalizePromotionPiece(piece) {
   const normalized = String(piece || "").trim().toLowerCase();
@@ -66,12 +76,24 @@ function listBoardSquares() {
 
 const BOARD_SQUARES = listBoardSquares();
 
+function getOppositeColor(color) {
+  return color === "b" ? "w" : "b";
+}
+
+function isImportantPieceType(pieceType) {
+  return IMPORTANT_PIECE_TYPES.has(String(pieceType || "").trim().toLowerCase());
+}
+
+function getPieceValue(pieceType) {
+  return PIECE_VALUES[String(pieceType || "").trim().toLowerCase()] || 0;
+}
+
 function isServerAuthoritativeMode(gameMode) {
   return gameMode === "fischer" || gameMode === "evolution";
 }
 
 function shouldPreferServerMoveMemeMetadata(gameMode) {
-  return gameMode === "classic" || gameMode === "meme";
+  return gameMode === "meme";
 }
 
 function loadGameFromFen(fen) {
@@ -87,6 +109,175 @@ function loadGameFromFen(fen) {
   } catch {
     return null;
   }
+}
+
+function getNestedValue(source, path) {
+  return path.reduce(
+    (current, key) =>
+      current && typeof current === "object" && key in current ? current[key] : undefined,
+    source
+  );
+}
+
+function normalizeAnalyzerClassification(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isAnalyzerMistakeClassification(moveEntry) {
+  const candidatePaths = [
+    ["classification"],
+    ["move_classification"],
+    ["mistake"],
+    ["analysis", "classification"],
+    ["analysis", "move_classification"],
+    ["analysis", "mistake"],
+    ["analyzer", "classification"],
+    ["analyzer", "move_classification"],
+    ["analyzer", "mistake"],
+    ["analysis_result", "classification"],
+    ["analysis_result", "move_classification"],
+    ["analysis_result", "mistake"],
+  ];
+
+  return candidatePaths.some((path) => {
+    const value = getNestedValue(moveEntry, path);
+
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    const normalized = normalizeAnalyzerClassification(value);
+    return normalized === "mistake";
+  });
+}
+
+function collectCapturedPieces(previousGame, nextGame, movedPieceColor) {
+  if (!previousGame || !nextGame || !movedPieceColor) {
+    return [];
+  }
+
+  const enemyColor = getOppositeColor(movedPieceColor);
+  const capturedPieces = [];
+
+  for (const square of BOARD_SQUARES) {
+    const beforePiece = previousGame.get(square);
+    const afterPiece = nextGame.get(square);
+
+    if (
+      beforePiece?.color === enemyColor &&
+      (!afterPiece || afterPiece.color !== enemyColor || afterPiece.type !== beforePiece.type)
+    ) {
+      capturedPieces.push({
+        ...beforePiece,
+        square,
+      });
+    }
+  }
+
+  return capturedPieces;
+}
+
+function resolveMoveSquares(moveEntry, move, sequence) {
+  const firstStep = Array.isArray(sequence) && sequence.length > 0 ? sequence[0] : null;
+  const lastStep =
+    Array.isArray(sequence) && sequence.length > 0 ? sequence[sequence.length - 1] : null;
+
+  return {
+    fromSquare: move?.from || firstStep?.from || "",
+    toSquare: move?.to || lastStep?.to || "",
+  };
+}
+
+function shouldAllowSacrificeMeme({
+  moveEntry,
+  previousGame,
+  nextGame,
+  move = null,
+  sequence = null,
+}) {
+  if (!isAnalyzerMistakeClassification(moveEntry) || !previousGame || !nextGame) {
+    return false;
+  }
+
+  const { fromSquare, toSquare } = resolveMoveSquares(moveEntry, move, sequence);
+  if (!fromSquare || !toSquare) {
+    return false;
+  }
+
+  const movedPieceBefore = previousGame.get(fromSquare);
+  const movedPieceAfter = nextGame.get(toSquare);
+  const movedPieceType = movedPieceAfter?.type || movedPieceBefore?.type || "";
+  const movedPieceColor = movedPieceAfter?.color || movedPieceBefore?.color || "";
+
+  if (!isImportantPieceType(movedPieceType) || !movedPieceColor) {
+    return false;
+  }
+
+  if (nextGame.isCheck() || nextGame.isCheckmate()) {
+    return false;
+  }
+
+  const opponentColor = getOppositeColor(movedPieceColor);
+  const attackers = nextGame.attackers(toSquare, opponentColor) || [];
+  if (attackers.length === 0) {
+    return false;
+  }
+
+  const defenders = nextGame.attackers(toSquare, movedPieceColor) || [];
+  const movedPieceValue = getPieceValue(movedPieceType);
+  const capturedMaterialValue = collectCapturedPieces(
+    previousGame,
+    nextGame,
+    movedPieceColor
+  ).reduce((sum, piece) => sum + getPieceValue(piece?.type), 0);
+  const weakestAttackerValue = attackers.reduce((minValue, attackerSquare) => {
+    const attackerPiece = nextGame.get(attackerSquare);
+    const attackerValue = getPieceValue(attackerPiece?.type);
+
+    if (!attackerValue) {
+      return minValue;
+    }
+
+    return Math.min(minValue, attackerValue);
+  }, Number.POSITIVE_INFINITY);
+
+  const isLikelyHanging =
+    defenders.length === 0 ||
+    attackers.length > defenders.length ||
+    weakestAttackerValue <= movedPieceValue;
+  const lacksCompensation = capturedMaterialValue < movedPieceValue;
+
+  return isLikelyHanging && lacksCompensation;
+}
+
+function resolveServerMemeCategory({
+  moveEntry,
+  serverMemeCategory = "",
+  derivedCategory = "",
+  preferServerMetadata = false,
+  previousGame = null,
+  nextGame = null,
+  move = null,
+  sequence = null,
+}) {
+  const preferredCategory = preferServerMetadata
+    ? serverMemeCategory || derivedCategory
+    : derivedCategory || serverMemeCategory;
+
+  if (
+    preferredCategory === MEME_CATEGORIES.SACRIFICE &&
+    !shouldAllowSacrificeMeme({
+      moveEntry,
+      previousGame,
+      nextGame,
+      move,
+      sequence,
+    })
+  ) {
+    return "";
+  }
+
+  return preferredCategory;
 }
 
 function cloneGameInstance(chessInstance) {
@@ -211,11 +402,17 @@ function buildResolvedServerHistoryEntries({
       String(moveEntry?.meme_category || moveEntry?.memeCategory || "").trim() ||
       String(getMemeEffectById(serverMemeId)?.category || "").trim();
     const derivedCategory = String(derivedAnalysis?.category || "").trim();
-    const resolvedCategory = preferServerMetadata
-      ? serverMemeCategory || derivedCategory
-      : derivedCategory || serverMemeCategory;
+    const resolvedCategory = resolveServerMemeCategory({
+      moveEntry,
+      serverMemeCategory,
+      derivedCategory,
+      preferServerMetadata,
+      previousGame,
+      nextGame,
+      sequence: parseMoveSequence(moveValue),
+    });
 
-    let resolvedMemeId = preferServerMetadata ? serverMemeId : "";
+    let resolvedMemeId = preferServerMetadata && resolvedCategory ? serverMemeId : "";
     if (!resolvedMemeId && resolvedCategory) {
       const resolvedMeme = pickDeterministicMemeEffect(resolvedCategory, {
         gameId,
@@ -650,8 +847,11 @@ export function useChessGame(options = {}) {
       : readStoredMemeMode()
   );
   const [isBoardAnimationLocked, setIsBoardAnimationLocked] = useState(false);
+  const isGameOver =
+    typeof game?.isGameOver === "function" ? game.isGameOver() : false;
   const boardInteractionLocked =
     interactionLocked ||
+    isGameOver ||
     isBoardAnimationLocked ||
     (usesServerAuthoritativeRules &&
       (Boolean(authoritativePreviewFen) ||
@@ -1589,9 +1789,16 @@ export function useChessGame(options = {}) {
     const latestMoveMemeCategory =
       String(lastMoveEntry?.meme_category || lastMoveEntry?.memeCategory || "").trim() ||
       String(getMemeEffectById(latestMoveMemeId)?.category || "").trim();
-    const latestResolvedMemeCategory = preferServerMoveMemeMetadata
-      ? latestMoveMemeCategory || latestMovePreviewAnalysis?.category || ""
-      : latestMovePreviewAnalysis?.category || latestMoveMemeCategory || "";
+    const latestResolvedMemeCategory = resolveServerMemeCategory({
+      moveEntry: lastMoveEntry,
+      serverMemeCategory: latestMoveMemeCategory,
+      derivedCategory: String(latestMovePreviewAnalysis?.category || "").trim(),
+      preferServerMetadata: preferServerMoveMemeMetadata,
+      previousGame,
+      nextGame,
+      move: latestMoveFromHistory,
+      sequence: lastSequence,
+    });
     const latestEffectSquare =
       latestMovePreviewAnalysis?.targetSquare ||
       latestMoveFromHistory?.to ||
@@ -1675,7 +1882,11 @@ export function useChessGame(options = {}) {
       if (shouldTriggerEffect) {
         let didTriggerServerEffect = false;
 
-        if (preferServerMoveMemeMetadata && latestMoveMemeId) {
+        if (
+          preferServerMoveMemeMetadata &&
+          latestMoveMemeId &&
+          latestResolvedMemeCategory
+        ) {
           didTriggerServerEffect = triggerMemeEffectById(
             latestMoveMemeId,
             latestEffectContext
@@ -1768,7 +1979,10 @@ export function useChessGame(options = {}) {
     : verboseHistory.map((move) =>
         `${move.from}${move.to}${move.promotion || ""}`.toLowerCase()
       );
-  const historyEntries = usesServerAuthoritativeRules
+  const canResolveHistoryEntriesFromState =
+    visibleServerMoves.length > 0 && visibleServerMoves.length === history.length;
+  const historyEntries = usesServerAuthoritativeRules ||
+    (!preferServerMoveMemeMetadata && canResolveHistoryEntriesFromState)
     ? buildResolvedServerHistoryEntries({
         serverMoves: visibleServerMoves,
         initialFen,
@@ -1777,21 +1991,36 @@ export function useChessGame(options = {}) {
       })
     : history.map((moveValue, index) => {
         const serverMoveEntry = visibleServerMoves[index];
+        const previousFen = index > 0
+          ? visibleServerMoves[index - 1]?.fen
+          : initialFen;
+        const previousGame = loadGameFromFen(previousFen);
+        const nextGame = loadGameFromFen(serverMoveEntry?.fen);
+        const sequence = parseMoveSequence(moveValue);
+        const serverMemeCategory = String(
+          serverMoveEntry?.meme_category || serverMoveEntry?.memeCategory || ""
+        ).trim() ||
+          String(
+            getMemeEffectById(
+              String(serverMoveEntry?.meme_id || serverMoveEntry?.memeId || "").trim()
+            )?.category || ""
+          ).trim();
+        const memeCategory = resolveServerMemeCategory({
+          moveEntry: serverMoveEntry,
+          serverMemeCategory,
+          derivedCategory: "",
+          preferServerMetadata: true,
+          previousGame,
+          nextGame,
+          sequence,
+        });
 
         return {
           move: moveValue,
-          memeId: String(
-            serverMoveEntry?.meme_id || serverMoveEntry?.memeId || ""
-          ).trim(),
-          memeCategory:
-            String(
-              serverMoveEntry?.meme_category || serverMoveEntry?.memeCategory || ""
-            ).trim() ||
-            String(
-              getMemeEffectById(
-                String(serverMoveEntry?.meme_id || serverMoveEntry?.memeId || "").trim()
-              )?.category || ""
-            ).trim(),
+          memeId: memeCategory
+            ? String(serverMoveEntry?.meme_id || serverMoveEntry?.memeId || "").trim()
+            : "",
+          memeCategory,
         };
       });
   const activeHistoryPly = Math.min(historyCursor, history.length);

@@ -570,19 +570,6 @@ export default function PlayPage() {
       ? String(roomState?.player2_id || "").trim()
       : String(roomState?.player1_id || "").trim());
   const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
-  const gameClock = useGameClock({
-    gameId,
-    roomState,
-    fallbackTimeControl: activeRoom.matchTimeControl,
-    currentUserId,
-    opponentUserId: resolvedOpponentUserId,
-    sessionToken: activeRoom.sessionToken,
-    isOnlineGame: onlineRoom.isOnlineGame,
-    isLocalBotGame: activeRoom.isLocalBotGame,
-    onTimeoutResolved: activeRoom.applyRoomState,
-  });
-  const showTimedClocks = Boolean(gameClock.timed);
-
   const chessGameState = useChessGame({
     syncKey: gameId,
     preloadMemeAssets: Boolean(gameId),
@@ -627,6 +614,19 @@ export default function PlayPage() {
       finishedEventResult?.winnerId ||
       ""
   ).trim();
+  const gameClock = useGameClock({
+    gameId,
+    roomState,
+    fallbackTimeControl: activeRoom.matchTimeControl,
+    currentUserId,
+    opponentUserId: resolvedOpponentUserId,
+    sessionToken: activeRoom.sessionToken,
+    isOnlineGame: onlineRoom.isOnlineGame,
+    isLocalBotGame: activeRoom.isLocalBotGame,
+    isGameFinished,
+    onTimeoutResolved: activeRoom.applyRoomState,
+  });
+  const showTimedClocks = Boolean(gameClock.timed);
 
   const emojiOwnerId =
     activeRoom.currentUserProfile?.id || activeRoom.currentUserId || user?.id;

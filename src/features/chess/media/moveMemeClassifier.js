@@ -2,14 +2,14 @@ import { Chess } from "chess.js";
 import { MEME_CATEGORIES } from "./memeConfig.js";
 
 const IMPORTANT_PIECE_TYPES = new Set(["n", "b", "r", "q"]);
-const PIECE_VALUES = {
+const PIECE_VALUES = Object.freeze({
   p: 1,
   n: 3,
   b: 3,
   r: 5,
   q: 9,
   k: 100,
-};
+});
 const SLIDING_DIRECTIONS = {
   b: [
     [1, 1],
@@ -53,12 +53,12 @@ function getOppositeColor(color) {
   return color === "b" ? "w" : "b";
 }
 
-function getPieceValue(pieceType) {
-  return PIECE_VALUES[String(pieceType || "").toLowerCase()] ?? 0;
-}
-
 function isImportantPieceType(pieceType) {
   return IMPORTANT_PIECE_TYPES.has(String(pieceType || "").toLowerCase());
+}
+
+function getPieceValue(pieceType) {
+  return PIECE_VALUES[String(pieceType || "").toLowerCase()] || 0;
 }
 
 function loadGameFromFen(fen) {
@@ -216,7 +216,7 @@ function createsPin(nextGame, actorSquare, actorColor, movedPieceType) {
   return false;
 }
 
-function collectAttackedImportantPieces(nextGame, actorSquare, actorColor) {
+function collectAttackedPieces(nextGame, actorSquare, actorColor) {
   if (!nextGame || !actorSquare || !actorColor) {
     return [];
   }
@@ -227,7 +227,7 @@ function collectAttackedImportantPieces(nextGame, actorSquare, actorColor) {
   for (const square of BOARD_SQUARES) {
     const piece = nextGame.get(square);
 
-    if (!piece || piece.color !== enemyColor || !isImportantPieceType(piece.type)) {
+    if (!piece || piece.color !== enemyColor) {
       continue;
     }
 
@@ -241,6 +241,14 @@ function collectAttackedImportantPieces(nextGame, actorSquare, actorColor) {
   }
 
   return attackedPieces;
+}
+
+function collectAttackedImportantPieces(attackedPieces = []) {
+  return attackedPieces.filter((piece) => isImportantPieceType(piece.type));
+}
+
+function createsAttack(attackedPieces = []) {
+  return attackedPieces.length >= 1;
 }
 
 function createsFork(attackedImportantPieces = []) {
@@ -263,75 +271,61 @@ function movedFromInitialSquare(initialGame, previousGame, actorInfo) {
   );
 }
 
-function listLegalCapturesToSquare(chessInstance, targetSquare) {
-  if (!chessInstance || !targetSquare) {
-    return [];
-  }
-
-  try {
-    return chessInstance
-      .moves({ verbose: true })
-      .filter((move) => move?.to === targetSquare && Boolean(move?.captured));
-  } catch {
-    return [];
-  }
-}
-
-function applyVerboseMove(chessInstance, move) {
-  if (!chessInstance || !move?.from || !move?.to) {
-    return null;
-  }
-
-  const nextClone = loadGameFromFen(chessInstance.fen());
-  if (!nextClone) {
-    return null;
-  }
-
-  try {
-    nextClone.move({
-      from: move.from,
-      to: move.to,
-      promotion: move.promotion || undefined,
-    });
-    return nextClone;
-  } catch {
-    return null;
-  }
-}
-
-function isMaterialLosingImportantPiece({
+function createsBadSacrifice({
+  previousGame,
   nextGame,
-  movedPieceSquare,
-  movedPieceType,
-  capturedTotalValue,
+  actorInfo,
+  capturedPieces = [],
 }) {
-  if (!nextGame || !movedPieceSquare || !isImportantPieceType(movedPieceType)) {
+  const movedPieceSquare = actorInfo?.targetSquare || actorInfo?.fromSquare || "";
+  const movedPieceType = actorInfo?.movedPieceType || "";
+  const movedPieceColor = actorInfo?.movedPieceColor || "";
+
+  if (
+    !previousGame ||
+    !nextGame ||
+    !movedPieceSquare ||
+    !movedPieceColor ||
+    !isImportantPieceType(movedPieceType)
+  ) {
     return false;
   }
 
+  if (nextGame.isCheckmate() || nextGame.inCheck()) {
+    return false;
+  }
+
+  const enemyColor = getOppositeColor(movedPieceColor);
+  const attackers = nextGame.attackers(movedPieceSquare, enemyColor) || [];
+
+  if (!Array.isArray(attackers) || attackers.length === 0) {
+    return false;
+  }
+
+  const defenders = nextGame.attackers(movedPieceSquare, movedPieceColor) || [];
   const movedPieceValue = getPieceValue(movedPieceType);
-  if (movedPieceValue <= 0) {
-    return false;
-  }
+  const capturedMaterialValue = capturedPieces.reduce(
+    (sum, piece) => sum + getPieceValue(piece?.type),
+    0
+  );
+  const weakestAttackerValue = attackers.reduce((minValue, attackerSquare) => {
+    const attackerPiece = nextGame.get(attackerSquare);
+    const attackerValue = getPieceValue(attackerPiece?.type);
 
-  const enemyCaptures = listLegalCapturesToSquare(nextGame, movedPieceSquare);
-  if (enemyCaptures.length === 0) {
-    return false;
-  }
-
-  return enemyCaptures.some((enemyCapture) => {
-    const afterEnemyCapture = applyVerboseMove(nextGame, enemyCapture);
-    if (!afterEnemyCapture) {
-      return false;
+    if (!attackerValue) {
+      return minValue;
     }
 
-    const attackerValue = getPieceValue(afterEnemyCapture.get(movedPieceSquare)?.type);
-    const hasLegalRecapture =
-      listLegalCapturesToSquare(afterEnemyCapture, movedPieceSquare).length > 0;
-    const recaptureGain = hasLegalRecapture ? attackerValue : 0;
+    return Math.min(minValue, attackerValue);
+  }, Number.POSITIVE_INFINITY);
 
-    return capturedTotalValue - movedPieceValue + recaptureGain < 0;
-  });
+  const isLikelyHanging =
+    defenders.length === 0 ||
+    attackers.length > defenders.length ||
+    weakestAttackerValue <= movedPieceValue;
+  const lacksCompensation = capturedMaterialValue < movedPieceValue;
+
+  return isLikelyHanging && lacksCompensation;
 }
 
 export function analyzeMoveForMeme({
@@ -374,27 +368,8 @@ export function analyzeMoveForMeme({
   const capturedImportantPieces = capturedPieces.filter((piece) =>
     isImportantPieceType(piece.type)
   );
-  const capturedTotalValue = capturedPieces.reduce(
-    (sum, piece) => sum + getPieceValue(piece.type),
-    0
-  );
   const favorableTrade =
     capturedImportantPieces.length > 0;
-
-  if (
-    isMaterialLosingImportantPiece({
-      nextGame,
-      movedPieceSquare,
-      movedPieceType: actorInfo.movedPieceType,
-      capturedTotalValue,
-    })
-  ) {
-    return {
-      category: MEME_CATEGORIES.SACRIFICE,
-      targetSquare: movedPieceSquare,
-      nextOrdinaryMoveCount: ordinaryMoveCount,
-    };
-  }
 
   if (nextGame.isCheckmate() || nextGame.inCheck()) {
     return {
@@ -404,21 +379,30 @@ export function analyzeMoveForMeme({
     };
   }
 
-  if (favorableTrade) {
+  if (
+    createsBadSacrifice({
+      previousGame,
+      nextGame,
+      actorInfo,
+      capturedPieces,
+    })
+  ) {
     return {
-      category: MEME_CATEGORIES.IMPORTANT_CAPTURE,
+      category: MEME_CATEGORIES.SACRIFICE,
       targetSquare: movedPieceSquare,
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };
   }
 
-  const attackedImportantPieces = collectAttackedImportantPieces(
+  const attackedPieces = collectAttackedPieces(
     nextGame,
     movedPieceSquare,
     movedPieceColor
   );
+  const attackedImportantPieces = collectAttackedImportantPieces(attackedPieces);
 
   if (
+    createsAttack(attackedPieces) ||
     createsFork(attackedImportantPieces) ||
     createsPin(
       nextGame,
@@ -429,6 +413,14 @@ export function analyzeMoveForMeme({
   ) {
     return {
       category: MEME_CATEGORIES.FORK_PIN,
+      targetSquare: movedPieceSquare,
+      nextOrdinaryMoveCount: ordinaryMoveCount,
+    };
+  }
+
+  if (favorableTrade) {
+    return {
+      category: MEME_CATEGORIES.IMPORTANT_CAPTURE,
       targetSquare: movedPieceSquare,
       nextOrdinaryMoveCount: ordinaryMoveCount,
     };

@@ -17,11 +17,20 @@ body {
   font-family: var(--font-display);
   color: var(--color-text);
   background: var(--page-background);
-  overflow: hidden;
+  /* overflow: hidden; */
   transition:
     color 0.2s ease,
     background 0.2s ease;
 }
+
+
+@media (max-width: 1180px) {
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 
 img,
 video {

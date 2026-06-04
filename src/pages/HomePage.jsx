@@ -17,6 +17,7 @@ import { preloadShopCatalog } from "../features/shop/shopApi.js";
 import { preloadMyGameHistory } from "../features/game/gameApi.js";
 import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
 
 const PROFILE_HISTORY_WARMUP_LIMIT = 10;
 
@@ -140,16 +141,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mobile-page__currency-row">
-          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>{shopFunds}</span>
-          </div>
-          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span>{gameFunds}</span>
-          </div>
-        </div>
+        <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
 
         <div className="mobile-page__panel-wrap">
           <MainMenuPanel

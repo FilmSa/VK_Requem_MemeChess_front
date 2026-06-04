@@ -24,21 +24,21 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    id: "favorites",
-    label: "Избранное",
-    to: "/favorites",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 21L5 14C3.5 12.5 3 10.5 3 9C3 6 5.5 4 8 4C10 4 11.5 5.5 12 7C12.5 5.5 14 4 16 4C18.5 4 21 6 21 9C21 10.5 20.5 12.5 19 14L12 21Z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
+  // {
+  //   id: "favorites",
+  //   label: "Избранное",
+  //   to: "/favorites",
+  //   icon: (
+  //     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  //       <path
+  //         d="M12 21L5 14C3.5 12.5 3 10.5 3 9C3 6 5.5 4 8 4C10 4 11.5 5.5 12 7C12.5 5.5 14 4 16 4C18.5 4 21 6 21 9C21 10.5 20.5 12.5 19 14L12 21Z"
+  //         stroke="currentColor"
+  //         strokeWidth="2"
+  //         strokeLinejoin="round"
+  //       />
+  //     </svg>
+  //   ),
+  // },
   {
     id: "shop",
     label: "Магазин",

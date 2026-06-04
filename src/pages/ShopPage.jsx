@@ -12,6 +12,8 @@ import { withAssetBase } from "../shared/lib/assets.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
+import { getCustomizationItem } from "../shared/constants/customizationCatalog.js";
 
 export default function ShopPage() {
   const navigate = useNavigate();
@@ -138,16 +140,7 @@ export default function ShopPage() {
           </div>
         </div>
 
-        <div className="mobile-page__currency-row">
-          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
-            <img src="/icons/crown.svg" className="h-[18px] w-[18px]" alt="" />
-            <span>{shopFunds}</span>
-          </div>
-          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
-            <img src="/icons/rock.svg" className="h-[18px] w-[18px]" alt="" />
-            <span>{gameFunds}</span>
-          </div>
-        </div>
+        <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
 
         <div className="mobile-page__content">
           {catalogError ? (
@@ -156,22 +149,72 @@ export default function ShopPage() {
 
           <div style={{ marginBottom: 16 }}>
             <h2 className="mobile-page__section-title">Скины</h2>
-            <ShopSkinsSection
-              items={pieceShopItems}
-              onBuy={handleRequestBuy}
-              buyingSlug={buyingSlug}
-              isLoading={isLoading}
-            />
+            <div className="mobile-shop-grid">
+              {pieceShopItems.map((entry) => {
+                const catalogItem = getCustomizationItem(entry.item.slug);
+                const previewSrc = catalogItem?.shopHeroImage || catalogItem?.imageSrc || "";
+                const title = entry.item.title || catalogItem?.title || entry.item.slug;
+                return (
+                  <div key={entry.item.slug} className="mobile-shop-grid-card">
+                    <div className="mobile-shop-grid-card__preview">
+                      {previewSrc ? (
+                        <img src={previewSrc} alt={title} />
+                      ) : (
+                        <div style={{ padding: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
+                          {title}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mobile-shop-grid-card__info">
+                      <div className="mobile-shop-grid-card__title">{title}</div>
+                      <button
+                        type="button"
+                        className={`mobile-shop-grid-card__price-btn ${entry.owned ? "mobile-shop-grid-card__price-btn--owned" : ""}`}
+                        onClick={entry.owned ? undefined : () => handleRequestBuy(entry)}
+                        disabled={entry.owned || buyingSlug === entry.item.slug}
+                      >
+                        {entry.owned ? "Куплено" : `${Number(entry.price ?? 0).toLocaleString("ru-RU")} `}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <h2 className="mobile-page__section-title">Эмоции</h2>
-            <ShopEmotionsSection
-              items={emoteShopItems}
-              onBuy={handleRequestBuy}
-              buyingSlug={buyingSlug}
-              isLoading={isLoading}
-            />
+            <div className="mobile-shop-grid">
+              {emoteShopItems.map((entry) => {
+                const catalogItem = getCustomizationItem(entry.item.slug);
+                const videoSrc = entry.item.asset_url || catalogItem?.videoSrc || "";
+                const title = entry.item.title || catalogItem?.title || entry.item.slug;
+                return (
+                  <div key={entry.item.slug} className="mobile-shop-grid-card">
+                    <div className="mobile-shop-grid-card__preview">
+                      {videoSrc ? (
+                        <video src={videoSrc} muted autoPlay loop playsInline preload="metadata" />
+                      ) : (
+                        <div style={{ padding: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
+                          {title}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mobile-shop-grid-card__info">
+                      <div className="mobile-shop-grid-card__title">{title}</div>
+                      <button
+                        type="button"
+                        className={`mobile-shop-grid-card__price-btn ${entry.owned ? "mobile-shop-grid-card__price-btn--owned" : ""}`}
+                        onClick={entry.owned ? undefined : () => handleRequestBuy(entry)}
+                        disabled={entry.owned || buyingSlug === entry.item.slug}
+                      >
+                        {entry.owned ? "Куплено" : `${Number(entry.price ?? 0).toLocaleString("ru-RU")} `}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 

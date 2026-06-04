@@ -29,6 +29,7 @@ import { useReliableNavigate } from "../shared/router/useReliableNavigate.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
 import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 const ratingIcon = withAssetBase("/icons/rock.svg");
@@ -1084,16 +1085,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mobile-profile-currency-row">
-            <div className="mobile-page__currency-pill mobile-page__currency-pill--gold" style={{ justifyContent: "center" }}>
-            <img src="/icons/crown.svg" className="h-[18px] w-[18px]" alt="" />
-              <span>{shopFunds}</span>
-            </div>
-            <div className="mobile-page__currency-pill mobile-page__currency-pill--purple" style={{ justifyContent: "center" }}>
-              <img src="/icons/rock.svg" className="h-[18px] w-[18px]" alt="" />
-              <span>{gameFunds}</span>
-            </div>
-          </div>
+          <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
 
           <div className="mobile-profile-stats-grid">
             <div className="mobile-profile-stat-tile">

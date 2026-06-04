@@ -184,7 +184,7 @@ export default function ShopPage() {
 
           <div style={{ marginBottom: 16 }}>
             <h2 className="mobile-page__section-title">Эмоции</h2>
-            <div className="mobile-shop-grid">
+            <div className="mobile-shop-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
               {emoteShopItems.map((entry) => {
                 const catalogItem = getCustomizationItem(entry.item.slug);
                 const videoSrc = entry.item.asset_url || catalogItem?.videoSrc || "";

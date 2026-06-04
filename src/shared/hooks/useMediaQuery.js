@@ -1,13 +1,13 @@
 import { useSyncExternalStore } from "react";
 
 function subscribe(callback) {
-  const mql = window.matchMedia("(max-width: 767px)");
+  const mql = window.matchMedia("(max-width: 1180px)");
   mql.addEventListener("change", callback);
   return () => mql.removeEventListener("change", callback);
 }
 
 function getSnapshot() {
-  return window.matchMedia("(max-width: 767px)").matches;
+  return window.matchMedia("(max-width: 1180px)").matches;
 }
 
 function getServerSnapshot() {

@@ -380,7 +380,7 @@
 }
 
 .page-placeholder__card {
-  width: min(100%, 760px);
+  width: min(100%, 1180px);
   padding: 28px;
 }
 
@@ -463,7 +463,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1180px) {
   .app-sidebar__profile-actions,
   .status-card__actions {
     flex-direction: column;

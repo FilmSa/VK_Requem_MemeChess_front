@@ -1,63 +1,30 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCallback } from "react";
+import startGameIcon from "../../../../icons/startgame.svg";
+import { withAssetBase } from "../../../shared/lib/assets.js";
+
 
 const NAV_ITEMS = [
   {
     id: "home",
-    label: "Главная",
+    label: "Играть",
     to: "/",
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 12L12 3L21 12"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M5 10V20H19V10"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <img 
+        src={ startGameIcon }
+        alt="Играть"
+      />
     ),
   },
-  // {
-  //   id: "favorites",
-  //   label: "Избранное",
-  //   to: "/favorites",
-  //   icon: (
-  //     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-  //       <path
-  //         d="M12 21L5 14C3.5 12.5 3 10.5 3 9C3 6 5.5 4 8 4C10 4 11.5 5.5 12 7C12.5 5.5 14 4 16 4C18.5 4 21 6 21 9C21 10.5 20.5 12.5 19 14L12 21Z"
-  //         stroke="currentColor"
-  //         strokeWidth="2"
-  //         strokeLinejoin="round"
-  //       />
-  //     </svg>
-  //   ),
-  // },
   {
     id: "shop",
     label: "Магазин",
     to: "/shop",
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 7H20L18 20H6L4 7Z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M8 7V5C8 3 9.5 2 12 2C14.5 2 16 3 16 5V7"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <img
+        src={withAssetBase("/icons/cart.svg")}
+        alt="Магазин"
+      />
     ),
   },
   {

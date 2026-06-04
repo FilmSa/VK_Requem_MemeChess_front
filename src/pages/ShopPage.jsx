@@ -18,7 +18,7 @@ import { getCustomizationItem } from "../shared/constants/customizationCatalog.j
 export default function ShopPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, isAuthenticated, refreshCurrency } = useAuth();
+  const { user, token } = useAuth();
   const { refreshInventory } = useInventory();
   const { showNotification } = useNotifications();
   const [shopItems, setShopItems] = useState([]);
@@ -68,7 +68,7 @@ export default function ShopPage() {
   );
 
   function handleRequestBuy(entry) {
-    if (!isAuthenticated) {
+    if (!user) {
       navigate("/login", { state: { from: location } });
       return;
     }
@@ -127,8 +127,8 @@ export default function ShopPage() {
   }
 
   const isMobile = useIsMobile();
-  const shopFunds = isAuthenticated ? isAuthenticated.shop_funds : 0;
-  const gameFunds = isAuthenticated ? isAuthenticated.game_funds : 0;
+  const shopFunds = user?.shop_funds ?? 0;
+  const gameFunds = user?.game_funds ?? 0;
 
   if (isMobile) {
     return (

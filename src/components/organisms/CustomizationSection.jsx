@@ -1,14 +1,18 @@
 import Divider from "../atoms/Divider.jsx";
 import CustomizationGrid from "../molecules/CustomizationGrid.jsx";
 import CustomizationHeader from "../molecules/CustomizationHeader.jsx";
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 function SecondaryLabel({ children, className = "" }) {
+  const isMobile = useIsMobile();
+
   return (
     <div
-      className={`text-[18px] font-medium leading-none ${className}`}
+      className={`font-medium leading-none ${className}`}
       style={{
         fontFamily: '"Unbounded", sans-serif',
         color: "var(--main-menu-text)",
+        fontSize: isMobile ? 16 : 18,
       }}
     >
       {children}

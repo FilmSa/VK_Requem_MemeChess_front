@@ -34,10 +34,9 @@ import {
 } from "../shared/lib/emojiVolume.js";
 import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
-import QuickAccessMolecule from "../components/molecules/QuickAccessMolecule.jsx";
-import MoveHistoryMolecule from "../components/molecules/MoveHistoryMolecule.jsx";
 import MoveNavigationMolecule from "../components/molecules/MoveNavigationMolecule.jsx";
-import GameActionsMolecule from "../components/molecules/GameActionsMolecule.jsx";
+import Icon from "../components/atoms/Icon.jsx";
+import MediaPreviewCard from "../components/molecules/MediaPreviewCard.jsx";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -456,6 +455,7 @@ export default function PlayPage() {
   const [emojiVolume, setEmojiVolume] = useState(() => readStoredEmojiVolume());
   const [actionNotice, setActionNotice] = useState("");
   const [isResignConfirmMode, setIsResignConfirmMode] = useState(false);
+  const [isEmojiPanelOpen, setIsEmojiPanelOpen] = useState(false);
   const [isResultModalOpen, setIsResultModalOpen] = useState(false);
   const [finishedEventResult, setFinishedEventResult] = useState(null);
   const [extraHighlightedSquares, setExtraHighlightedSquares] = useState({});
@@ -1171,7 +1171,7 @@ export default function PlayPage() {
 
   const isMobile = useIsMobile();
   const mobileBoardSize = typeof window !== "undefined"
-    ? Math.min(window.innerWidth - 24, 380)
+    ? Math.min(window.innerWidth - 12, 600)
     : 350;
 
   if (isMobile) {
@@ -1207,6 +1207,8 @@ export default function PlayPage() {
               bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
               topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
               bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
+              topGap={14}
+              bottomGap={6}
               boardOverlay={
                 <GameResultModal
                   isOpen={Boolean(resultPresentation && isResultModalOpen)}
@@ -1226,11 +1228,35 @@ export default function PlayPage() {
 
           <div className="mobile-play-controls">
             <div className="mobile-play-controls__section">
-              <QuickAccessMolecule
-                items={emojiQuickAccessItems}
-                onItemClick={handleEmojiSelect}
-                disabled={emojiCooldownActive}
-              />
+              <button
+                type="button"
+                className="mobile-play-reactions-toggle"
+                onClick={() => setIsEmojiPanelOpen((v) => !v)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 7c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1zm6 0c0 .55-.45 1-1 1s-1-.45-1-1 .45-1 1-1 1 .45 1 1zm.41 5.41c.38.38.38 1.03 0 1.41-1.53 1.53-3.69 2.38-5.91 2.38s-4.38-.85-5.91-2.38c-.38-.38-.38-1.03 0-1.41s1.03-.38 1.41 0c1.08 1.08 2.6 1.68 4.5 1.68s3.42-.6 4.5-1.68c.38-.39 1.03-.39 1.41 0z"/>
+                </svg>
+                Реакции
+              </button>
+
+              {isEmojiPanelOpen ? (
+                <div className="mobile-play-emoji-panel">
+                  {emojiQuickAccessItems.map((item) => (
+                    <MediaPreviewCard
+                      key={item.id}
+                      title={item.title}
+                      imageSrc={item.imageSrc}
+                      videoSrc={item.videoSrc}
+                      cornerStyle="diagonal"
+                      disabled={emojiCooldownActive}
+                      onClick={() => {
+                        handleEmojiSelect(item);
+                        setIsEmojiPanelOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="mobile-play-controls__section">
@@ -1246,24 +1272,95 @@ export default function PlayPage() {
 
             <div className="mobile-play-controls__section">
               <h4 className="mobile-play-controls__title">Нотация</h4>
-              <MoveHistoryMolecule history={chessGameState.history} activePly={chessGameState.activeHistoryPly} />
+              <div className="mobile-play-history-inline">
+                {chessGameState.history.length === 0 ? (
+                  <span>Ходы появятся здесь</span>
+                ) : (
+                  chessGameState.history.map((move, index) => {
+                    const isActive = index < chessGameState.activeHistoryPly;
+                    return (
+                      <span key={index} className={isActive ? "is-active" : ""}>
+                        {index % 2 === 0 ? `${Math.floor(index / 2) + 1}. ` : ""}{move}
+                      </span>
+                    );
+                  })
+                )}
+              </div>
             </div>
 
             <div className="mobile-play-controls__section">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <GameActionsMolecule
-                  onResign={handleResign}
-                  onResignConfirm={handleResignConfirm}
-                  onResignCancel={handleResignCancel}
-                  onDraw={handleDrawOffer}
-                  onDrawAccept={handleDrawAccept}
-                  onDrawDecline={handleDrawDecline}
-                  drawOfferState={drawControls}
-                  isResignConfirmMode={isResignConfirmMode}
-                  disabled={(!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess)) || !roomState}
-                  resignDisabled={isGameFinished}
-                  drawDisabled={isGameFinished || Boolean(drawOfferedBy) || activeRoom.isBotGame}
-                />
+              <h4 className="mobile-play-controls__title">Действия</h4>
+              <div className="mobile-play-actions-row">
+                {isResignConfirmMode ? (
+                  <>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn"
+                      onClick={handleResignCancel}
+                      disabled={!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess)}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn mobile-play-icon-btn--danger"
+                      onClick={handleResignConfirm}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </button>
+                  </>
+                ) : drawControls?.mode === "incoming" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn"
+                      style={{ borderColor: "rgba(78, 214, 109, 0.5)", background: "rgba(40, 167, 69, 0.2)", color: "#22c55e" }}
+                      onClick={handleDrawAccept}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn mobile-play-icon-btn--danger"
+                      onClick={handleDrawDecline}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn mobile-play-icon-btn--danger"
+                      onClick={handleResign}
+                      disabled={isGameFinished || (!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess))}
+                      title="Сдаться"
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M5 4v16M5 4l14 4-14 4M5 12l14 4-14 4"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="mobile-play-icon-btn"
+                      onClick={handleDrawOffer}
+                      disabled={isGameFinished || Boolean(drawOfferedBy) || activeRoom.isBotGame || (!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess))}
+                      title="Предложить ничью"
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

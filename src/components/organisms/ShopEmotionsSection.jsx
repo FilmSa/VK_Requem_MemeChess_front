@@ -18,7 +18,7 @@ function getCircularSlice(items, startIndex, count) {
   });
 }
 
-function EmotionCard({ item, onBuy, isBuying }) {
+export function EmotionCard({ item, onBuy, isBuying }) {
   const catalogItem = getCustomizationItem(item.item.slug);
   const videoSrc = item.item.asset_url || catalogItem?.videoSrc || "";
   const title = item.item.title || catalogItem?.title || item.item.slug;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ResponsivePanelFrame from "../components/atoms/ResponsivePanelFrame.jsx";
 import PurchaseConfirmModal from "../components/organisms/PurchaseConfirmModal.jsx";
-import ShopEmotionsSection from "../components/organisms/ShopEmotionsSection.jsx";
+import ShopEmotionsSection, { EmotionCard } from "../components/organisms/ShopEmotionsSection.jsx";
 import ShopSkinsSection from "../components/organisms/ShopSkinsSection.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
 import { useInventory } from "../features/inventory/useInventory.js";
@@ -14,6 +14,9 @@ import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
 import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
 import { getCustomizationItem } from "../shared/constants/customizationCatalog.js";
+import ShopPriceButton from "../components/molecules/ShopPriceButton.jsx";
+import MediaPreviewCard from "../components/molecules/MediaPreviewCard.jsx";
+
 
 export default function ShopPage() {
   const navigate = useNavigate();
@@ -158,7 +161,11 @@ export default function ShopPage() {
                   <div key={entry.item.slug} className="mobile-shop-grid-card">
                     <div className="mobile-shop-grid-card__preview">
                       {previewSrc ? (
-                        <img src={previewSrc} alt={title} />
+                        <MediaPreviewCard
+                          title={title}
+                          imageSrc={previewSrc}
+                          className="h-full w-full rounded-none"
+                        />
                       ) : (
                         <div style={{ padding: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
                           {title}
@@ -167,14 +174,14 @@ export default function ShopPage() {
                     </div>
                     <div className="mobile-shop-grid-card__info">
                       <div className="mobile-shop-grid-card__title">{title}</div>
-                      <button
-                        type="button"
-                        className={`mobile-shop-grid-card__price-btn ${entry.owned ? "mobile-shop-grid-card__price-btn--owned" : ""}`}
+                      <ShopPriceButton
+                        price={entry.price}
+                        label={entry.owned ? "Куплено" : undefined}
                         onClick={entry.owned ? undefined : () => handleRequestBuy(entry)}
                         disabled={entry.owned || buyingSlug === entry.item.slug}
-                      >
-                        {entry.owned ? "Куплено" : `${Number(entry.price ?? 0).toLocaleString("ru-RU")} `}
-                      </button>
+                        compact
+                        className="h-[28px] text-[12px]"
+                      />
                     </div>
                   </div>
                 );
@@ -185,35 +192,14 @@ export default function ShopPage() {
           <div style={{ marginBottom: 16 }}>
             <h2 className="mobile-page__section-title">Эмоции</h2>
             <div className="mobile-shop-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              {emoteShopItems.map((entry) => {
-                const catalogItem = getCustomizationItem(entry.item.slug);
-                const videoSrc = entry.item.asset_url || catalogItem?.videoSrc || "";
-                const title = entry.item.title || catalogItem?.title || entry.item.slug;
-                return (
-                  <div key={entry.item.slug} className="mobile-shop-grid-card">
-                    <div className="mobile-shop-grid-card__preview">
-                      {videoSrc ? (
-                        <video src={videoSrc} muted autoPlay loop playsInline preload="metadata" />
-                      ) : (
-                        <div style={{ padding: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
-                          {title}
-                        </div>
-                      )}
-                    </div>
-                    <div className="mobile-shop-grid-card__info">
-                      <div className="mobile-shop-grid-card__title">{title}</div>
-                      <button
-                        type="button"
-                        className={`mobile-shop-grid-card__price-btn ${entry.owned ? "mobile-shop-grid-card__price-btn--owned" : ""}`}
-                        onClick={entry.owned ? undefined : () => handleRequestBuy(entry)}
-                        disabled={entry.owned || buyingSlug === entry.item.slug}
-                      >
-                        {entry.owned ? "Куплено" : `${Number(entry.price ?? 0).toLocaleString("ru-RU")} `}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {emoteShopItems.map((entry) => (
+                <EmotionCard
+                  key={entry.item.slug}
+                  item={entry}
+                  onBuy={handleRequestBuy}
+                  isBuying={buyingSlug === entry.item.slug}
+                />
+              ))}
             </div>
           </div>
         </div>

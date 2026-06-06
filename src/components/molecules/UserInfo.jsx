@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import Avatar from "../atoms/Avatar";
 import Text from "../atoms/Text";
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 function VolumeIcon({ muted = false }) {
   return (
@@ -135,6 +136,7 @@ export default function UserInfo({
 }) {
   const infoRef = useRef(null);
   const location = useLocation();
+  const isMobile = useIsMobile();
   const clampedEmojiVolume = Math.min(1, Math.max(0, Number(emojiVolume) || 0));
   const emojiVolumePercent = Math.round(clampedEmojiVolume * 100);
   const emojiSliderFill = `${emojiVolumePercent}%`;
@@ -146,6 +148,7 @@ export default function UserInfo({
     <div
       ref={infoRef}
       className="relative z-[100] mb-[12px] flex items-center gap-[10px] overflow-visible"
+      style={isMobile ? { marginBottom: 0, gap: "6px" } : undefined}
     >
       <ReactionOverlay anchorRef={infoRef} reaction={reaction} />
 
@@ -155,8 +158,12 @@ export default function UserInfo({
         style={profileHref ? { cursor: "pointer" } : undefined}
       >
         <div
-          className="relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[18px]"
-          style={{ background: "var(--player-panel-avatar-bg)" }}
+          className="relative shrink-0 overflow-hidden rounded-[18px]"
+          style={{
+            width: isMobile ? 36 : 54,
+            height: isMobile ? 36 : 54,
+            background: "var(--player-panel-avatar-bg)",
+          }}
         >
           <Avatar
             src={avatar}
@@ -166,10 +173,11 @@ export default function UserInfo({
 
         <div className="min-w-0 flex flex-1 flex-col justify-center">
           <Text
-            className="min-w-0 truncate text-[14px] font-medium leading-[1.2] text-white"
+            className="min-w-0 truncate font-medium leading-[1.2] text-white"
             style={{
               fontFamily: '"Unbounded", sans-serif',
               color: "var(--player-panel-name)",
+              fontSize: isMobile ? 12 : 14,
             }}
           >
             {name}

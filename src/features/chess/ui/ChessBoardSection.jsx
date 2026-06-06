@@ -36,6 +36,8 @@ export default function ChessBoardSection({
   onTopPlayerEmojiVolumeChange,
   boardOverlay = null,
   animateIntroPieces = false,
+  topGap = TOP_PLAYER_PANEL_GAP,
+  bottomGap = BOTTOM_PLAYER_PANEL_GAP,
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -96,8 +98,8 @@ export default function ChessBoardSection({
           width: boardWidth,
         }}
       >
-        <div ref={topPanelRef} style={{ marginBottom: TOP_PLAYER_PANEL_GAP }}>
-          <PlayerPanel
+<div ref={topPanelRef} style={{ marginBottom: topGap }}>
+            <PlayerPanel
             name={topPlayerName}
             level=""
             avatar={topPlayerAvatar || DEFAULT_AVATAR}
@@ -135,8 +137,8 @@ export default function ChessBoardSection({
           animateIntroPieces={animateIntroPieces}
         />
 
-        <div ref={bottomPanelRef} style={{ marginTop: BOTTOM_PLAYER_PANEL_GAP }}>
-          <PlayerPanel
+<div ref={bottomPanelRef} style={{ marginTop: bottomGap }}>
+            <PlayerPanel
             name={bottomPlayerName}
             level=""
             avatar={bottomPlayerAvatar || DEFAULT_AVATAR}

@@ -1098,7 +1098,7 @@ export default function ProfilePage() {
             </div>
             <div className="mobile-profile-stat-tile">
               <div className="mobile-profile-stat-tile__value">{winRate}%</div>
-              <div className="mobile-profile-stat-tile__label">Винрейт</div>
+              <div className="mobile-profile-stat-tile__label">Победы/Поражения</div>
             </div>
           </div>
 

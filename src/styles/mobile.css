@@ -1,11 +1,10 @@
 @media (max-width: 1180px) {
-  .mobile-page {
+.mobile-page {
     display: flex;
     flex-direction: column;
     height: 100dvh;
     background: var(--page-background);
     color: var(--color-text);
-    overflow: hidden;
   }
 
   .mobile-page__topbar {
@@ -235,34 +234,28 @@
   .mobile-play-container {
     flex: 1;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
   .mobile-play-board-area {
-    flex: 1;
-    min-height:540px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    padding: 4px;
+    padding: 6px;
   }
 
   .mobile-play-controls {
-    flex-shrink: 0;
-    max-height: 40vh;
-    overflow-y: auto;
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    -webkit-overflow-scrolling: touch;
+    padding: 8px 12px;
+    padding-bottom: 8px;
   }
 
   .mobile-play-controls__section {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .mobile-play-controls__section:last-child {
@@ -271,16 +264,16 @@
 
   .mobile-play-controls__title {
     font-family: var(--font-display);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     color: var(--color-text);
   }
 
   .mobile-play-controls .game-settings__move-row {
-    padding: 6px 8px;
-    font-size: 13px;
-    grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr);
+    padding: 4px 6px;
+    font-size: 12px;
+    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .mobile-play-controls .game-settings__history-list {
@@ -290,6 +283,93 @@
   .mobile-play-controls .game-settings__actions {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+  }
+
+  .mobile-play-reactions-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid rgba(103, 68, 196, 0.5);
+    border-radius: 999px;
+    background: rgba(13, 22, 63, 0.98);
+    color: #c084fc;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0 auto 8px;
+    transition: brightness 0.15s ease;
+  }
+
+  .mobile-play-reactions-toggle:active {
+    filter: brightness(1.15);
+  }
+
+  .mobile-play-emoji-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .mobile-play-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid rgba(103, 68, 196, 0.5);
+    background: rgba(13, 22, 63, 0.98);
+    color: #fff;
+    cursor: pointer;
+    transition: brightness 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .mobile-play-icon-btn:active {
+    filter: brightness(1.15);
+  }
+
+  .mobile-play-icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .mobile-play-icon-btn--danger {
+    border-color: rgba(243, 56, 86, 0.5);
+    background: rgba(243, 56, 86, 0.2);
+    color: #ff6b7a;
+  }
+
+  .mobile-play-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-play-history-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    font-size: 13px;
+    line-height: 1.5;
+    max-height: 66px;
+    overflow-y: auto;
+  }
+
+  .mobile-play-history-inline span {
+    color: var(--color-text-soft);
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  .mobile-play-history-inline .is-active {
+    color: var(--color-accent, #1ee0ff);
+    font-weight: 600;
   }
 
   .mobile-shop-filter-row {

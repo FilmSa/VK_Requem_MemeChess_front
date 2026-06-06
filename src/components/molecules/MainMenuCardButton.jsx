@@ -1,6 +1,7 @@
 import ButtonBase from "../atoms/ButtonBase.jsx";
 import Icon from "../atoms/Icon.jsx";
 import Text from "../atoms/Text.jsx";
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 const radiusClasses = [
   "rounded-br-[35px] rounded-tl-[35px]",
@@ -8,13 +9,6 @@ const radiusClasses = [
   "rounded-bl-[35px] rounded-tr-[35px]",
   "rounded-br-[35px] rounded-tl-[35px]",
 ];
-
-const cardTextStyle = {
-  color: "#ffffff",
-  fontSize: 31,
-  fontWeight: 500,
-  fontFamily: '"Unbounded", sans-serif',
-};
 
 export default function MainMenuCardButton({
   title,
@@ -25,6 +19,15 @@ export default function MainMenuCardButton({
   index,
   onClick,
 }) {
+  const isMobile = useIsMobile();
+
+  const cardTextStyle = {
+    color: "#ffffff",
+    fontSize: isMobile ? 16 : 28,
+    fontWeight: 500,
+    fontFamily: '"Unbounded", sans-serif',
+  };
+
   return (
     <ButtonBase
       onClick={onClick}
@@ -39,8 +42,8 @@ export default function MainMenuCardButton({
           : "0 4px 4px rgba(0,0,0,0.25), inset 0 4px 4px rgba(0,0,0,0.25)",
       }}
     >
-      <div className="flex w-full items-center justify-center gap-[10px]">
-        <div className="w-[138px] text-left leading-[1.05]">
+      <div className={`flex w-full items-center justify-center gap-[${isMobile ? "7" : "10"}px]`}>
+        <div className={`${isMobile ? "w-[98px]" : "w-[138px]"} text-left leading-[1.05]`}>
           <Text className="block" style={cardTextStyle}>
             {title}
           </Text>
@@ -53,8 +56,8 @@ export default function MainMenuCardButton({
           src={icon}
           alt=""
           className="object-contain"
-          width={78}
-          height={78}
+          width={isMobile ? 62 : 78}
+          height={isMobile ? 62 : 78}
         />
       </div>
     </ButtonBase>

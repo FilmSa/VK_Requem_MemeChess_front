@@ -1,14 +1,9 @@
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
+
 const shapeClasses = {
   full: "rounded-[15px]",
   start: "rounded-bl-[15px] rounded-tl-[15px] rounded-tr-[15px]",
   end: "rounded-br-[15px] rounded-tl-[15px] rounded-tr-[15px]",
-};
-
-const inputStyle = {
-  color: "var(--main-menu-text)",
-  fontSize: 20,
-  fontWeight: 500,
-  fontFamily: '"Unbounded", sans-serif',
 };
 
 export default function SurfaceInput({
@@ -16,9 +11,22 @@ export default function SurfaceInput({
   className = "",
   ...props
 }) {
+  const isMobile = useIsMobile();
+
+  const inputStyle = {
+    color: "var(--main-menu-text)",
+    fontSize: isMobile ? 16 : 20,
+    fontWeight: 500,
+    fontFamily: '"Unbounded", sans-serif',
+  };
+
+  const sizeClass = isMobile
+    ? "h-[30px] w-[78px] px-[10px]"
+    : "h-[36px] w-[98px] px-[14px]";
+
   return (
     <input
-      className={`h-[36px] w-[98px] border-none px-[14px] outline-none placeholder:text-[var(--color-text-soft)] disabled:cursor-not-allowed disabled:opacity-70 ${
+      className={`border-none outline-none placeholder:text-[var(--color-text-soft)] disabled:cursor-not-allowed disabled:opacity-70 ${sizeClass} ${
         shapeClasses[shape] || shapeClasses.full
       } ${className}`}
       style={{

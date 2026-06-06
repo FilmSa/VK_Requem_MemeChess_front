@@ -582,7 +582,42 @@
   }
 }
 
-/* Restore desktop layout explicitly to avoid mobile overrides leaking */
+/* Restore sidebar to desktop size for screens above useIsMobile breakpoint
+   but below the 1180px breakpoint where app-page__grid restore kicks in.
+   Required for pages using flex layout (e.g. ProfilePage). */
+@media (min-width: 768px) and (max-width: 1179px) {
+  .app-sidebar {
+    position: relative !important;
+    width: var(--sidebar-width, 247px) !important;
+    min-width: var(--sidebar-width, 247px) !important;
+    max-width: var(--sidebar-width, 247px) !important;
+    height: auto !important;
+    flex-direction: column !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    padding: 0 !important;
+  }
+
+  .app-sidebar nav {
+    flex-direction: column !important;
+    width: auto !important;
+    justify-content: initial !important;
+  }
+
+  .app-sidebar .menu-button > span {
+    display: inline !important;
+  }
+
+  .app-sidebar .menu-button img {
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .app-sidebar__profile {
+    display: flex !important;
+  }
+}
+
 @media (min-width: 1180px) {
   .app-shell__grid {
     display: grid !important;
@@ -590,7 +625,8 @@
   }
 
   .app-shell__grid > .app-sidebar,
-  .app-page__grid > .app-sidebar {
+  .app-page__grid > .app-sidebar,
+  .flex > .app-sidebar {
     position: relative !important;
     width: var(--sidebar-width, 247px) !important;
     min-width: var(--sidebar-width, 247px) !important;

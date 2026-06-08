@@ -309,8 +309,13 @@
   .mobile-play-emoji-panel {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 8px 0;
+    gap: 6px;
+    padding: 6px 0;
+  }
+
+  .mobile-play-emoji-panel button {
+    transform: scale(0.8);
+    transform-origin: center;
   }
 
   .mobile-play-icon-btn {

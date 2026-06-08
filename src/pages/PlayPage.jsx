@@ -1207,6 +1207,8 @@ export default function PlayPage() {
               bottomPlayerTimerTone={gameClock.bottom?.tone || "idle"}
               topPlayerTimerActive={Boolean(gameClock.top?.isActive)}
               bottomPlayerTimerActive={Boolean(gameClock.bottom?.isActive)}
+              topPlayerEmojiVolume={emojiVolume}
+              onTopPlayerEmojiVolumeChange={handleEmojiVolumeChange}
               topGap={14}
               bottomGap={6}
               boardOverlay={
@@ -1344,9 +1346,7 @@ export default function PlayPage() {
                       disabled={isGameFinished || (!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess))}
                       title="Сдаться"
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <path d="M5 4v16M5 4l14 4-14 4M5 12l14 4-14 4"/>
-                      </svg>
+                      <Icon iconKey="surrender" width={22} height={22} />
                     </button>
                     <button
                       type="button"
@@ -1355,9 +1355,7 @@ export default function PlayPage() {
                       disabled={isGameFinished || Boolean(drawOfferedBy) || activeRoom.isBotGame || (!activeRoom.isLocalBotGame && (!onlineRoom.isOnlineGame || !onlineRoom.hasOnlineAccess))}
                       title="Предложить ничью"
                     >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                      </svg>
+                      <Icon iconKey="draw" width={22} height={22} />
                     </button>
                   </>
                 )}

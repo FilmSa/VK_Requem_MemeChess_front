@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BOARD_SKIN_ITEM_IDS,
   CARD_SETS,
@@ -46,17 +46,18 @@ export function useMainMenuPanelState({ userId } = {}) {
     pieces: true,
   });
   const [expandedCustomizeSections, setExpandedCustomizeSections] = useState({});
+const [selectedBoardSkin, setSelectedBoardSkin] = useState(() =>
+    readStoredBoardSkin()
+  );
+  const [selectedPieceSkin, setSelectedPieceSkin] = useState(() =>
+    readStoredPieceSkin()
+  );
   const [selectedEmojiQuickAccessIds, setSelectedEmojiQuickAccessIds] = useState(
     () => readStoredEmojiQuickAccess(userId)
   );
-  const [selectedPieceSkin, setSelectedPieceSkin] = useState(
-    () => readStoredPieceSkin()
-  );
-  const [selectedBoardSkin, setSelectedBoardSkin] = useState(
-    () => readStoredBoardSkin()
-  );
+  const skipNextPersistRef = useRef(false);
 
-  const cards = useMemo(() => CARD_SETS[activeTab] || [], [activeTab]);
+  const cards = useMemo(() => CARD_SETS[activeTab] || CARD_SETS.new, [activeTab]);
 
   useEffect(() => {
     setSelectedEmojiQuickAccessIds(readStoredEmojiQuickAccess(userId));
@@ -68,11 +69,16 @@ export function useMainMenuPanelState({ userId } = {}) {
     }
 
     return subscribeEmojiQuickAccessChanges(userId, (nextIds) => {
+      skipNextPersistRef.current = true;
       setSelectedEmojiQuickAccessIds(nextIds);
     });
   }, [userId]);
 
   useEffect(() => {
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
     persistEmojiQuickAccess(userId, selectedEmojiQuickAccessIds);
   }, [selectedEmojiQuickAccessIds, userId]);
 

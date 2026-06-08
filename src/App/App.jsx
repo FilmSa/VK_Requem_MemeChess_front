@@ -18,6 +18,7 @@ import {
   resolveRoutePreloader,
   preloadShopPage,
   preloadTournamentsPage,
+  preloadFavoritesPage,
 } from "./routeLoaders.js";
 
 const HomePage = lazy(preloadHomePage);
@@ -28,6 +29,7 @@ const ProfilePage = lazy(preloadProfilePage);
 const RegisterPage = lazy(preloadRegisterPage);
 const ShopPage = lazy(preloadShopPage);
 const TournamentsPage = lazy(preloadTournamentsPage);
+const FavoritesPage = lazy(preloadFavoritesPage);
 
 const PRIMARY_ROUTE_ORDER = new Map([
   ["/", 0],
@@ -108,6 +110,7 @@ function AnimatedRoutes() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/shop" element={<ShopPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/tournaments" element={<TournamentsPage />} />
             <Route
               path="/profile"

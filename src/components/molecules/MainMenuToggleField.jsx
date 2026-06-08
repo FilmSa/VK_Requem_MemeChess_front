@@ -1,5 +1,6 @@
 import FieldLabel from "../atoms/FieldLabel.jsx";
 import SwitchBase from "../atoms/SwitchBase.jsx";
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 export default function MainMenuToggleField({
   label,
@@ -7,8 +8,14 @@ export default function MainMenuToggleField({
   disabled = false,
   onChange,
 }) {
+  const isMobile = useIsMobile();
+
+  const rowClass = isMobile
+    ? "flex h-[58px] items-center justify-between px-[7px] py-[6px]"
+    : "flex h-[68px] items-center justify-between px-[10px] py-[8px]";
+
   return (
-    <div className="flex h-[68px] items-center justify-between px-[10px] py-[8px]">
+    <div className={rowClass}>
       <FieldLabel>{label}</FieldLabel>
       <SwitchBase
         checked={checked}

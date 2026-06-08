@@ -15,6 +15,9 @@ import {
 import { buildStandardInitialFen } from "../features/chess/lib/chess960.js";
 import { preloadShopCatalog } from "../features/shop/shopApi.js";
 import { preloadMyGameHistory } from "../features/game/gameApi.js";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
 
 const PROFILE_HISTORY_WARMUP_LIMIT = 10;
 
@@ -123,6 +126,34 @@ export default function HomePage() {
       window.clearTimeout(timeoutId);
     };
   }, [token]);
+
+  const isMobile = useIsMobile();
+  const shopFunds = user?.shop_funds ?? 0;
+  const gameFunds = user?.game_funds ?? 0;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
+
+        <div className="mobile-page__panel-wrap">
+          <MainMenuPanel
+            style={{ width: "100%", height: "100%" }}
+            onPreviewStateChange={setPreviewState}
+          />
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="app-page h-screen w-screen overflow-hidden">

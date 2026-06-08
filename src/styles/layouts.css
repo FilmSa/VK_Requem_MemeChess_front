@@ -380,7 +380,7 @@
 }
 
 .page-placeholder__card {
-  width: min(100%, 760px);
+  width: min(100%, 1180px);
   padding: 28px;
 }
 
@@ -433,6 +433,9 @@
 }
 
 @media (max-width: 1180px) {
+  .body {
+    overflow-y: auto;
+  }
   .app-shell__grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
@@ -460,7 +463,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1180px) {
   .app-sidebar__profile-actions,
   .status-card__actions {
     flex-direction: column;
@@ -471,9 +474,179 @@
   }
 }
 
+@media (max-width: 1180px) {
+
+  .app-shell__grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stack page content vertically and allow sidebar to be placed after content */
+  .app-page__grid {
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    grid-template-columns: none;
+  }
+
+  .app-sidebar {
+    /* make bottom nav appearance but keep it in document flow */
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: calc(64px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--sidebar-background);
+    z-index: 300;
+  }
+
+  .app-shell__content {
+    padding-bottom: calc(64px + 20px + env(safe-area-inset-bottom));
+  }
+
+  /* Use flex ordering so sidebar appears after content visually */
+  .app-shell__grid,
+  .app-page__grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell__grid > .app-sidebar,
+  .app-page__grid > .app-sidebar {
+    order: 2;
+  }
+
+  .app-shell__grid > .app-shell__content,
+  .app-page__grid > .app-shell__content,
+  .app-page__grid > :not(.app-sidebar) {
+    order: 1;
+  }
+
+  .app-sidebar nav {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    width: 100%;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0;
+  }
+
+  .app-sidebar__profile {
+    display: none;
+  }
+
+  .app-sidebar img {
+    max-height: 36px;
+    max-width: 36px;
+  }
+
+  .app-sidebar button,
+  .app-sidebar a {
+    min-width: 0;
+    padding: 6px 8px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  .app-sidebar .menu-button {
+    flex: 1 1 auto;
+    max-width: 120px;
+    width: auto;
+  }
+
+  .app-sidebar .menu-button > span {
+    display: none;
+  }
+
+  .app-sidebar .menu-button img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .route-transition--forward,
   .route-transition--backward {
     animation: none;
+  }
+}
+
+/* Restore sidebar to desktop size for screens above useIsMobile breakpoint
+   but below the 1180px breakpoint where app-page__grid restore kicks in.
+   Required for pages using flex layout (e.g. ProfilePage). */
+@media (min-width: 768px) and (max-width: 1179px) {
+  .app-sidebar {
+    position: relative !important;
+    width: var(--sidebar-width, 247px) !important;
+    min-width: var(--sidebar-width, 247px) !important;
+    max-width: var(--sidebar-width, 247px) !important;
+    height: auto !important;
+    flex-direction: column !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    padding: 0 !important;
+  }
+
+  .app-sidebar nav {
+    flex-direction: column !important;
+    width: auto !important;
+    justify-content: initial !important;
+  }
+
+  .app-sidebar .menu-button > span {
+    display: inline !important;
+  }
+
+  .app-sidebar .menu-button img {
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .app-sidebar__profile {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 1180px) {
+  .app-shell__grid {
+    display: grid !important;
+    grid-template-columns: minmax(220px, var(--sidebar-width, 247px)) minmax(0, 1fr) !important;
+  }
+
+  .app-shell__grid > .app-sidebar,
+  .app-page__grid > .app-sidebar,
+  .flex > .app-sidebar {
+    position: relative !important;
+    width: var(--sidebar-width, 247px) !important;
+    min-width: var(--sidebar-width, 247px) !important;
+    max-width: var(--sidebar-width, 247px) !important;
+    order: 0 !important;
+    height: auto !important;
+  }
+
+  .app-shell__grid > .app-shell__content,
+  .app-page__grid > .app-shell__content,
+  .app-page__grid > :not(.app-sidebar) {
+    order: 0 !important;
+  }
+
+  .app-sidebar.app-sidebar--fullscreen {
+    /* do not use fullscreen overlay on desktop */
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    width: var(--sidebar-width, 247px) !important;
+    max-width: var(--sidebar-width, 247px) !important;
   }
 }

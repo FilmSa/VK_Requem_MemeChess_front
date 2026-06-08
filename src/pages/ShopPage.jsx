@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ResponsivePanelFrame from "../components/atoms/ResponsivePanelFrame.jsx";
 import PurchaseConfirmModal from "../components/organisms/PurchaseConfirmModal.jsx";
-import ShopEmotionsSection from "../components/organisms/ShopEmotionsSection.jsx";
+import ShopEmotionsSection, { EmotionCard } from "../components/organisms/ShopEmotionsSection.jsx";
 import ShopSkinsSection from "../components/organisms/ShopSkinsSection.jsx";
 import { useAuth } from "../features/auth/useAuth.js";
 import { useInventory } from "../features/inventory/useInventory.js";
@@ -10,11 +10,18 @@ import { useNotifications } from "../features/notifications/useNotifications.js"
 import { buyShopItem, getShopCatalog } from "../features/shop/shopApi.js";
 import { withAssetBase } from "../shared/lib/assets.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
+import { getCustomizationItem } from "../shared/constants/customizationCatalog.js";
+import ShopPriceButton from "../components/molecules/ShopPriceButton.jsx";
+import MediaPreviewCard from "../components/molecules/MediaPreviewCard.jsx";
+
 
 export default function ShopPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, isAuthenticated, refreshCurrency } = useAuth();
+  const { user, token } = useAuth();
   const { refreshInventory } = useInventory();
   const { showNotification } = useNotifications();
   const [shopItems, setShopItems] = useState([]);
@@ -64,7 +71,7 @@ export default function ShopPage() {
   );
 
   function handleRequestBuy(entry) {
-    if (!isAuthenticated) {
+    if (!user) {
       navigate("/login", { state: { from: location } });
       return;
     }
@@ -120,6 +127,97 @@ export default function ShopPage() {
     } finally {
       setBuyingSlug("");
     }
+  }
+
+  const isMobile = useIsMobile();
+  const shopFunds = user?.shop_funds ?? 0;
+  const gameFunds = user?.game_funds ?? 0;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
+
+        <div className="mobile-page__content">
+          {catalogError ? (
+            <p style={{ color: "#ff8a8a", fontSize: 14 }}>{catalogError}</p>
+          ) : null}
+
+          <div style={{ marginBottom: 16 }}>
+            <h2 className="mobile-page__section-title">Скины</h2>
+            <div className="mobile-shop-grid">
+              {pieceShopItems.map((entry) => {
+                const catalogItem = getCustomizationItem(entry.item.slug);
+                const previewSrc = catalogItem?.shopHeroImage || catalogItem?.imageSrc || "";
+                const title = entry.item.title || catalogItem?.title || entry.item.slug;
+                return (
+                  <div key={entry.item.slug} className="mobile-shop-grid-card">
+                    <div className="mobile-shop-grid-card__preview">
+                      {previewSrc ? (
+                        <MediaPreviewCard
+                          title={title}
+                          imageSrc={previewSrc}
+                          className="h-full w-full rounded-none"
+                        />
+                      ) : (
+                        <div style={{ padding: 16, fontSize: 12, color: "var(--color-text-muted)" }}>
+                          {title}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mobile-shop-grid-card__info">
+                      <div className="mobile-shop-grid-card__title">{title}</div>
+                      <ShopPriceButton
+                        price={entry.price}
+                        label={entry.owned ? "Куплено" : undefined}
+                        onClick={entry.owned ? undefined : () => handleRequestBuy(entry)}
+                        disabled={entry.owned || buyingSlug === entry.item.slug}
+                        compact
+                        className="h-[28px] text-[12px]"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <h2 className="mobile-page__section-title">Эмоции</h2>
+            <div className="mobile-shop-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              {emoteShopItems.map((entry) => (
+                <EmotionCard
+                  key={entry.item.slug}
+                  item={entry}
+                  onBuy={handleRequestBuy}
+                  isBuying={buyingSlug === entry.item.slug}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <PurchaseConfirmModal
+          isOpen={Boolean(purchaseCandidate)}
+          item={purchaseCandidate}
+          isSubmitting={Boolean(
+            purchaseCandidate?.slug && buyingSlug === purchaseCandidate.slug
+          )}
+          errorMessage={purchaseError}
+          onClose={handleClosePurchaseModal}
+          onConfirm={handleConfirmBuy}
+        />
+
+        <MobileBottomNav />
+      </div>
+    );
   }
 
   return (

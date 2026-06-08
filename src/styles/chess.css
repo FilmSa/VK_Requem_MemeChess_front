@@ -300,7 +300,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1132px) {
   .game-settings__summary,
   .game-settings__actions {
     grid-template-columns: 1fr;

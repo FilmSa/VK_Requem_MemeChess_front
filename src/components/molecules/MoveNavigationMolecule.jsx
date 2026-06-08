@@ -115,21 +115,24 @@ export default function MoveNavigationMolecule({
         >
           <VolumeIcon muted={clampedVolume <= 0.001} />
         </span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={clampedVolume}
-          onChange={(event) =>
-            onMemeEffectsVolumeChange?.(event.target.valueAsNumber)
-          }
-          aria-label="Громкость мем-эффектов"
-          className="h-[4px] min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-transparent"
-          style={{
-            background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${sliderFill}, rgba(255,255,255,0.14) ${sliderFill}, rgba(255,255,255,0.14) 100%)`,
-          }}
-        />
+<input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={clampedVolume}
+            onChange={(event) =>
+              onMemeEffectsVolumeChange?.(event.target.valueAsNumber)
+            }
+            aria-label="Громкость мем-эффектов"
+            className="min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-transparent"
+            style={{
+              height: 4,
+              padding: "12px 0",
+              background: `linear-gradient(90deg, rgba(30,224,255,0.92) 0%, rgba(30,224,255,0.92) ${sliderFill}, rgba(255,255,255,0.14) ${sliderFill}, rgba(255,255,255,0.14) 100%)`,
+              backgroundClip: "content-box",
+            }}
+          />
         <span
           className="w-[40px] flex-shrink-0 text-right text-[11px] tracking-[0.08em]"
           style={{

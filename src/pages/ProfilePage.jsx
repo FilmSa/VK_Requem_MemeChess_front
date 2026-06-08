@@ -27,6 +27,9 @@ import {
 } from "../shared/lib/username.js";
 import { useReliableNavigate } from "../shared/router/useReliableNavigate.js";
 import AppSidebar from "../shared/ui/organisms/AppSidebar.jsx";
+import { useIsMobile } from "../shared/hooks/useMediaQuery.js";
+import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
+import MobileCurrencyDisplay from "../shared/ui/atoms/MobileCurrencyDisplay.jsx";
 
 const fallbackAvatar = withAssetBase("/images/default-avatar.png");
 const ratingIcon = withAssetBase("/icons/rock.svg");
@@ -1012,6 +1015,147 @@ export default function ProfilePage() {
     }
 
     navigate(`/play?game=${encodeURIComponent(entry.gameId)}`);
+  }
+
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    const fallbackImg = withAssetBase("/images/default-avatar.png");
+    const avatarSrc = user?.avatar_url || fallbackImg;
+    const username = user?.username || "Игрок";
+    const level = user?.level || "—";
+    const rank = user?.rank || "БЕЗ РАНГА";
+    const worldPosition = user?.world_position || "#—";
+    const shopFunds = user?.shop_funds ?? 0;
+    const gameFunds = user?.game_funds ?? 0;
+    const totalWins = user?.total_wins ?? 0;
+    const totalLosses = user?.total_losses ?? 0;
+    const totalGames = totalWins + totalLosses;
+    const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+    const xpCurrent = user?.xp_current ?? 0;
+    const xpMax = user?.xp_max ?? 10000;
+    const xpPercent = xpMax > 0 ? Math.min(100, Math.round((xpCurrent / xpMax) * 100)) : 0;
+    const classicRating = user?.rating_classic;
+    const rapidRating = user?.rating_rapid;
+    const blitzRating = user?.rating_blitz;
+    const classicChange = user?.rating_classic_change;
+    const rapidChange = user?.rating_rapid_change;
+    const blitzChange = user?.rating_blitz_change;
+
+    return (
+      <div className="mobile-page">
+        <div className="mobile-page__topbar">
+          <div className="mobile-page__topbar-left">
+            <span className="mobile-page__topbar-logo">Pawn Requiem</span>
+            <span className="mobile-page__topbar-sub">Meme Chess</span>
+          </div>
+        </div>
+
+        {/* <div className="mobile-page__currency-row">
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--gold">
+            <img src="/icons/crown.svg" className="h-[18px] w-[18px]" alt="" />
+            <span>{shopFunds}</span>
+          </div>
+          <div className="mobile-page__currency-pill mobile-page__currency-pill--purple">
+            <img src="/icons/rock.svg" className="h-[18px] w-[18px]" alt="" />
+            <span>{gameFunds}</span>
+          </div>
+        </div> */}
+
+        <div className="mobile-page__content">
+          <div className="mobile-profile-header">
+            <div className="mobile-profile-header__avatar">
+              <img src={avatarSrc} alt="" className="mobile-profile-header__avatar-img" />
+              <div className="mobile-profile-header__level">{level} LVL</div>
+            </div>
+            <div className="mobile-profile-header__info">
+              <h2 className="mobile-profile-header__name">{username}</h2>
+              <p className="mobile-profile-header__rank">Ранг: <strong>{rank}</strong></p>
+              <p className="mobile-profile-header__rank">{worldPosition} в мире</p>
+            </div>
+          </div>
+
+          <div className="mobile-profile-xp">
+            <div className="mobile-profile-xp__header">
+              <span>XP</span>
+              <span>{xpCurrent.toLocaleString("ru-RU")} / {xpMax.toLocaleString("ru-RU")}</span>
+            </div>
+            <div className="mobile-profile-xp__bar">
+              <div className="mobile-profile-xp__fill" style={{ width: `${xpPercent}%` }} />
+            </div>
+          </div>
+
+          <MobileCurrencyDisplay shopFunds={shopFunds} gameFunds={gameFunds} />
+
+          <div className="mobile-profile-stats-grid">
+            <div className="mobile-profile-stat-tile">
+              <div className="mobile-profile-stat-tile__value">{totalWins}</div>
+              <div className="mobile-profile-stat-tile__label">Победы</div>
+            </div>
+            <div className="mobile-profile-stat-tile">
+              <div className="mobile-profile-stat-tile__value">{totalLosses}</div>
+              <div className="mobile-profile-stat-tile__label">Поражения</div>
+            </div>
+            <div className="mobile-profile-stat-tile">
+              <div className="mobile-profile-stat-tile__value">{winRate}%</div>
+              <div className="mobile-profile-stat-tile__label">Победы/Поражения</div>
+            </div>
+          </div>
+
+          <div className="mobile-profile-rating-grid">
+            <div className="mobile-profile-rating-tile">
+              <div className="mobile-profile-rating-tile__mode">Классика</div>
+              <div className="mobile-profile-rating-tile__value">{classicRating ?? "--"}</div>
+              <div className="mobile-profile-rating-tile__change mobile-profile-rating-tile__change--up">{classicChange ? `▲${classicChange}` : ""}</div>
+            </div>
+            <div className="mobile-profile-rating-tile">
+              <div className="mobile-profile-rating-tile__mode">Рапид</div>
+              <div className="mobile-profile-rating-tile__value">{rapidRating ?? "--"}</div>
+              <div className="mobile-profile-rating-tile__change mobile-profile-rating-tile__change--up">{rapidChange ? `▲${rapidChange}` : ""}</div>
+            </div>
+            <div className="mobile-profile-rating-tile">
+              <div className="mobile-profile-rating-tile__mode">Блиц</div>
+              <div className="mobile-profile-rating-tile__value">{blitzRating ?? "--"}</div>
+              <div className="mobile-profile-rating-tile__change mobile-profile-rating-tile__change--down">{blitzChange ? `▼${blitzChange}` : ""}</div>
+            </div>
+          </div>
+
+          <div className="mobile-profile-history">
+            <h3 className="mobile-profile-history__title">Последние партии</h3>
+            {historyEntries.length === 0 ? (
+              <p style={{ color: "var(--color-text-muted)", fontSize: 14 }}>
+                Пока нет сыгранных партий.
+              </p>
+            ) : (
+              historyEntries.slice(0, 5).map((entry) => {
+                const opponentName = entry.opponent?.username || "Соперник";
+                const modeLabel = resolveGameModeLabel(entry.gameMode || entry.game_mode);
+                const timeLabel = entry.timeControlLabel || "";
+                const isWin = entry.winner_id === user?.id;
+                return (
+                  <button
+                    key={entry.gameId}
+                    type="button"
+                    className="mobile-profile-history-card"
+                    onClick={() => openGame(entry)}
+                  >
+                    <div className="mobile-profile-history-card__info">
+                      <div className="mobile-profile-history-card__opponent">{opponentName}</div>
+                      <div className="mobile-profile-history-card__meta">{modeLabel} · {timeLabel}</div>
+                    </div>
+                    <div className={`mobile-profile-history-card__result ${isWin ? "mobile-profile-history-card__result--win" : "mobile-profile-history-card__result--loss"}`}>
+                      {isWin ? `+${entry.rating_change || ""}` : "Поражение"}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
   }
 
   return (

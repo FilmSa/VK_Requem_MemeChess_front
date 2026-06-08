@@ -1,5 +1,6 @@
 import FieldLabel from "../atoms/FieldLabel.jsx";
 import SurfaceInput from "../atoms/SurfaceInput.jsx";
+import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 export default function MainMenuDepositField({
   label,
@@ -11,11 +12,21 @@ export default function MainMenuDepositField({
   onFromChange,
   onToChange,
 }) {
+  const isMobile = useIsMobile();
+
+  const rowClass = isMobile
+    ? "flex h-[58px] items-center justify-between px-[7px] py-[6px]"
+    : "flex h-[68px] items-center justify-between px-[10px] py-[8px]";
+
+  const inputWrap = isMobile
+    ? "flex w-[168px] items-center justify-between py-[4px]"
+    : "flex w-[210px] items-center justify-between py-[6px]";
+
   return (
-    <div className="flex h-[68px] items-center justify-between px-[10px] py-[8px]">
+    <div className={rowClass}>
       <FieldLabel>{label}</FieldLabel>
 
-      <div className="flex w-[210px] items-center justify-between py-[6px]">
+      <div className={inputWrap}>
         <SurfaceInput
           value={fromValue}
           type="text"

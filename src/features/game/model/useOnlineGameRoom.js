@@ -28,6 +28,7 @@ function normalizeProfile(profile) {
     id: profile.id || "",
     username: profile.username || "",
     avatar_url: profile.avatar_url || "",
+    piece_skin_slug: profile.piece_skin_slug || "",
   };
 }
 
@@ -153,7 +154,14 @@ export function useOnlineGameRoom(gameId) {
     return () => {
       cancelled = true;
     };
-  }, [gameId, hasOnlineAccess, isOnlineGame, onlineIdentity.token]);
+  }, [
+    gameId,
+    hasOnlineAccess,
+    isOnlineGame,
+    onlineIdentity.token,
+    roomState?.player1_id,
+    roomState?.player2_id,
+  ]);
 
   const currentUserProfile = useMemo(() => {
     const player1 = normalizeProfile(visibleParticipants?.player1);
@@ -247,8 +255,16 @@ export function useOnlineGameRoom(gameId) {
             !normalizedState?.fen &&
             Array.isArray(normalizedState?.moves) &&
             normalizedState.moves.length !== chessGameState.moveCount;
+          const shouldSyncByServerMoveLag =
+            Array.isArray(normalizedState?.moves) &&
+            normalizedState.moves.length !== chessGameState.syncedMoveCount;
 
-          if (shouldForceSync || shouldSyncByFen || shouldSyncByMoveCount) {
+          if (
+            shouldForceSync ||
+            shouldSyncByFen ||
+            shouldSyncByMoveCount ||
+            shouldSyncByServerMoveLag
+          ) {
             chessGameState.syncFromServerState(normalizedState);
           }
         },

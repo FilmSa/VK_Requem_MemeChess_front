@@ -38,6 +38,9 @@ export default function ChessBoardSection({
   animateIntroPieces = false,
   topGap = TOP_PLAYER_PANEL_GAP,
   bottomGap = BOTTOM_PLAYER_PANEL_GAP,
+  whitePieceSkinId = "",
+  blackPieceSkinId = "",
+  boardSkinId = "",
 }) {
   const fallbackGameState = useChessGame();
   const gameStateLocal = gameState || fallbackGameState;
@@ -50,6 +53,8 @@ export default function ChessBoardSection({
     highlightedSquares,
     boardOrientation,
     activeEffects,
+    effectLayerVolume,
+    removeEffect,
     promotionState,
     onPieceDragBegin,
     onPieceDragEnd,
@@ -122,6 +127,8 @@ export default function ChessBoardSection({
           boardOrientation={boardOrientation}
           highlightedSquares={highlightedSquares}
           activeEffects={activeEffects}
+          effectLayerVolume={effectLayerVolume}
+          onEffectDone={removeEffect}
           promotionState={promotionState}
           onPieceDragBegin={(piece, square) => onPieceDragBegin(piece, square)}
           onPieceDragEnd={(piece, square) => onPieceDragEnd(piece, square)}
@@ -135,6 +142,9 @@ export default function ChessBoardSection({
           isPieceDraggable={isPieceDraggable}
           overlayContent={boardOverlay}
           animateIntroPieces={animateIntroPieces}
+          whitePieceSkinId={whitePieceSkinId}
+          blackPieceSkinId={blackPieceSkinId}
+          boardSkinId={boardSkinId}
         />
 
 <div ref={bottomPanelRef} style={{ marginTop: bottomGap }}>

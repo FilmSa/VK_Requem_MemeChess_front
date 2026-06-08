@@ -71,8 +71,8 @@ function getEffectiveRemainingMs(
   return Math.max(0, storedRemainingMs - Math.max(0, nowMs - startedAtMs));
 }
 
-function hasRunningClock(roomState, timed) {
-  if (!timed) {
+function hasRunningClock(roomState, timed, isGameFinished = false) {
+  if (!timed || isGameFinished || roomState?.status !== "active") {
     return false;
   }
 
@@ -116,6 +116,7 @@ export function useGameClock({
   sessionToken,
   isOnlineGame = false,
   isLocalBotGame = false,
+  isGameFinished = false,
   onTimeoutResolved,
 }) {
   const timeoutAttemptKeyRef = useRef("");
@@ -133,7 +134,7 @@ export function useGameClock({
   );
   const timed = Boolean(resolvedTimeControl.timed && resolvedTimeControl.baseMs > 0);
   const gameStatus = String(roomState?.status || "").trim().toLowerCase();
-  const clockRunning = hasRunningClock(roomState, timed);
+  const clockRunning = hasRunningClock(roomState, timed, isGameFinished);
 
   const playerClock = useMemo(() => {
     const bottomRemainingMs = getStoredRemainingMs(
@@ -194,6 +195,7 @@ export function useGameClock({
       !clockRunning ||
       !gameId ||
       !sessionToken ||
+      isGameFinished ||
       gameStatus !== "active" ||
       !playerClock.activePlayerId
     ) {
@@ -256,6 +258,7 @@ export function useGameClock({
     clockRunning,
     gameId,
     gameStatus,
+    isGameFinished,
     isLocalBotGame,
     isOnlineGame,
     onTimeoutResolved,

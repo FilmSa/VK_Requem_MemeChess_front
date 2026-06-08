@@ -67,7 +67,7 @@ export default function CurrencyBadge({
         onClick={onClick}
         title={label}
         aria-label={accessibleLabel}
-        className="block w-full border-none bg-transparent p-0 text-left transition hover:brightness-110"
+        className="block w-full border-none bg-transparent p-0 text-left transition duration-150 hover:-translate-y-[2px] hover:brightness-110 focus-visible:-translate-y-[2px]"
       >
         {content}
       </button>
@@ -83,7 +83,7 @@ export default function CurrencyBadge({
       href={href}
       title={label}
       aria-label={accessibleLabel}
-      className="block no-underline transition hover:brightness-110"
+      className="block no-underline transition duration-150 hover:-translate-y-[2px] hover:brightness-110 focus-visible:-translate-y-[2px]"
     >
       {content}
     </a>

@@ -6,7 +6,7 @@ import {
 } from "../../../shared/lib/memeEffectsVolume.js";
 
 const MEDIA_METADATA_TIMEOUT_MS = 2000;
-const MAX_EFFECT_DURATION_MS = 4000;
+const MAX_EFFECT_DURATION_MS = 6000;
 const mediaDurationCache = new Map();
 
 function resolveEffectConfig(effectSource) {
@@ -114,14 +114,22 @@ async function resolveEffectDurationMs(effectInstance, fallbackDuration) {
   }
 
   const resolvedDurations = await Promise.all(durationCandidates);
-  return Math.min(
-    MAX_EFFECT_DURATION_MS,
-    Math.max(cappedFallbackDuration, ...resolvedDurations)
-  );
+  const normalizedDurations = resolvedDurations
+    .map((duration) => Math.max(0, Number(duration) || 0))
+    .filter((duration) => duration > 0);
+
+  if (!normalizedDurations.length) {
+    return cappedFallbackDuration;
+  }
+
+  return Math.min(MAX_EFFECT_DURATION_MS, Math.max(...normalizedDurations));
 }
 
 export function useBoardEffectsController() {
   const [activeEffects, setActiveEffects] = useState([]);
+  const [effectLayerVolume, setEffectLayerVolume] = useState(() =>
+    readStoredMemeEffectsVolume()
+  );
   const timeoutsRef = useRef(new Map());
   const activeAudioEntriesRef = useRef(new Set());
   const activeInstanceIdsRef = useRef(new Set());
@@ -182,6 +190,7 @@ export function useBoardEffectsController() {
   useEffect(() => {
     return subscribeMemeEffectsVolumeChanges((volume) => {
       memeEffectsVolumeRef.current = volume;
+      setEffectLayerVolume(volume);
       updateActiveAudioVolumes(volume);
     });
   }, []);
@@ -252,6 +261,12 @@ export function useBoardEffectsController() {
 
     const effectIdentifier = config.id || String(effectSource || "effect");
     const instanceId = `${effectIdentifier}-${Date.now()}-${Math.random()}`;
+    const baseVolume = Math.min(1, Math.max(0, Number(config.volume ?? 1) || 0));
+    const useInlineMediaAudio =
+      config.mediaType === "video" &&
+      typeof config.asset === "string" &&
+      config.asset.length > 0 &&
+      config.sound === config.asset;
 
     const effectInstance = {
       instanceId,
@@ -268,12 +283,14 @@ export function useBoardEffectsController() {
       from: options.from ?? null,
       to: options.to ?? null,
       piece: options.piece ?? null,
+      baseVolume,
+      useInlineMediaAudio,
     };
     const shownAt = Date.now();
 
     activeInstanceIdsRef.current.add(instanceId);
-    if (config.sound) {
-      playSound(config.sound, config.volume ?? 1, instanceId);
+    if (config.sound && !useInlineMediaAudio) {
+      playSound(config.sound, baseVolume, instanceId);
     }
 
     setActiveEffects((current) => [...current, effectInstance]);
@@ -315,6 +332,7 @@ export function useBoardEffectsController() {
 
   return {
     activeEffects,
+    effectLayerVolume,
     triggerEffect,
     removeEffect,
     clearEffects,

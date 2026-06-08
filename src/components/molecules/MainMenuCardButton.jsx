@@ -32,7 +32,7 @@ export default function MainMenuCardButton({
     <ButtonBase
       onClick={onClick}
       aria-pressed={isSelected}
-      className={`relative flex items-center justify-center overflow-hidden border-none p-[10px] shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] ${
+      className={`relative flex items-center justify-center overflow-hidden border-none p-[10px] shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] transition-transform duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px] ${
         radiusClasses[index] || radiusClasses[0]
       }`}
       style={{

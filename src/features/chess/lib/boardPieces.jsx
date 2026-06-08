@@ -108,27 +108,36 @@ const pieceSkins = {
   },
 };
 
-function createCustomPieces(skinId = DEFAULT_PIECE_SKIN_ID, options = {}) {
-  const skin = pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
+function resolvePieceSkin(skinId) {
+  return pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
+}
+
+function createCustomPieces(skinSelection = DEFAULT_PIECE_SKIN_ID, options = {}) {
+  const selection =
+    skinSelection && typeof skinSelection === "object"
+      ? skinSelection
+      : { whiteSkinId: skinSelection, blackSkinId: skinSelection };
+  const whiteSkin = resolvePieceSkin(selection.whiteSkinId);
+  const blackSkin = resolvePieceSkin(selection.blackSkinId);
 
   return {
-    wK: makePiece(skin.wK, "wK", options),
-    wQ: makePiece(skin.wQ, "wQ", options),
-    wR: makePiece(skin.wR, "wR", options),
-    wB: makePiece(skin.wB, "wB", options),
-    wN: makePiece(skin.wN, "wN", options),
-    wP: makePiece(skin.wP, "wP", options),
-    bK: makePiece(skin.bK, "bK", options),
-    bQ: makePiece(skin.bQ, "bQ", options),
-    bR: makePiece(skin.bR, "bR", options),
-    bB: makePiece(skin.bB, "bB", options),
-    bN: makePiece(skin.bN, "bN", options),
-    bP: makePiece(skin.bP, "bP", options),
+    wK: makePiece(whiteSkin.wK, "wK", options),
+    wQ: makePiece(whiteSkin.wQ, "wQ", options),
+    wR: makePiece(whiteSkin.wR, "wR", options),
+    wB: makePiece(whiteSkin.wB, "wB", options),
+    wN: makePiece(whiteSkin.wN, "wN", options),
+    wP: makePiece(whiteSkin.wP, "wP", options),
+    bK: makePiece(blackSkin.bK, "bK", options),
+    bQ: makePiece(blackSkin.bQ, "bQ", options),
+    bR: makePiece(blackSkin.bR, "bR", options),
+    bB: makePiece(blackSkin.bB, "bB", options),
+    bN: makePiece(blackSkin.bN, "bN", options),
+    bP: makePiece(blackSkin.bP, "bP", options),
   };
 }
 
 function getPieceSkinAssets(skinId = DEFAULT_PIECE_SKIN_ID) {
-  return pieceSkins[skinId] || pieceSkins[DEFAULT_PIECE_SKIN_ID];
+  return resolvePieceSkin(skinId);
 }
 
 export const customPieces = createCustomPieces();

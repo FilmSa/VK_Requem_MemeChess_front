@@ -1,4 +1,10 @@
+import { useEffect, useRef } from "react";
+
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+function clampVolume(value) {
+  return Math.min(1, Math.max(0, Number(value) || 0));
+}
 
 function normalizeOrientation(boardOrientation) {
   return boardOrientation === "b" || boardOrientation === "black"
@@ -35,22 +41,68 @@ function squareToCoords(square, boardOrientation, boardWidth) {
   };
 }
 
-function renderEffectMedia(effect) {
+function EffectVideo({ effect, layerVolume, onDone }) {
+  const videoRef = useRef(null);
+  const useInlineMediaAudio = Boolean(effect?.useInlineMediaAudio);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) {
+      return;
+    }
+
+    videoElement.muted = !useInlineMediaAudio;
+    if (useInlineMediaAudio) {
+      videoElement.volume = clampVolume((effect?.baseVolume ?? 1) * layerVolume);
+    }
+  }, [effect?.baseVolume, layerVolume, useInlineMediaAudio]);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) {
+      return;
+    }
+
+    videoElement.currentTime = 0;
+    videoElement.play().catch(() => {});
+  }, [effect?.instanceId]);
+
+  function handleEnded() {
+    if (!useInlineMediaAudio || typeof onDone !== "function") {
+      return;
+    }
+
+    onDone(effect?.instanceId);
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      src={effect.asset}
+      autoPlay
+      muted={!useInlineMediaAudio}
+      playsInline
+      preload="auto"
+      onEnded={handleEnded}
+      onError={handleEnded}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        pointerEvents: "none",
+        userSelect: "none",
+      }}
+    />
+  );
+}
+
+function renderEffectMedia(effect, layerVolume, onDone) {
   if (effect.mediaType === "video") {
     return (
-      <video
-        src={effect.asset}
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          pointerEvents: "none",
-          userSelect: "none",
-        }}
+      <EffectVideo
+        effect={effect}
+        layerVolume={layerVolume}
+        onDone={onDone}
       />
     );
   }
@@ -75,6 +127,8 @@ export default function BoardEffectsLayer({
   activeEffects = [],
   boardWidth,
   boardOrientation,
+  layerVolume = 1,
+  onEffectDone,
 }) {
   if (!Array.isArray(activeEffects) || activeEffects.length === 0) {
     return null;
@@ -107,7 +161,7 @@ export default function BoardEffectsLayer({
               justifyContent: "center",
             }}
           >
-            {renderEffectMedia(effect)}
+            {renderEffectMedia(effect, layerVolume, onEffectDone)}
           </div>
         );
       })}

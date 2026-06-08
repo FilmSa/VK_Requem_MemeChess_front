@@ -6,12 +6,16 @@ import {
   saveLocalBotGameState,
 } from "../localBotStorage.js";
 import { createClientBotClient } from "../bot/clientBotClient.js";
+import { analyzeMoveForMeme } from "../../chess/media/moveMemeClassifier.js";
+import { pickDeterministicMemeEffect } from "../../chess/media/memeEffects.js";
+import { readStoredPieceSkin } from "../../../shared/lib/pieceSkin.js";
 
 const LOCAL_BOT_USER_ID = "local-bot";
 const LOCAL_GUEST_USER_ID = "local-player";
 const LOCAL_BOT_NAME = "MemeBot";
 const LOCAL_PLAYER_NAME = "Игрок";
 const BOT_THINK_DELAY_MS = 4000;
+const DEFAULT_LOCAL_BOT_PIECE_SKIN = "piece.classic";
 
 function normalizeBotDifficulty(value) {
   const normalized = String(value || "").trim().toLowerCase();
@@ -52,6 +56,7 @@ function normalizeProfile(profile) {
     id: String(profile.id || "").trim(),
     username: String(profile.username || "").trim(),
     avatar_url: String(profile.avatar_url || "").trim(),
+    piece_skin_slug: String(profile.piece_skin_slug || "").trim(),
   };
 }
 
@@ -65,6 +70,7 @@ function buildLocalPlayerProfile(profile) {
     id: LOCAL_GUEST_USER_ID,
     username: LOCAL_PLAYER_NAME,
     avatar_url: "",
+    piece_skin_slug: readStoredPieceSkin(),
   };
 }
 
@@ -73,6 +79,7 @@ function createLocalBotProfile() {
     id: LOCAL_BOT_USER_ID,
     username: LOCAL_BOT_NAME,
     avatar_url: "",
+    piece_skin_slug: DEFAULT_LOCAL_BOT_PIECE_SKIN,
   };
 }
 
@@ -190,7 +197,7 @@ function resolveFinishedState(chess, lastMoverId, player1Id, player2Id) {
   };
 }
 
-function buildMoveEntry(move, userId, number, chess) {
+function buildMoveEntry(move, userId, number, chess, meme = {}) {
   return {
     number,
     user_id: userId,
@@ -199,6 +206,37 @@ function buildMoveEntry(move, userId, number, chess) {
     is_capture: Boolean(move.captured),
     is_check: chess.inCheck(),
     is_checkmate: chess.isCheckmate(),
+    meme_id: meme.memeId || "",
+    meme_category: meme.memeCategory || "",
+  };
+}
+
+function resolveLocalMoveMeme(roomState, previousGame, nextGame, move, moveNumber) {
+  const analysis = analyzeMoveForMeme({
+    previousGame,
+    nextGame,
+    move,
+    initialFen: roomState?.initial_fen || "",
+  });
+  const memeCategory = analysis.category || "";
+
+  if (!memeCategory) {
+    return {
+      memeCategory: "",
+      memeId: "",
+    };
+  }
+
+  const memeEffect = pickDeterministicMemeEffect(memeCategory, {
+    gameId: roomState?.game_id || "",
+    moveKey: serializeMove(move),
+    moveNumber,
+    previousEntries: roomState?.moves || [],
+  });
+
+  return {
+    memeCategory,
+    memeId: memeEffect?.id || "",
   };
 }
 
@@ -244,6 +282,7 @@ function applySerializedMove(roomState, serializedMove, actorId) {
     return null;
   }
 
+  const previousGame = new Chess(roomState.fen || roomState.initial_fen);
   const chess = new Chess(roomState.fen || roomState.initial_fen);
   const moveRequest = parseUciMove(serializedMove);
   const moveResult = moveRequest ? chess.move(moveRequest) : null;
@@ -253,7 +292,15 @@ function applySerializedMove(roomState, serializedMove, actorId) {
   }
 
   const nextMoves = [...(roomState.moves || [])];
-  nextMoves.push(buildMoveEntry(moveResult, actorId, nextMoves.length + 1, chess));
+  const moveNumber = nextMoves.length + 1;
+  const moveMeme = resolveLocalMoveMeme(
+    roomState,
+    previousGame,
+    chess,
+    moveResult,
+    moveNumber
+  );
+  nextMoves.push(buildMoveEntry(moveResult, actorId, moveNumber, chess, moveMeme));
 
   const finishedState = resolveFinishedState(
     chess,

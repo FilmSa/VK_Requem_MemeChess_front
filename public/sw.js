@@ -1,17 +1,55 @@
-const CACHE_NAME = "memechess-shell-v1";
-const OFFLINE_CACHE_NAME = "memechess-runtime-v1";
+try {
+  self.importScripts("./meme-precache.js");
+} catch {
+  self.__MEME_PRECACHE_VERSION = "v1";
+  self.__MEME_PRECACHE_URLS = [];
+}
+
+const CACHE_VERSION = self.__MEME_PRECACHE_VERSION || "v1";
+const CACHE_NAME = `memechess-shell-${CACHE_VERSION}`;
+const OFFLINE_CACHE_NAME = `memechess-runtime-${CACHE_VERSION}`;
+const MEME_CACHE_NAME = `memechess-memes-${CACHE_VERSION}`;
+const MEME_PRECACHE_URLS = Array.isArray(self.__MEME_PRECACHE_URLS)
+  ? self.__MEME_PRECACHE_URLS
+  : [];
 
 function normalizeBasePath(pathname) {
   const normalizedPath = pathname.endsWith("/") ? pathname : `${pathname}/`;
   return normalizedPath === "//" ? "/" : normalizedPath;
 }
 
+function withBasePath(assetPath, basePath) {
+  if (!assetPath || typeof assetPath !== "string" || !assetPath.startsWith("/")) {
+    return assetPath;
+  }
+
+  if (basePath === "/") {
+    return assetPath;
+  }
+
+  return `${basePath.replace(/\/$/, "")}${assetPath}`;
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    (async () => {
       const basePath = normalizeBasePath(self.location.pathname.replace(/sw\.js$/, ""));
-      return cache.addAll([basePath, `${basePath}index.html`]);
-    })
+      const shellCache = await caches.open(CACHE_NAME);
+      await shellCache.addAll([basePath, `${basePath}index.html`]);
+
+      if (MEME_PRECACHE_URLS.length === 0) {
+        return;
+      }
+
+      const memeCache = await caches.open(MEME_CACHE_NAME);
+      const precacheTargets = MEME_PRECACHE_URLS.map((assetPath) =>
+        withBasePath(assetPath, basePath)
+      );
+
+      await Promise.allSettled(
+        precacheTargets.map((assetPath) => memeCache.add(assetPath))
+      );
+    })()
   );
   self.skipWaiting();
 });
@@ -21,7 +59,11 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME && key !== OFFLINE_CACHE_NAME) {
+          if (
+            key !== CACHE_NAME &&
+            key !== OFFLINE_CACHE_NAME &&
+            key !== MEME_CACHE_NAME
+          ) {
             return caches.delete(key);
           }
           return Promise.resolve(false);

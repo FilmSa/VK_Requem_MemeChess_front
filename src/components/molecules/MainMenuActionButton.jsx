@@ -29,7 +29,7 @@ export default function MainMenuActionButton({
     <ButtonBase
       onClick={onClick}
       disabled={disabled}
-      className={`${baseClass} shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-70 ${backgroundClassName} ${className}`}
+      className={`${baseClass} shadow-[0_4px_4px_rgba(0,0,0,0.25),inset_0_4px_4px_rgba(0,0,0,0.25)] transition-transform duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:focus-visible:translate-y-0 ${backgroundClassName} ${className}`}
       style={backgroundStyle}
     >
       <Text style={actionTextStyle}>{label}</Text>

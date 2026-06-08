@@ -31,7 +31,7 @@ export default function MenuButton({ label, icon, to, active, preload }) {
       onFocus={() => {
         void preload?.();
       }}
-      className="menu-button flex h-[56px] md:w-[207px] w-full items-center justify-between rounded-[20px_0px] border-none px-[8px] py-[6px] no-underline outline-none transition-all"
+      className="flex h-[56px] w-[207px] items-center justify-between rounded-[20px_0px] border-none px-[8px] py-[6px] no-underline outline-none transition-all duration-150 hover:-translate-y-[2px] focus-visible:-translate-y-[2px]"
       style={{
         background: active ? "var(--menu-item-active-bg)" : "transparent",
         boxShadow: active ? "var(--menu-item-shadow)" : "none",

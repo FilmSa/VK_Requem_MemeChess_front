@@ -37,6 +37,11 @@ import MobileBottomNav from "../shared/ui/organisms/MobileBottomNav.jsx";
 import MoveNavigationMolecule from "../components/molecules/MoveNavigationMolecule.jsx";
 import Icon from "../components/atoms/Icon.jsx";
 import MediaPreviewCard from "../components/molecules/MediaPreviewCard.jsx";
+import {
+  DEFAULT_PIECE_SKIN_SLUG,
+  normalizePieceSkinSlug,
+} from "../shared/constants/customizationCatalog.js";
+import { readStoredPieceSkin } from "../shared/lib/pieceSkin.js";
 
 const EMOJI_COOLDOWN_MS = 10_000;
 const EMOJI_POPUP_DURATION_MS = 2_400;
@@ -56,15 +61,15 @@ const EVOLUTION_STAGE_NOTICES = [
   },
   {
     threshold: 10,
-    title: "Эволюция: кони",
+    title: "Эволюция: коня",
     message:
-      "После 20-го хода кони могут ходить дважды за один ход. Двойной маршрут теперь подсвечивается прямо на доске.",
+      "После 20-го хода кони могут ходить дважды за один ход.",
   },
   {
     threshold: 15,
-    title: "Эволюция: прорыв коня",
+    title: "Эволюция: прорыв слона",
     message:
-      "После 30-го хода конь пробивает пешки насквозь и может поражать фигуры за ними.",
+      "После 30-го хода слона пробивает пешки насквозь и может поражать фигуры за ними.",
   },
 ];
 
@@ -84,14 +89,14 @@ EVOLUTION_STAGE_NOTICES[1] = {
 
 EVOLUTION_STAGE_NOTICES[2] = {
   threshold: 10,
-  title: "Эволюция: кони",
+  title: "Эволюция: коня",
   message:
-    "После 10-го хода кони могут ходить дважды за один ход. Двойной маршрут теперь показывается на доске по шагам.",
+    "После 10-го хода кони могут ходить дважды за один ход.",
 };
 
 EVOLUTION_STAGE_NOTICES[3] = {
   threshold: 15,
-  title: "Эволюция: слоны",
+  title: "Эволюция: слона",
   message:
     "После 15-го хода слоны пробивают пешки насквозь и могут поражать фигуры за ними.",
 };
@@ -276,6 +281,25 @@ function buildResignHighlight(square) {
   };
 }
 
+function areSquareHighlightsEqual(currentHighlights, nextHighlights) {
+  const currentKeys = Object.keys(currentHighlights || {});
+  const nextKeys = Object.keys(nextHighlights || {});
+
+  if (currentKeys.length !== nextKeys.length) {
+    return false;
+  }
+
+  return currentKeys.every((key) => {
+    const currentStyle = currentHighlights?.[key] || null;
+    const nextStyle = nextHighlights?.[key] || null;
+
+    return (
+      currentStyle?.background === nextStyle?.background &&
+      currentStyle?.boxShadow === nextStyle?.boxShadow
+    );
+  });
+}
+
 function isEditableTarget(target) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -369,14 +393,14 @@ function buildGameResultPresentation({
           outcome: "win",
           title: "Победа",
           subtitle: "Победа матом.",
-          reasonLabel: "Мат",
+          reasonLabel: "Шах и мат",
           score: "1 - 0",
         }
       : {
           outcome: "loss",
           title: "Поражение",
           subtitle: "Поражение матом.",
-          reasonLabel: "Мат",
+          reasonLabel: "Шах и мат",
           score: "0 - 1",
         };
   }
@@ -440,6 +464,56 @@ function buildGameResultPresentation({
   return null;
 }
 
+function deriveTerminalResultFromGame(chessInstance, player1Id, player2Id) {
+  if (!chessInstance || typeof chessInstance.isGameOver !== "function") {
+    return null;
+  }
+
+  if (!chessInstance.isGameOver()) {
+    return null;
+  }
+
+  if (chessInstance.isCheckmate()) {
+    const loserId = chessInstance.turn() === "w" ? player1Id : player2Id;
+    const winnerId = loserId === player1Id ? player2Id : player1Id;
+
+    return {
+      finishedReason: "checkmate",
+      winnerId: String(winnerId || "").trim(),
+    };
+  }
+
+  if (chessInstance.isStalemate()) {
+    return {
+      finishedReason: "stalemate",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isInsufficientMaterial()) {
+    return {
+      finishedReason: "insufficient_material",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isThreefoldRepetition()) {
+    return {
+      finishedReason: "threefold_repetition",
+      winnerId: "",
+    };
+  }
+
+  if (chessInstance.isDraw()) {
+    return {
+      finishedReason: "draw",
+      winnerId: "",
+    };
+  }
+
+  return null;
+}
+
 export default function PlayPage() {
   const reliableNavigate = useReliableNavigate();
   const [searchParams] = useSearchParams();
@@ -475,19 +549,77 @@ export default function PlayPage() {
   const currentUserId = String(activeRoom.currentUserId || user?.id || "").trim();
   const opponentColor = getOpponentColor(activeRoom.playerColor);
   const roomState = activeRoom.roomState;
+  const currentPieceSkinSlug =
+    normalizePieceSkinSlug(activeRoom.currentUserProfile?.piece_skin_slug) ||
+    readStoredPieceSkin() ||
+    DEFAULT_PIECE_SKIN_SLUG;
+  const opponentPieceSkinSlug =
+    normalizePieceSkinSlug(activeRoom.opponentProfile?.piece_skin_slug) ||
+    DEFAULT_PIECE_SKIN_SLUG;
+  const currentSideColor =
+    roomState?.player1_id && roomState.player1_id === currentUserId
+      ? "w"
+      : roomState?.player2_id && roomState.player2_id === currentUserId
+        ? "b"
+        : activeRoom.playerColor || "w";
+  const whitePieceSkinId =
+    currentSideColor === "w"
+      ? currentPieceSkinSlug
+      : opponentPieceSkinSlug;
+  const blackPieceSkinId =
+    currentSideColor === "b"
+      ? currentPieceSkinSlug
+      : opponentPieceSkinSlug;
   const resolvedOpponentUserId =
     String(activeRoom.opponentUserId || "").trim() ||
     (currentUserId && roomState?.player1_id === currentUserId
       ? String(roomState?.player2_id || "").trim()
       : String(roomState?.player1_id || "").trim());
-  const isGameFinished = roomState?.status === "finished";
+  const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
+  const chessGameState = useChessGame({
+    syncKey: gameId,
+    preloadMemeAssets: Boolean(gameId),
+    playerColor: activeRoom.playerColor,
+    gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
+    currentUserId,
+    isBotGame: activeRoom.isBotGame,
+    serverLegalMoves: roomState?.legal_moves || [],
+    serverMoves: roomState?.moves || [],
+    initialFen: roomState?.initial_fen || "",
+    interactionLocked: roomState?.status === "finished",
+    extraHighlightedSquares,
+    preferStateMoveEffects: true,
+    forceServerAuthoritative: activeRoom.isBotGame,
+  });
+  const liveBoardTerminalResult = useMemo(() => {
+    if (!roomState || chessGameState.isViewingHistory) {
+      return null;
+    }
+
+    return deriveTerminalResultFromGame(
+      chessGameState.displayedGame,
+      String(roomState.player1_id || "").trim(),
+      String(roomState.player2_id || "").trim()
+    );
+  }, [
+    chessGameState.displayedGame,
+    chessGameState.isViewingHistory,
+    roomState,
+  ]);
+  const isGameFinished =
+    roomState?.status === "finished" || Boolean(liveBoardTerminalResult);
   const finishedReason = String(
-    roomState?.finished_reason || finishedEventResult?.finishedReason || ""
+    roomState?.finished_reason ||
+      liveBoardTerminalResult?.finishedReason ||
+      finishedEventResult?.finishedReason ||
+      ""
   ).trim();
   const winnerId = String(
-    roomState?.winner_id || finishedEventResult?.winnerId || ""
+    roomState?.winner_id ||
+      liveBoardTerminalResult?.winnerId ||
+      finishedEventResult?.winnerId ||
+      ""
   ).trim();
-  const drawOfferedBy = String(roomState?.draw_offered_by || "").trim();
   const gameClock = useGameClock({
     gameId,
     roomState,
@@ -497,23 +629,10 @@ export default function PlayPage() {
     sessionToken: activeRoom.sessionToken,
     isOnlineGame: onlineRoom.isOnlineGame,
     isLocalBotGame: activeRoom.isLocalBotGame,
+    isGameFinished,
     onTimeoutResolved: activeRoom.applyRoomState,
   });
   const showTimedClocks = Boolean(gameClock.timed);
-
-  const chessGameState = useChessGame({
-    syncKey: gameId,
-    playerColor: activeRoom.playerColor,
-    gameMode: activeRoom.matchGameMode || roomState?.game_mode || "",
-    currentUserId,
-    isBotGame: activeRoom.isBotGame,
-    serverLegalMoves: roomState?.legal_moves || [],
-    serverMoves: roomState?.moves || [],
-    initialFen: roomState?.initial_fen || "",
-    interactionLocked: isGameFinished,
-    extraHighlightedSquares,
-    forceServerAuthoritative: activeRoom.isBotGame,
-  });
 
   const emojiOwnerId =
     activeRoom.currentUserProfile?.id || activeRoom.currentUserId || user?.id;
@@ -1012,7 +1131,9 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (!isGameFinished || finishedReason !== "resign") {
-      setExtraHighlightedSquares({});
+      setExtraHighlightedSquares((currentHighlights) =>
+        Object.keys(currentHighlights).length === 0 ? currentHighlights : {}
+      );
       return;
     }
 
@@ -1024,7 +1145,13 @@ export default function PlayPage() {
       findKingSquareByColor(chessGameState.game, loserColor) ||
       findKingSquareByColor(chessGameState.displayedGame, loserColor);
 
-    setExtraHighlightedSquares(buildResignHighlight(kingSquare));
+    const nextHighlights = buildResignHighlight(kingSquare);
+
+    setExtraHighlightedSquares((currentHighlights) =>
+      areSquareHighlightsEqual(currentHighlights, nextHighlights)
+        ? currentHighlights
+        : nextHighlights
+    );
   }, [
     chessGameState.displayedGame,
     chessGameState.game,
@@ -1385,6 +1512,8 @@ export default function PlayPage() {
                   sendMove={roomControls.sendMove}
                   boardWidth={layout.boardSize}
                   onLayoutMetricsChange={handleBoardMetricsChange}
+                  whitePieceSkinId={whitePieceSkinId}
+                  blackPieceSkinId={blackPieceSkinId}
                   topPlayerName={activeRoom.opponentName}
                   topPlayerAvatar={
                     activeRoom.opponentProfile?.avatar_url || DEFAULT_AVATAR
@@ -1420,6 +1549,7 @@ export default function PlayPage() {
                     subtitle={resultPresentation?.subtitle}
                     reasonLabel={resultPresentation?.reasonLabel}
                     score={resultPresentation?.score}
+                    boardSize={layout.boardSize}
                     currentPlayer={{
                       name: activeRoom.currentUserName,
                       avatar_url: activeRoom.currentUserProfile?.avatar_url || "",
@@ -1450,6 +1580,7 @@ export default function PlayPage() {
                 onEmojiSelect={handleEmojiSelect}
                 emojiCooldownActive={emojiCooldownActive}
                 history={chessGameState.history}
+                historyEntries={chessGameState.historyEntries}
                 activeHistoryPly={chessGameState.activeHistoryPly}
                 canViewPrevious={chessGameState.canViewPrevious}
                 canViewNext={chessGameState.canViewNext}
@@ -1489,6 +1620,7 @@ export default function PlayPage() {
         subtitle={resultPresentation?.subtitle}
         reasonLabel={resultPresentation?.reasonLabel}
         score={resultPresentation?.score}
+        boardSize={layout.boardSize}
         currentPlayer={{
           name: activeRoom.currentUserName,
           avatar_url: activeRoom.currentUserProfile?.avatar_url || "",

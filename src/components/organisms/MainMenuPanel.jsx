@@ -4,7 +4,7 @@ import ResponsivePanelFrame from "../atoms/ResponsivePanelFrame.jsx";
 import MainMenuActionButton from "../molecules/MainMenuActionButton.jsx";
 import MainMenuCardButton from "../molecules/MainMenuCardButton.jsx";
 import MainMenuDepositField from "../molecules/MainMenuDepositField.jsx";
-import MainMenuSelectField from "../molecules/MainMenuSelectField.jsx";
+import MainMenuGameModeSelector from "../molecules/MainMenuGameModeSelector.jsx";
 import MainMenuTabButton from "../molecules/MainMenuTabButton.jsx";
 import MainMenuToggleField from "../molecules/MainMenuToggleField.jsx";
 import CustomizationSection from "./CustomizationSection.jsx";
@@ -117,7 +117,7 @@ export default function MainMenuPanel({
                   className="rounded-br-[40px] rounded-tl-[40px]"
                   style={{ padding: isMobile ? "0 7px" : "0 10px", background: "var(--main-menu-panel-bg)", boxShadow: "var(--main-menu-surface-shadow)" }}
                 >
-                  <MainMenuSelectField {...modeField} />
+                  <MainMenuGameModeSelector {...modeField} />
                   <MainMenuToggleField {...memeField} />
                   <MainMenuDepositField {...depositField} />
                 </div>

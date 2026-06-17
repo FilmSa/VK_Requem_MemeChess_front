@@ -121,6 +121,171 @@ function resolveStatusMeta(entry, currentUserId) {
   };
 }
 
+function isDrawFinishedReason(finishedReason) {
+  return (
+    finishedReason === "draw_agreed" ||
+    finishedReason === "stalemate" ||
+    finishedReason === "insufficient_material" ||
+    finishedReason === "threefold_repetition" ||
+    finishedReason === "draw"
+  );
+}
+
+function resolveDerivedHistoryState(entry, currentUserId = "") {
+  const status = String(entry?.status || "").trim().toLowerCase();
+  const winnerId = String(entry?.winnerId || "").trim();
+  const finishedReason = String(entry?.finishedReason || "")
+    .trim()
+    .toLowerCase();
+  const finishedAt = String(entry?.finishedAt || "").trim();
+  const hasExplicitFinishedState =
+    status === "finished" ||
+    Boolean(winnerId) ||
+    Boolean(finishedReason) ||
+    Boolean(finishedAt);
+
+  if (hasExplicitFinishedState) {
+    return {
+      status: status === "active" ? "finished" : status || "finished",
+      winnerId,
+      finishedReason,
+    };
+  }
+
+  const fen = String(entry?.fen || "").trim();
+  if (!fen) {
+    return {
+      status: status || "active",
+      winnerId: "",
+      finishedReason: "",
+    };
+  }
+
+  try {
+    const chess = new Chess();
+    chess.load(fen);
+
+    if (!chess.isGameOver()) {
+      return {
+        status: status || "active",
+        winnerId: "",
+        finishedReason: "",
+      };
+    }
+
+    if (chess.isCheckmate()) {
+      const winnerColor = chess.turn() === "w" ? "b" : "w";
+      const currentPlayerColor = entry?.youArePlayer1 ? "w" : "b";
+      const opponentId = String(entry?.opponent?.id || "").trim();
+      const inferredWinnerId =
+        winnerColor === currentPlayerColor
+          ? String(currentUserId || "").trim()
+          : opponentId;
+
+      return {
+        status: "finished",
+        winnerId: inferredWinnerId,
+        finishedReason: "checkmate",
+      };
+    }
+
+    if (chess.isStalemate()) {
+      return {
+        status: "finished",
+        winnerId: "",
+        finishedReason: "stalemate",
+      };
+    }
+
+    if (chess.isInsufficientMaterial()) {
+      return {
+        status: "finished",
+        winnerId: "",
+        finishedReason: "insufficient_material",
+      };
+    }
+
+    if (chess.isThreefoldRepetition()) {
+      return {
+        status: "finished",
+        winnerId: "",
+        finishedReason: "threefold_repetition",
+      };
+    }
+
+    if (chess.isDraw()) {
+      return {
+        status: "finished",
+        winnerId: "",
+        finishedReason: "draw",
+      };
+    }
+  } catch {
+    // Fall back to the API-provided state when the position cannot be parsed.
+  }
+
+  return {
+    status: status || "active",
+    winnerId: "",
+    finishedReason: "",
+  };
+}
+
+function resolveDerivedStatusMeta(entry, currentUserId) {
+  const historyState = resolveDerivedHistoryState(entry, currentUserId);
+  const status = String(historyState.status || "").trim().toLowerCase();
+  const winnerId = String(historyState.winnerId || "").trim();
+  const finishedReason = String(historyState.finishedReason || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    status === String(entry?.status || "").trim().toLowerCase() &&
+    !winnerId &&
+    !finishedReason
+  ) {
+    return resolveStatusMeta(entry, currentUserId);
+  }
+
+  if (status === "active") {
+    return {
+      status,
+      label: "Активно",
+      tone: "active",
+    };
+  }
+
+  if (isDrawFinishedReason(finishedReason)) {
+    return {
+      status,
+      label: "Ничья",
+      tone: "neutral",
+    };
+  }
+
+  if (!winnerId) {
+    return {
+      status,
+      label: "Завершена",
+      tone: "neutral",
+    };
+  }
+
+  if (winnerId === currentUserId) {
+    return {
+      status,
+      label: "Победа",
+      tone: "success",
+    };
+  }
+
+  return {
+    status,
+    label: "Поражение",
+    tone: "danger",
+  };
+}
+
 function resolveInventoryPreview(item) {
   const catalogItem = getCustomizationItem(item.slug);
   const resolvedTitle = catalogItem?.title || item.title || item.slug;
@@ -638,7 +803,7 @@ function HistoryCard({
   selectedBoardSkinId,
   onOpen,
 }) {
-  const statusMeta = resolveStatusMeta(entry, currentUserId);
+  const statusMeta = resolveDerivedStatusMeta(entry, currentUserId);
   const opponentName =
     entry.opponent?.username ||
     (entry.status === "active" ? "Ожидание соперника" : "Соперник неизвестен");
@@ -1131,7 +1296,7 @@ export default function ProfilePage() {
                 const opponentName = entry.opponent?.username || "Соперник";
                 const modeLabel = resolveGameModeLabel(entry.gameMode || entry.game_mode);
                 const timeLabel = entry.timeControlLabel || "";
-                const isWin = entry.winner_id === user?.id;
+                const statusMeta = resolveDerivedStatusMeta(entry, user?.id);
                 return (
                   <button
                     key={entry.gameId}
@@ -1143,8 +1308,16 @@ export default function ProfilePage() {
                       <div className="mobile-profile-history-card__opponent">{opponentName}</div>
                       <div className="mobile-profile-history-card__meta">{modeLabel} · {timeLabel}</div>
                     </div>
-                    <div className={`mobile-profile-history-card__result ${isWin ? "mobile-profile-history-card__result--win" : "mobile-profile-history-card__result--loss"}`}>
-                      {isWin ? `+${entry.rating_change || ""}` : "Поражение"}
+                    <div
+                      className={`mobile-profile-history-card__result ${
+                        statusMeta.tone === "success"
+                          ? "mobile-profile-history-card__result--win"
+                          : statusMeta.tone === "danger"
+                            ? "mobile-profile-history-card__result--loss"
+                            : "mobile-profile-history-card__result--draw"
+                      }`}
+                    >
+                      {statusMeta.label}
                     </div>
                   </button>
                 );

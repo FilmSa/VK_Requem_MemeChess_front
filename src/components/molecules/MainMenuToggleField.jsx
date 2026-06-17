@@ -12,7 +12,7 @@ export default function MainMenuToggleField({
 
   const rowClass = isMobile
     ? "flex h-[58px] items-center justify-between px-[7px] py-[6px]"
-    : "flex h-[68px] items-center justify-between px-[10px] py-[8px]";
+    : "flex h-[56px] items-center justify-between px-[10px] py-[6px]";
 
   return (
     <div className={rowClass}>

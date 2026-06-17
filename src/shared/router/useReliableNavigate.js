@@ -5,12 +5,15 @@ import { buildAppHref } from "./buildAppHref.js";
 export function useReliableNavigate() {
   const navigate = useNavigate();
   const fallbackTimerRef = useRef(null);
+  const fallbackHrefRef = useRef("");
 
   const clearFallback = useCallback(() => {
     if (fallbackTimerRef.current) {
       window.clearTimeout(fallbackTimerRef.current);
       fallbackTimerRef.current = null;
     }
+
+    fallbackHrefRef.current = "";
   }, []);
 
   useEffect(() => clearFallback, [clearFallback]);
@@ -30,8 +33,15 @@ export function useReliableNavigate() {
 
       const usesHashRouter = import.meta.env.VITE_ROUTER_MODE === "hash";
       const fallbackHref = new URL(buildAppHref(to), window.location.origin).toString();
+      fallbackHrefRef.current = fallbackHref;
 
       fallbackTimerRef.current = window.setTimeout(() => {
+        fallbackTimerRef.current = null;
+
+        if (!fallbackHrefRef.current || fallbackHrefRef.current !== fallbackHref) {
+          return;
+        }
+
         const currentHref = usesHashRouter
           ? `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`
           : window.location.href;
@@ -41,7 +51,7 @@ export function useReliableNavigate() {
           return;
         }
 
-        window.location.reload();
+        fallbackHrefRef.current = "";
       }, 160);
     },
     [clearFallback, navigate]

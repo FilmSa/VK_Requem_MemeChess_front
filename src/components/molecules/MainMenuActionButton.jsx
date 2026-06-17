@@ -16,14 +16,14 @@ export default function MainMenuActionButton({
 
   const actionTextStyle = {
     color: "#ffffff",
-    fontSize: isMobile ? 16 : 27,
+    fontSize: isMobile ? 16 : 25,
     fontWeight: 500,
     fontFamily: '"Unbounded", sans-serif',
   };
 
   const baseClass = isMobile
     ? "flex items-center justify-between rounded-br-[20px] rounded-tl-[20px] border-none px-[14px] py-[7px]"
-    : "flex items-center justify-between rounded-br-[20px] rounded-tl-[20px] border-none px-[20px] py-[10px]";
+    : "flex items-center justify-between rounded-br-[20px] rounded-tl-[20px] border-none px-[20px] py-[8px]";
 
   return (
     <ButtonBase
@@ -37,8 +37,8 @@ export default function MainMenuActionButton({
         src={icon}
         alt=""
         className="object-contain"
-        width={isMobile ? 39 : 49}
-        height={isMobile ? 39 : 49}
+        width={isMobile ? 39 : 44}
+        height={isMobile ? 39 : 44}
       />
     </ButtonBase>
   );

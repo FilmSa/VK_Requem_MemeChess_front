@@ -11,6 +11,7 @@ import { useOnlineGameRoom } from "../features/game/model/useOnlineGameRoom.js";
 import { useLocalBotGameRoom } from "../features/game/model/useLocalBotGameRoom.js";
 import { useGameClock } from "../features/game/model/useGameClock.js";
 import { useAuth } from "../features/auth/useAuth.js";
+import { invalidateGameHistoryCache } from "../features/game/gameApi.js";
 import {
   readStoredEmojiQuickAccess,
   resolveEmojiQuickAccessItems,
@@ -518,7 +519,7 @@ export default function PlayPage() {
   const reliableNavigate = useReliableNavigate();
   const [searchParams] = useSearchParams();
   const gameId = searchParams.get("game") || "";
-  const { user, refreshCurrency } = useAuth();
+  const { user, token, refreshCurrency } = useAuth();
   const { showNotification, dismissNotification } = useNotifications();
   const [topReaction, setTopReaction] = useState(null);
   const [bottomReaction, setBottomReaction] = useState(null);
@@ -539,9 +540,11 @@ export default function PlayPage() {
   const cooldownTimeoutRef = useRef(null);
   const activeReactionAudioEntriesRef = useRef(new Set());
   const finishedCurrencyRefreshKeyRef = useRef("");
+  const finishedHistoryInvalidateKeyRef = useRef("");
   const lastEvolutionMoveCountRef = useRef(null);
   const { viewportRef, layout, handleBoardMetricsChange } =
     useResponsiveWorkspaceLayout();
+  const isMobile = useIsMobile();
 
   const onlineRoom = useOnlineGameRoom(gameId);
   const localBotRoom = useLocalBotGameRoom(gameId);
@@ -1046,6 +1049,35 @@ export default function PlayPage() {
   ]);
 
   useEffect(() => {
+    if (
+      activeRoom.isLocalBotGame ||
+      !onlineRoom.isOnlineGame ||
+      !gameId ||
+      !token ||
+      !isGameFinished ||
+      !finishedReason
+    ) {
+      return;
+    }
+
+    const invalidateKey = `${gameId}:${finishedReason}:${winnerId}`;
+    if (finishedHistoryInvalidateKeyRef.current === invalidateKey) {
+      return;
+    }
+
+    finishedHistoryInvalidateKeyRef.current = invalidateKey;
+    invalidateGameHistoryCache(token);
+  }, [
+    activeRoom.isLocalBotGame,
+    isGameFinished,
+    finishedReason,
+    gameId,
+    onlineRoom.isOnlineGame,
+    token,
+    winnerId,
+  ]);
+
+  useEffect(() => {
     if (drawOfferedBy || isGameFinished) {
       setActionNotice("");
       setIsResignConfirmMode(false);
@@ -1296,9 +1328,8 @@ export default function PlayPage() {
     );
   }
 
-  const isMobile = useIsMobile();
   const mobileBoardSize = typeof window !== "undefined"
-    ? Math.min(window.innerWidth - 12, 600)
+    ? window.innerWidth
     : 350;
 
   if (isMobile) {

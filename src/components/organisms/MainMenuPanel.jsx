@@ -31,6 +31,19 @@ export default function MainMenuPanel({
 }) {
   const isMobile = useIsMobile();
   const isCustomizeTab = activeTabId === "customize";
+  const settingsContentStyle = useMemo(
+    () =>
+      isMobile
+        ? {
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            paddingTop: 10,
+            paddingBottom: 8,
+          }
+        : undefined,
+    [isMobile]
+  );
 
   const panelStyle = useMemo(() => ({
     width: isMobile ? "100%" : MAIN_MENU_BASE_WIDTH,
@@ -52,11 +65,11 @@ export default function MainMenuPanel({
       : "justify-start px-[10px] pb-[10px] pt-[15px]"
     : isMobile
       ? "justify-start p-[7px] pt-[12px]"
-      : "justify-start p-[10px] pt-[18px]";
+      : "justify-start px-[10px] pb-[8px] pt-[12px]";
 
   const inner = (
     <section style={isMobile ? { ...panelStyle, ...style } : panelStyle}>
-      <div className="relative flex w-full items-start overflow-hidden" style={{ height: isMobile ? 68 : 80 }}>
+      <div className="relative flex w-full items-start overflow-hidden" style={{ height: isMobile ? 68 : 76 }}>
         <div
           className="absolute inset-x-0 bottom-0 h-px"
           style={{ background: "var(--main-menu-divider)" }}
@@ -93,11 +106,11 @@ export default function MainMenuPanel({
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-hidden">
-            <CustomScrollbarWrapper className="h-full min-h-0 pr-[6px]">
-              <div className="flex min-h-full flex-col pb-[2px]" style={{ gap: isMobile ? 20 : 30 }}>
+            <CustomScrollbarWrapper className="h-full min-h-0 pr-[4px]">
+              <div className="flex min-h-full flex-col pb-[2px]" style={{ gap: isMobile ? 20 : 18 }}>
                 <div
-                  className="grid min-h-[300px] grid-cols-2 overflow-hidden rounded-br-[40px] rounded-tl-[40px]"
-                  style={{ minHeight: isMobile ? "200px" : "300px",  gap: isMobile ? 7 : 10, padding: isMobile ? "7px" : "10px", boxShadow: "var(--main-menu-surface-shadow)" }}
+                  className="grid grid-cols-2 overflow-hidden rounded-br-[40px] rounded-tl-[40px]"
+                  style={{ minHeight: isMobile ? "200px" : "264px", gap: isMobile ? 7 : 10, padding: isMobile ? "7px" : "10px", boxShadow: "var(--main-menu-surface-shadow)" }}
                 >
                   {cards.map((card, index) => (
                     <MainMenuCardButton
@@ -115,11 +128,13 @@ export default function MainMenuPanel({
 
                 <div
                   className="rounded-br-[40px] rounded-tl-[40px]"
-                  style={{ padding: isMobile ? "0 7px" : "0 10px", background: "var(--main-menu-panel-bg)", boxShadow: "var(--main-menu-surface-shadow)" }}
+                  style={{ padding: isMobile ? "0 7px" : "0 10px 6px", background: "var(--main-menu-panel-bg)", boxShadow: "var(--main-menu-surface-shadow)" }}
                 >
-                  <MainMenuGameModeSelector {...modeField} />
-                  <MainMenuToggleField {...memeField} />
-                  <MainMenuDepositField {...depositField} />
+                  <div style={settingsContentStyle}>
+                    <MainMenuGameModeSelector {...modeField} />
+                    <MainMenuToggleField {...memeField} />
+                    <MainMenuDepositField {...depositField} />
+                  </div>
                 </div>
               </div>
             </CustomScrollbarWrapper>
@@ -127,7 +142,7 @@ export default function MainMenuPanel({
         )}
 
         {!isCustomizeTab ? (
-          <div className="shrink-0 flex flex-col" style={{ marginTop: isMobile ? 7 : 10, gap: isMobile ? 7 : 10 }}>
+          <div className="shrink-0 flex flex-col" style={{ marginTop: isMobile ? 7 : 8, gap: isMobile ? 7 : 8 }}>
             <MainMenuActionButton
               label={actions.startLabel}
               icon={actions.startIcon}

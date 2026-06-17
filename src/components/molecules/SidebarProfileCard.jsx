@@ -17,6 +17,16 @@ function buildCardStyle() {
   };
 }
 
+function buildFullWidthCardStyle() {
+  return {
+    ...buildCardStyle(),
+    width: "calc(100% + 20px)",
+    maxWidth: "none",
+    marginLeft: "-10px",
+    marginRight: "-10px",
+  };
+}
+
 function trimDecimal(value) {
   return Number(value.toFixed(value >= 10 ? 0 : 1))
     .toString()
@@ -75,8 +85,8 @@ export default function SidebarProfileCard({
             handleGuestClick();
           }
         }}
-        className="w-full overflow-hidden rounded-[24px] p-[16px]"
-        style={buildCardStyle()}
+        className="overflow-hidden rounded-[24px] p-[16px]"
+        style={buildFullWidthCardStyle()}
       >
         <div className="flex min-w-0 items-center gap-3">
           <div
@@ -130,8 +140,8 @@ export default function SidebarProfileCard({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-[24px] p-[16px]"
-      style={buildCardStyle()}
+      className="overflow-hidden rounded-[24px] p-[16px]"
+      style={buildFullWidthCardStyle()}
     >
       <div className="flex flex-col gap-[12px]">
         <div
@@ -192,8 +202,8 @@ export default function SidebarProfileCard({
           </div>
         </div>
 
-        <div className="flex gap-[3px]">
-          <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 gap-[4px] overflow-hidden">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <CurrencyBadge
               onClick={openCurrencyConvertModal}
               icon={crownsIcon}
@@ -204,7 +214,7 @@ export default function SidebarProfileCard({
               className="py-[11px]"
             />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <CurrencyBadge
               onClick={() => {
                 void navigateWithPreload("/shop", onPreloadShop);

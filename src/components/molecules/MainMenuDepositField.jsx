@@ -16,11 +16,11 @@ export default function MainMenuDepositField({
 
   const rowClass = isMobile
     ? "flex h-[58px] items-center justify-between px-[7px] py-[6px]"
-    : "flex h-[68px] items-center justify-between px-[10px] py-[8px]";
+    : "flex h-[56px] items-center justify-between px-[10px] py-[6px]";
 
   const inputWrap = isMobile
     ? "flex w-[168px] items-center justify-between py-[4px]"
-    : "flex w-[210px] items-center justify-between py-[6px]";
+    : "flex w-[210px] items-center justify-between py-[4px]";
 
   return (
     <div className={rowClass}>

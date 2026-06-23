@@ -88,7 +88,7 @@ export default function SidebarProfileCard({
         className="overflow-hidden rounded-[24px] p-[16px]"
         style={buildFullWidthCardStyle()}
       >
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <div
             className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] border border-dashed text-[22px] font-semibold"
             style={{
@@ -101,13 +101,10 @@ export default function SidebarProfileCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[17px] font-semibold">Гость</p>
-            <p
-              className="mt-1 line-clamp-2 text-[12px] leading-[1.35]"
-              style={{ color: "var(--color-text-muted)" }}
-            >
-              Войдите, чтобы открыть профиль и сохранить аккаунт.
-            </p>
+            <p className="truncate text-[17px] font-semibold" 
+            style={{
+              paddingLeft: "20px"
+            }}>Гость</p>
           </div>
         </div>
 

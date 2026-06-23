@@ -2,16 +2,36 @@ import classicIcon from "../../../icons/gameModeClassic.svg";
 import fisherIcon from "../../../icons/gameModeFisher.svg";
 import evolutionIcon from "../../../icons/gameModeEvolution.svg";
 import ButtonBase from "../atoms/ButtonBase.jsx";
+import DelayedTooltip from "../atoms/DelayedTooltip.jsx";
 import FieldLabel from "../atoms/FieldLabel.jsx";
 import { useIsMobile } from "../../shared/hooks/useMediaQuery.js";
 
 const MODE_CONFIG = {
-  Классика: { icon: classicIcon, border: "#84DAE9" },
-  Фишер: { icon: fisherIcon, border: "#FF00C8" },
-  Эволюция: { icon: evolutionIcon, border: "#16CEEF" },
+  "\u041a\u043b\u0430\u0441\u0441\u0438\u043a\u0430": {
+    icon: classicIcon,
+    border: "#84DAE9",
+    description:
+      "\u041e\u0431\u044b\u0447\u043d\u044b\u0435 \u0448\u0430\u0445\u043c\u0430\u0442\u044b",
+  },
+  "\u0424\u0438\u0448\u0435\u0440": {
+    icon: fisherIcon,
+    border: "#FF00C8",
+    description:
+      "\u0428\u0430\u0445\u043c\u0430\u0442\u044b \u0432 \u043a\u043e\u0442\u043e\u0440\u044b\u0445 \u0432 \u0441\u043b\u0443\u0447\u0430\u0439\u043d\u043e\u043c \u043f\u043e\u0440\u044f\u0434\u043a\u0435 \u0440\u0430\u0441\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u044b \u0444\u0438\u0433\u0443\u0440\u044b \u043f\u0435\u0440\u0435\u0434 \u043f\u0435\u0448\u043a\u0430\u043c\u0438",
+  },
+  "\u042d\u0432\u043e\u043b\u044e\u0446\u0438\u044f": {
+    icon: evolutionIcon,
+    border: "#16CEEF",
+    description:
+      "\u0428\u0430\u0445\u043c\u0430\u0442\u044b \u0432 \u043a\u043e\u0442\u043e\u0440\u044b\u0445 \u043f\u043e \u0434\u043e\u0441\u0442\u0438\u0436\u0435\u043d\u0438\u044e \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u043d\u043e\u0433\u043e \u043a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u0430 \u0445\u043e\u0434\u043e\u0432 \u0444\u0438\u0433\u0443\u0440\u044b \u043f\u043e\u043b\u0443\u0447\u0430\u044e\u0442 \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0441\u043f\u043e\u0441\u043e\u0431\u043d\u043e\u0441\u0442\u0438",
+  },
 };
 
-const MODE_ORDER = ["Классика", "Фишер", "Эволюция"];
+const MODE_ORDER = [
+  "\u041a\u043b\u0430\u0441\u0441\u0438\u043a\u0430",
+  "\u0424\u0438\u0448\u0435\u0440",
+  "\u042d\u0432\u043e\u043b\u044e\u0446\u0438\u044f",
+];
 
 function resolveRgb(hexColor) {
   const normalized = hexColor.replace("#", "");
@@ -82,29 +102,36 @@ export default function MainMenuGameModeSelector({
           const isActive = value === mode;
 
           return (
-            <ButtonBase
+            <DelayedTooltip
               key={mode}
+              content={config.description}
               disabled={disabled}
-              onClick={() => onSelect(mode)}
-              style={{
-                ...buttonBaseStyle,
-                borderColor: config.border,
-                background: isActive
-                  ? buildActiveBackground(config.border)
-                  : "#1A2B51",
-              }}
+              style={{ flex: 1 }}
             >
-              <img
-                src={config.icon}
-                alt={mode}
+              <ButtonBase
+                disabled={disabled}
+                onClick={() => onSelect(mode)}
                 style={{
-                  width: isMobile ? 40 : 44,
-                  height: isMobile ? 40 : 44,
-                  flexShrink: 0,
+                  ...buttonBaseStyle,
+                  width: "100%",
+                  borderColor: config.border,
+                  background: isActive
+                    ? buildActiveBackground(config.border)
+                    : "#1A2B51",
                 }}
-              />
-              <span style={labelStyle}>{mode}</span>
-            </ButtonBase>
+              >
+                <img
+                  src={config.icon}
+                  alt={mode}
+                  style={{
+                    width: isMobile ? 40 : 44,
+                    height: isMobile ? 40 : 44,
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={labelStyle}>{mode}</span>
+              </ButtonBase>
+            </DelayedTooltip>
           );
         })}
       </div>

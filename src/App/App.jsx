@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import lottie from "lottie-web";
 import {
   BrowserRouter,
   HashRouter,
@@ -129,10 +130,39 @@ function AnimatedRoutes() {
 }
 
 function RouteLoadingScreen() {
+  const containerRef = useRef(null);
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+
+    fetch(`${import.meta.env.BASE_URL}loading-animation.json`)
+      .then((res) => res.json())
+      .then((animationData) => {
+        animationRef.current = lottie.loadAnimation({
+          container: containerRef.current,
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          animationData,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.destroy();
+        animationRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="app-page flex min-h-screen items-center justify-center px-4 py-8">
       <div
-        className="rounded-[24px] border px-6 py-5 text-[15px]"
+        className="flex flex-col items-center gap-10 rounded-[24px] border px-20 py-16"
         style={{
           borderColor: "var(--status-card-border)",
           background: "var(--status-card-background)",
@@ -140,7 +170,9 @@ function RouteLoadingScreen() {
           color: "var(--color-text)",
         }}
       >
-        Загружаем страницу...
+        <div ref={containerRef} className="h-[300px] w-[400px] overflow-hidden" />
+        <span className="pb-6 text-[14px] mb-[10px]">Загружаем страницу...</span>
+        <span> </span>
       </div>
     </div>
   );
